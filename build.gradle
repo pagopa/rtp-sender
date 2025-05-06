@@ -1,0 +1,292 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.graalvm.buildtools.native' version '0.10.4'
+	id("org.openapi.generator") version "7.11.0"
+	id "org.sonarqube" version "6.0.0.5145"
+	id 'jacoco'
+}
+
+group = 'it.gov.pagopa'
+version = project.version
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springCloudAzureVersion', "5.19.0")
+	set('otelInstrumentationVersion','2.14.0')
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
+
+	//	spring security + oauth2 resource server
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	implementation 'org.springframework.security:spring-security-oauth2-jose'
+
+	//	spring oauth2
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	//	implementation 'com.azure.spring:spring-cloud-azure-starter-actuator'
+	implementation("io.swagger.core.v3:swagger-annotations:2.2.28")
+	implementation("org.openapitools:jackson-databind-nullable:0.2.6")
+	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+	implementation("org.springframework.boot:spring-boot-starter-validation")
+	// https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api
+	compileOnly group: 'jakarta.servlet', name: 'jakarta.servlet-api', version: '6.1.0'
+
+	// Alternative to com.azure.spring:spring-cloud-azure-starter-monitor:1.0.0-beta.6
+	implementation 'com.azure:azure-monitor-opentelemetry-autoconfigure:1.0.0'
+	implementation 'io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:2.13.3'
+	implementation ("io.opentelemetry.instrumentation:opentelemetry-spring-webflux-5.3:2.15.0-alpha")
+
+	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+	implementation 'org.apache.commons:commons-lang3:3.0'
+
+	// spring cache + caffeine
+	// https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-cache
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	// https://mvnrepository.com/artifact/com.github.ben-manes.caffeine/caffeine
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
+
+
+	// Azure blob storage and manage identity
+	implementation 'com.azure:azure-identity:1.15.1'
+	implementation 'com.azure:azure-storage-common:12.29.0-beta.1'
+	implementation 'com.azure:azure-storage-blob:12.30.0-beta.1'
+	implementation 'com.microsoft.azure:msal4j:1.19.0'
+
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	annotationProcessor("org.projectlombok:lombok")
+	compileOnly("org.projectlombok:lombok")
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "com.azure.spring:spring-cloud-azure-dependencies:${springCloudAzureVersion}"
+		mavenBom "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${otelInstrumentationVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+tasks.compileJava {
+	dependsOn("generateOpenAPIActivate")
+	dependsOn("generateOpenAPISend")
+	dependsOn("generateOpenAPIEPC")
+	dependsOn("generateOpenAPIActivateClient")
+	dependsOn("generateOpenAPIEPCClient")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("$projectDir/build/generated/src/main/java")
+        }
+    }
+}
+
+tasks.register('generateOpenAPIActivate', GenerateTask) {
+	generatorName.set("spring")
+	inputSpec.set("$rootDir/openapi/activation.openapi.yaml")
+	outputDir.set("$projectDir/build/generated")
+	apiPackage.set("it.gov.pagopa.rtp.sender.controller.generated.activate")
+	modelPackage.set("it.gov.pagopa.rtp.sender.model.generated.activate")
+	modelNameSuffix.set("Dto")
+	generateApiTests.set(false)
+	generateApiDocumentation.set(false)
+	generateApiTests.set(false)
+	generateModelTests.set(false)
+	library.set("spring-boot")
+	configOptions.set([
+			"dateLibrary"         : "java8",
+			"useSpringBoot3"      : "true",
+			"interfaceOnly"       : "true",
+			"useTags"             : "true",
+			"useSwaggerUI"        : "false",
+			"reactive"            : "true",
+			"swaggerAnnotations"  : "false",
+			"skipDefaultInterface": "true",
+			"openApiNullable"     : "true",
+	])
+	typeMappings.set([
+			"DateTime"       : "java.time.LocalDateTime",
+			"zoned-date-time": "java.time.ZonedDateTime"
+	])
+}
+
+tasks.register('generateOpenAPIActivateClient', GenerateTask) {
+	generatorName.set("java")
+	inputSpec.set("$rootDir/openapi/activation.openapi.yaml")
+	outputDir.set("$projectDir/build/generated")
+	apiPackage.set("it.gov.pagopa.rtp.sender.activateClient.api")
+	modelPackage.set("it.gov.pagopa.rtp.sender.activateClient.model")
+	invokerPackage.set("it.gov.pagopa.rtp.sender.activateClient.invoker")
+	modelNameSuffix.set("Dto")
+	generateApiTests.set(false)
+	generateApiDocumentation.set(false)
+	generateApiTests.set(false)
+	generateModelTests.set(false)
+	library.set("webclient")
+	configOptions.set([
+			"dateLibrary"         : "java8",
+			"useJakartaEe"        : "true",
+	])
+	typeMappings.set([
+			"DateTime"       : "java.time.LocalDateTime",
+			"zoned-date-time": "java.time.ZonedDateTime"
+	])
+}
+
+tasks.register('generateOpenAPISend', GenerateTask) {
+	generatorName.set("spring")
+	inputSpec.set("$rootDir/openapi/send.openapi.yaml")
+	outputDir.set("$projectDir/build/generated")
+	apiPackage.set("it.gov.pagopa.rtp.sender.controller.generated.send")
+	modelPackage.set("it.gov.pagopa.rtp.sender.model.generated.send")
+	modelNameSuffix.set("Dto")
+	generateApiTests.set(false)
+	generateApiDocumentation.set(false)
+	generateApiTests.set(false)
+	generateModelTests.set(false)
+	library.set("spring-boot")
+	configOptions.set([
+			"dateLibrary"         : "java8",
+			"useSpringBoot3"      : "true",
+			"interfaceOnly"       : "true",
+			"useTags"             : "true",
+			"useSwaggerUI"        : "false",
+			"reactive"            : "true",
+			"swaggerAnnotations"  : "false",
+			"skipDefaultInterface": "true",
+			"openApiNullable"     : "true",
+	])
+	typeMappings.set([
+			"DateTime"       : "java.time.LocalDateTime",
+			"zoned-date-time": "java.time.ZonedDateTime"
+	])
+}
+
+tasks.register('generateOpenAPIEPC', GenerateTask) {
+	generatorName.set("spring")
+	inputSpec.set("$rootDir/openapi/EPC133-22 v3.1 - SRTP scheme rulebook v3.1 related API specifications_optimized.yaml")
+	outputDir.set("$projectDir/build/generated")
+	apiPackage.set("it.gov.pagopa.rtp.sender.controller.generated.epc")
+	modelPackage.set("it.gov.pagopa.rtp.sender.model.generated.epc")
+	modelNameSuffix.set("Dto")
+	generateApiTests.set(false)
+	generateApiDocumentation.set(false)
+	generateApiTests.set(false)
+	generateModelTests.set(false)
+	library.set("spring-boot")
+	configOptions.set([
+			"dateLibrary"         : "java8",
+			"useSpringBoot3"      : "true",
+			"interfaceOnly"       : "true",
+			"useTags"             : "true",
+			"useSwaggerUI"        : "false",
+			"swaggerAnnotations"  : "false",
+			"skipDefaultInterface": "true",
+			"openApiNullable"     : "true",
+	])
+	typeMappings.set([
+			"DateTime"       : "java.time.LocalDateTime",
+			"zoned-date-time": "java.time.ZonedDateTime"
+	])
+}
+
+tasks.register('generateOpenAPIEPCClient', GenerateTask) {
+	generatorName.set("java")
+	inputSpec.set("$rootDir/openapi/EPC133-22 v3.1 - SRTP scheme rulebook v3.1 related API specifications_optimized.yaml")
+	outputDir.set("$projectDir/build/generated")
+	apiPackage.set("it.gov.pagopa.rtp.sender.epcClient.api")
+	modelPackage.set("it.gov.pagopa.rtp.sender.epcClient.model")
+	invokerPackage.set("it.gov.pagopa.rtp.sender.epcClient.invoker")
+	modelNameSuffix.set("Dto")
+	generateApiTests.set(false)
+	generateApiDocumentation.set(false)
+	generateApiTests.set(false)
+	generateModelTests.set(false)
+	library.set("webclient")
+	configOptions.set([
+			"dateLibrary"         : "java8",
+			"useJakartaEe"        : "true",
+			"additionalModelTypeAnnotations": "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)"
+	])
+	typeMappings.set([
+			"DateTime"       : "java.time.LocalDateTime",
+			"zoned-date-time": "java.time.ZonedDateTime"
+	])
+}
+
+graalvmNative {
+	binaries {
+		main {
+			buildArgs.add("--initialize-at-build-time=org.slf4j.helpers")
+			buildArgs.add('--initialize-at-build-time=com.azure.core.credential.TokenCredential')
+            
+            // Initialize MSAL classes at runtime
+            buildArgs.add('--initialize-at-run-time=com.microsoft.aad.msal4j')
+            buildArgs.add('--initialize-at-run-time=com.azure.identity')
+            buildArgs.add('--initialize-at-run-time=com.azure.core.credential.AccessToken')
+
+			buildArgs.add('--initialize-at-build-time=ch.qos.logback')
+
+            buildArgs.add('--enable-all-security-services')
+            buildArgs.add('--enable-url-protocols=https')
+            buildArgs.add('--no-fallback')
+            
+			jvmArgs.add("-Djava.security.properties=${file("${projectDir}/src/main/resources/custom.security").absolutePath}")
+		}
+	}
+}
+
+bootRun {
+	jvmArgs = [
+			'-Djava.security.properties=src/main/resources/custom.security'
+	]
+}
+
+tasks.withType(JavaExec).configureEach {
+	jvmArgs += '-Djava.security.properties=src/main/resources/custom.security'
+}
+
+
+test {
+	finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+	}
+}
+
+sonarqube {
+	properties {
+		property 'sonar.host.url', 'https://sonarcloud.io'
+		property 'sonar.organization', 'pagopa'
+		property 'sonar.projectKey', 'pagopa_rtp-sender'
+	}
+}
