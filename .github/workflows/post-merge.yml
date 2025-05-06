@@ -1,0 +1,236 @@
+name: Post-merge/release workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  versioning:
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write # Create a new release.
+
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_version: ${{ steps.semantic.outputs.new_release_version }}
+
+    # prevents action to be executed on the push of gradle.properties
+    if: github.actor != 'rtp-gh-bot'
+
+    steps:
+      - name: "Checkout the source code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: "Install Node"
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af #v4.1.0
+        with:
+          node-version: "20.18.0"
+
+      - name: "Calculate of the new version (dry-run)"
+        uses: cycjimmy/semantic-release-action@b1b432f13acb7768e0c8efdec416d363a57546f2 # 4.1.1
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          semantic_version: 21.1.1
+          branch: main
+          extra_plugins: |
+            @semantic-release/release-notes-generator@14.0.1 # 44c780c6f9c1bf2643fe48b6718bd9a84b820132
+            @semantic-release/git@10.0.1 # 3e934d45f97fd07a63617c0fc098c9ed3e67d97a
+          dry_run: true
+
+  dev_deployment:
+    needs: versioning
+    if: needs.versioning.outputs.new_release_published == 'true'
+    runs-on: ubuntu-22.04
+    environment: cstar-d-weu-rtp
+
+    permissions:
+      id-token: write # Get OIDC token to authenticate to Azure.
+      packages: write # Push container imaged to GHCR.
+      contents: write # Create a new release.
+
+    outputs:
+      digest: ${{ steps.re_tag.outputs.stable_digest }}
+
+    steps:
+      - name: "Checkout the source code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+        with:
+          token: ${{ secrets.GIT_PAT }}
+
+      - name: "Update of gradle.properties with the new version"
+        run: |
+          sed -i -e "s/version=.*/version=${{ needs.versioning.outputs.new_version }}/g" gradle.properties
+
+      #
+      # RELEASE CANDIDATE - Build and push native container image.
+      #
+      - name: "Log in to the Container registry"
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: https://ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GIT_PAT }}
+
+      - name: "Set up QEMU"
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
+
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      - name: "Build and push the app image"
+        id: image
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85 # v6.7.0
+        with:
+          push: true
+          context: .
+          file: src/main/docker/Dockerfile
+          platforms: linux/amd64
+          tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}-RC
+          secrets: |
+            "gh_token=${{ secrets.GIT_PAT }}"
+
+      #
+      # RELEASE CANDIDATE - Update Container App.
+      #
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.9.7
+
+      - name: "RELEASE CANDIDATE - Update Container App"
+        shell: bash
+        working-directory: src/main/terraform
+        env:
+          ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+          ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+        run: |
+          terraform init -backend-config="env/cstar-d-weu-rtp/backend.tfvars" -reconfigure
+          terraform apply -var-file="env/cstar-d-weu-rtp/terraform.tfvars" -var="rtp_sender_image=ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}-RC@${{ steps.image.outputs.digest }}" -auto-approve -lock-timeout=300s
+
+      - name: "STABLE - Push of gradle.properties with the new version"
+        run: |
+          git config user.name "GitHub Workflow"
+          git config user.email "<>"
+          git add gradle.properties
+          git commit -m "Updated with new version ${{ needs.versioning.outputs.new_version }}"
+          git push origin main
+
+      - name: "Calculation of the new version (w/o dry_run) and put tag"
+        uses: cycjimmy/semantic-release-action@b1b432f13acb7768e0c8efdec416d363a57546f2 # 4.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          semantic_version: 21.1.1
+          branch: main
+          extra_plugins: |
+            @semantic-release/release-notes-generator@14.0.1 # 44c780c6f9c1bf2643fe48b6718bd9a84b820132
+            @semantic-release/git@10.0.1 # 3e934d45f97fd07a63617c0fc098c9ed3e67d97a
+          dry_run: false
+
+      #
+      # STABLE - Re-tagging (remove -RC and add version tag) and push native container image.
+      #
+      - name: Re-tag the app image
+        id: re_tag
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}-RC
+          docker image tag ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}-RC ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}
+          docker image tag ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}-RC ghcr.io/${{ github.repository }}:latest
+          docker rmi ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}-RC
+          echo "stable_digest=$(docker image push --all-tags ghcr.io/${{ github.repository }} | tail -n 1 | cut -d' ' -f3)" >> "$GITHUB_OUTPUT"
+
+      - name: "STABLE - Update Container App"
+        shell: bash
+        working-directory: src/main/terraform
+        env:
+          ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+          ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+        run: |
+          terraform init -backend-config="env/cstar-d-weu-rtp/backend.tfvars" -reconfigure
+          terraform apply -var-file="env/cstar-d-weu-rtp/terraform.tfvars" -var="rtp_sender_image=ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}@${{ steps.re_tag.outputs.stable_digest }}" -auto-approve -lock-timeout=300s
+
+  uat_deployment:
+    needs: [ versioning, dev_deployment ]
+
+    if: needs.versioning.outputs.new_release_published == 'true'
+
+    runs-on: ubuntu-22.04
+
+    environment: cstar-u-weu-rtp
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: "Checkout the source code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+
+      #
+      # Update Container App.
+      #
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.9.7
+
+      - name: "STABLE - Update Container App"
+        shell: bash
+        working-directory: src/main/terraform
+        env:
+          ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+          ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+        run: |
+          terraform init -backend-config="env/cstar-u-weu-rtp/backend.tfvars" -reconfigure
+          terraform apply -var-file="env/cstar-u-weu-rtp/terraform.tfvars" -var="rtp_sender_image=ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}@${{ needs.dev_deployment.outputs.digest }}" -auto-approve -lock-timeout=300s
+
+      #
+      # Install Node
+      #
+      - name: Install Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af #v4.1.0
+        with:
+          node-version: "20.18.0"
+      #
+      # Install Newman.
+      #
+      - name: Install Newman
+        run: npm install -g newman
+
+      #
+      # Create certificate directory
+      #
+      - name: Create certificate directory
+        run: |
+          mkdir -p certs
+          chmod 700 certs
+
+      #
+      # Write certificate files
+      #
+      - name: Write certificate files
+        run: |
+          echo “${{ secrets.CERT_FILE }}” | base64 --decode > certs/certificate.crt
+          echo “${{ secrets.KEY_FILE }}” | base64 --decode > certs/private.key
+          chmod 600 certs/private.key
+
+      #
+      # Run Postman collection.
+      #
+      - name: Run Postman collection
+        run: |
+          newman run src/test/postman/RTP-component-test.postman_collection.json \
+            -e src/test/postman/uat.postman_environment.json \
+            --env-var "payer-sp-client-secret=${{ secrets.PAYER_SP_CLIENT_SECRET }}" \
+            --env-var "pagopa-sp-client-secret=${{ secrets.PAGOPA_SP_CLIENT_SECRET }}" \
+            --ssl-client-cert certs/certificate.crt \
+            --ssl-client-key certs/private.key
