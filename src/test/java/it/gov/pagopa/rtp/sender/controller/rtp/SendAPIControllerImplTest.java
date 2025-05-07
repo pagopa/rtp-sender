@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.springSecurity;
 
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorDto;
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import it.gov.pagopa.rtp.sender.configuration.SecurityConfig;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
 import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
@@ -16,8 +18,6 @@ import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.model.generated.activate.ErrorDto;
-import it.gov.pagopa.rtp.sender.model.generated.activate.ErrorsDto;
 import it.gov.pagopa.rtp.sender.model.generated.send.CreateRtpDto;
 import it.gov.pagopa.rtp.sender.model.generated.send.PayeeDto;
 import it.gov.pagopa.rtp.sender.model.generated.send.PayerDto;

@@ -3,7 +3,7 @@ package it.gov.pagopa.rtp.sender.domain.errors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.gov.pagopa.rtp.sender.model.generated.activate.ErrorsDto;
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import lombok.Getter;
 
 @Getter
