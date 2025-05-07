@@ -14,7 +14,7 @@ WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
     && chown 1001:root /work
-COPY --from=builder --chown=1001:root --chmod=0755 /code/build/native/nativeCompile/rtp-se /work/application
+COPY --from=builder --chown=1001:root --chmod=0755 /code/build/native/nativeCompile/rtp-sender /work/application
 
 RUN useradd --uid 10000 runner
 USER 10000
