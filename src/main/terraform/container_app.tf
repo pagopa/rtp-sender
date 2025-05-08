@@ -83,7 +83,7 @@ resource "azurerm_container_app" "rtp-sender" {
     volume {
       name         = "jks-volume"
       storage_type = "AzureFile"
-      storage_name = azurerm_container_app_environment_storage.rtp_file_share_storage.name    
+      storage_name = azurerm_container_app_environment_storage.rtp_sender_file_share_storage.name    
     }
 
     max_replicas = var.rtp_sender_max_replicas
