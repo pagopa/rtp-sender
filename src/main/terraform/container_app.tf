@@ -83,7 +83,7 @@ resource "azurerm_container_app" "rtp-sender" {
     volume {
       name         = "jks-volume"
       storage_type = "AzureFile"
-      storage_name = azurerm_container_app_environment_storage.rtp_file_share_storage.name    
+      storage_name = azurerm_container_app_environment_storage.rtp_sender_file_share_storage.name    
     }
 
     max_replicas = var.rtp_sender_max_replicas
@@ -134,8 +134,8 @@ resource "azurerm_container_app" "rtp-sender" {
   tags = var.tags
 }
 
-resource "azurerm_container_app_environment_storage" "rtp_file_share_storage" {
-  name                         = "${local.project}-fss"
+resource "azurerm_container_app_environment_storage" "rtp_sender_file_share_storage" {
+  name                         = "${local.project}-sender-fss"
   container_app_environment_id = data.azurerm_container_app_environment.rtp-cae.id
   account_name                 = data.azurerm_storage_account.rtp_files_storage_account.name
   share_name                   = data.azurerm_storage_share.rtp_jks_file_share.name
