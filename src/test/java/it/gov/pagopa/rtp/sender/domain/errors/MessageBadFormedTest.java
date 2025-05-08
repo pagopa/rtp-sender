@@ -8,8 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.gov.pagopa.rtp.sender.model.generated.activate.ErrorsDto;
-
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import org.junit.jupiter.api.Test;
 
 class MessageBadFormedTest {
