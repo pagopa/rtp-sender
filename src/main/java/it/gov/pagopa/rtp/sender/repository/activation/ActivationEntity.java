@@ -17,10 +17,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Document("activations")
 public class ActivationEntity {
-    @Id
-    private UUID id;
-    private String serviceProviderDebtor;
-    private Instant effectiveActivationDate;
+  @Id
+  private UUID id;
+  private String serviceProviderDebtor;
+  private Instant effectiveActivationDate;
 
-    private String fiscalCode;
+  private String fiscalCode;
 }
