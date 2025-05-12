@@ -93,6 +93,9 @@ jobs:
           file: src/main/docker/Dockerfile
           platforms: linux/amd64
           tags: ghcr.io/${{ github.repository }}:latest, ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}-RC
+          labels: |
+            maintainer=https://pagopa.it
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
           secrets: |
             "gh_token=${{ secrets.GIT_PAT }}"
 
