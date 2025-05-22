@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.service.rtp.handler;
 
+import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import java.util.HashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,7 @@ class CancelRtpHandlerTest {
 
   @Test
   void givenValidRequest_whenHandleRtpCancellation_thenCancelRtp() {
+    final var transactionStatus = TransactionStatus.ACTC;
     final var resourceId = ResourceID.createNew();
     final var request = mock(EpcRequest.class);
     final var rtpToCancel = mock(Rtp.class);
@@ -105,7 +107,7 @@ class CancelRtpHandlerTest {
         .thenReturn(sepaRequest);
     when(epcClient.postRequestToPayCancellationRequest(any(), any(), any(), eq(sepaRequest)))
         .thenReturn(Mono.just(sepaResponse));
-    when(request.withResponse(sepaResponse))
+    when(request.withResponse(transactionStatus))
         .thenReturn(request);
     when(webClientFactory.createMtlsWebClient())
         .thenReturn(webClient);
@@ -121,6 +123,7 @@ class CancelRtpHandlerTest {
 
   @Test
   void givenRequestWithoutCertificate_whenHandleRtpCancellation_thenUseSimpleWebClient() {
+    final var transactionStatus = TransactionStatus.ACTC;
     final var resourceId = ResourceID.createNew();
     final var request = mock(EpcRequest.class);
     final var rtpToCancel = mock(Rtp.class);
@@ -150,7 +153,7 @@ class CancelRtpHandlerTest {
         .thenReturn(sepaRequest);
     when(epcClient.postRequestToPayCancellationRequest(any(), any(), any(), eq(sepaRequest)))
         .thenReturn(Mono.just(sepaResponse));
-    when(request.withResponse(sepaResponse))
+    when(request.withResponse(transactionStatus))
         .thenReturn(request);
 
     final var result = cancelRtpHandler.handle(request);
@@ -210,6 +213,7 @@ class CancelRtpHandlerTest {
 
   @Test
   void givenValidRequest_whenCancellationFailsOnce_thenRetriesAndSucceeds() {
+    final var transactionStatus = TransactionStatus.ACTC;
     final var resourceId = ResourceID.createNew();
     final var request = mock(EpcRequest.class);
     final var rtpToCancel = mock(Rtp.class);
@@ -249,7 +253,7 @@ class CancelRtpHandlerTest {
             }
         );
 
-    when(request.withResponse(sepaResponse))
+    when(request.withResponse(transactionStatus))
         .thenReturn(request);
 
     final var result = cancelRtpHandler.handle(request);
@@ -261,6 +265,7 @@ class CancelRtpHandlerTest {
 
   @Test
   void givenPartiallyFailingRtpSend_whenHandleRtpCancellation_thenRequestIdShouldChange() {
+    final var transactionStatus = TransactionStatus.ACTC;
     final var numRetries = MAX_ATTEMPTS;
     final var resourceId = ResourceID.createNew();
     final var request = mock(EpcRequest.class);
@@ -289,7 +294,7 @@ class CancelRtpHandlerTest {
         .thenReturn(apiClient);
     when(sepaRequestToPayMapper.toEpcRequestToCancel(rtpToCancel))
         .thenReturn(sepaRequest);
-    when(request.withResponse(sepaResponse))
+    when(request.withResponse(transactionStatus))
         .thenReturn(request);
     when(webClientFactory.createMtlsWebClient())
         .thenReturn(webClient);

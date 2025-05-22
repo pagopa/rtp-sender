@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.service.rtp.handler;
 
+import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -70,7 +71,7 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
               .doFirst(() -> log.info("Sending RTP cancellation request to {}", rtpToSend.serviceProviderDebtor()))
               .retryWhen(sendRetryPolicy());
         })
-        .map(request::withResponse);
+        .map(resp -> request.withResponse(TransactionStatus.ACTC));
   }
 }
 
