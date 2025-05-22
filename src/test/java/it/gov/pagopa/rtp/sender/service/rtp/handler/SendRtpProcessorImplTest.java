@@ -5,18 +5,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import it.gov.pagopa.rtp.sender.domain.registryfile.OAuth2;
+import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProviderFullData;
+import it.gov.pagopa.rtp.sender.domain.registryfile.TechnicalServiceProvider;
+import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
+import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import it.gov.pagopa.rtp.sender.domain.registryfile.OAuth2;
-import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProviderFullData;
-import it.gov.pagopa.rtp.sender.domain.registryfile.TechnicalServiceProvider;
-import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
-import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -34,6 +33,9 @@ class SendRtpProcessorImplTest {
 
   @Mock
   private CancelRtpHandler cancelRtpHandler;
+
+  @Mock
+  private SendRtpResponseHandler sendRtpResponseHandler;
 
   @InjectMocks
   private SendRtpProcessorImpl sendRtpProcessor;
@@ -62,6 +64,8 @@ class SendRtpProcessorImplTest {
     when(oauth2Handler.handle(epcRequestWithRegistryData))
         .thenReturn(Mono.just(epcRequestWithToken));
     when(sendRtpHandler.handle(epcRequestWithToken))
+        .thenReturn(Mono.just(epcRequestWithResponse));
+    when(sendRtpResponseHandler.handle(epcRequestWithResponse))
         .thenReturn(Mono.just(epcRequestWithResponse));
 
     final var resultMono = sendRtpProcessor.sendRtpToServiceProviderDebtor(rtpToSend);

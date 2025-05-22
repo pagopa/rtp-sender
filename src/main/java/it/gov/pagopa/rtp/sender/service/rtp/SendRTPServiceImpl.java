@@ -4,7 +4,6 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
 import it.gov.pagopa.rtp.sender.activateClient.model.ActivationDto;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
@@ -30,11 +29,9 @@ import it.gov.pagopa.rtp.sender.epcClient.model.SynchronousRequestToPayCancellat
 import it.gov.pagopa.rtp.sender.epcClient.model.SynchronousSepaRequestToPayCreationResponseDto;
 import it.gov.pagopa.rtp.sender.service.rtp.handler.SendRtpProcessor;
 import it.gov.pagopa.rtp.sender.utils.LoggingUtils;
-
 import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
@@ -107,16 +104,14 @@ public class SendRTPServiceImpl implements SendRTPService {
         .doOnError(
             error -> log.error("Error saving Rtp to be sent: {}", error.getMessage(), error));
 
-    final var sentRtp = rtpToSend.flatMap(this.sendRtpProcessor::sendRtpToServiceProviderDebtor)
-        .map(rtp::toRtpSent)
+    return rtpToSend.flatMap(this.sendRtpProcessor::sendRtpToServiceProviderDebtor)
         .flatMap(
             rtpToSave -> rtpRepository.save(rtpToSave)
                 .retryWhen(sendRetryPolicy())
                 .doOnError(ex -> log.error("Failed after retries", ex))
 
-        );
-
-    return sentRtp.doOnSuccess(
+        )
+        .doOnSuccess(
             rtpSaved -> log.info("RTP saved with id: {}", rtpSaved.resourceID().getId()))
         .doOnError(error -> log.error("Error sending RTP: {}", error.getMessage(), error))
         .onErrorMap(WebClientResponseException.class, this::mapExternalSendResponseToException)

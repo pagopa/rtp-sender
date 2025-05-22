@@ -1,8 +1,16 @@
 package it.gov.pagopa.rtp.sender.statemachine;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import it.gov.pagopa.rtp.sender.domain.rtp.Event;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
+import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -16,14 +24,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.reactivestreams.Publisher;
-
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
-import it.gov.pagopa.rtp.sender.statemachine.RtpStateMachine;
-import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionKey;
-import it.gov.pagopa.rtp.sender.statemachine.Transition;
-import it.gov.pagopa.rtp.sender.statemachine.TransitionConfiguration;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,12 +38,19 @@ class RtpStateMachineTest {
   private RtpStateMachine stateMachine;
 
   private final RtpEntity rtp = new RtpEntity();
+  private final RtpStatus sourceStatus = RtpStatus.CREATED;
   private final RtpEvent event = RtpEvent.SEND_RTP;
-  private final RtpTransitionKey transitionKey = new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.SEND_RTP);
+  private final RtpTransitionKey transitionKey = new RtpTransitionKey(sourceStatus, event);
 
   @BeforeEach
   void setUp() {
-    rtp.setStatus(RtpStatus.CREATED);
+    rtp.setStatus(sourceStatus);
+    rtp.setEvents(List.of(
+        Event.builder()
+            .timestamp(Instant.now())
+            .triggerEvent(RtpEvent.CREATE_RTP)
+            .build()
+    ));
     stateMachine = new RtpStateMachine(transitionConfiguration);
   }
 
@@ -69,22 +76,29 @@ class RtpStateMachineTest {
 
   @Test
   void givenValidTransition_whenTransition_thenApplyAndReturnEntity() {
+    final var destination = RtpStatus.SENT;
+    final var triggerEvent = RtpEvent.SEND_RTP;
+
     when(transitionConfiguration.getTransition(transitionKey))
         .thenReturn(Optional.of(transition));
 
     when(transition.getPreTransactionActions()).thenReturn(List.of(
         entity -> entity.setPayeeName("pre-action")));
 
-    when(transition.getDestination()).thenReturn(RtpStatus.SENT);
+    when(transition.getDestination()).thenReturn(destination);
+
+    when(transition.getEvent()).thenReturn(triggerEvent);
 
     when(transition.getPostTransactionActions()).thenReturn(List.of(
         entity -> entity.setPayeeId("post-action")));
 
     StepVerifier.create(stateMachine.transition(rtp, event))
         .assertNext(result -> {
-          assertEquals(RtpStatus.SENT, result.getStatus());
+          assertEquals(destination, result.getStatus());
           assertEquals("pre-action", result.getPayeeName());
           assertEquals("post-action", result.getPayeeId());
+          assertEquals(sourceStatus, result.getEvents().getLast().precStatus());
+          assertEquals(triggerEvent, result.getEvents().getLast().triggerEvent());
         })
         .verifyComplete();
   }

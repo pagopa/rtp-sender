@@ -1,18 +1,17 @@
 package it.gov.pagopa.rtp.sender.service.rtp.handler;
 
+import it.gov.pagopa.rtp.sender.configuration.OpenAPIClientFactory;
+import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
+import it.gov.pagopa.rtp.sender.configuration.mtlswebclient.WebClientFactory;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
+import it.gov.pagopa.rtp.sender.epcClient.api.DefaultApi;
+import it.gov.pagopa.rtp.sender.service.rtp.SepaRequestToPayMapper;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-
-import it.gov.pagopa.rtp.sender.configuration.OpenAPIClientFactory;
-import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
-import it.gov.pagopa.rtp.sender.configuration.mtlswebclient.WebClientFactory;
-import it.gov.pagopa.rtp.sender.epcClient.api.DefaultApi;
-import it.gov.pagopa.rtp.sender.service.rtp.SepaRequestToPayMapper;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
@@ -71,8 +70,9 @@ public class SendRtpHandler extends EpcApiInvokerHandler implements RequestHandl
               .doFirst(() -> log.info("Sending RTP to {}", rtpToSend.serviceProviderDebtor()))
               .retryWhen(sendRetryPolicy());
         })
-        .doOnSuccess(resp -> log.info("Mapping sent RTP to {}", TransactionStatus.ACTC))
         .map(resp -> request.withResponse(TransactionStatus.ACTC))
+        .doOnNext(resp -> log.info("Mapping sent RTP to {}", TransactionStatus.ACTC))
+        .switchIfEmpty(Mono.just(request))
         .onErrorResume(IllegalStateException.class, ex -> this.handleRetryError(ex, request))
         .doOnNext(resp -> log.info("Response: {}", resp.response()));
   }

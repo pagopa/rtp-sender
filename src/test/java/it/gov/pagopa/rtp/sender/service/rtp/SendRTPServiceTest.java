@@ -2,10 +2,13 @@ package it.gov.pagopa.rtp.sender.service.rtp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
 import it.gov.pagopa.rtp.sender.activateClient.model.ActivationDto;
 import it.gov.pagopa.rtp.sender.activateClient.model.PayerDto;
@@ -24,7 +27,6 @@ import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.epcClient.model.SepaRequestToPayRequestResourceDto;
 import it.gov.pagopa.rtp.sender.service.rtp.handler.SendRtpProcessor;
-
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +37,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +44,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -229,7 +229,7 @@ class SendRTPServiceTest {
         .thenReturn(Mono.just(mockActivationDto()));
 
     when(sendRtpProcessor.sendRtpToServiceProviderDebtor(any()))
-        .thenReturn(Mono.just(sourceRtp));
+        .thenReturn(Mono.just(rtpSent));
 
     /*
      * Mocks the save method.
