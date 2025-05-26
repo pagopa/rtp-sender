@@ -1,7 +1,9 @@
 package it.gov.pagopa.rtp.sender.repository.rtp;
 
+import it.gov.pagopa.rtp.sender.domain.rtp.Event;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -41,5 +43,6 @@ public class RtpEntity {
   @Field(name = "status", targetType = FieldType.STRING)
   private RtpStatus status;
   private String serviceProviderCreditor;
+  private List<Event> events;
 
 }

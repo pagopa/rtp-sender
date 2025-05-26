@@ -54,7 +54,7 @@ rtp_environment_secrets = {
 
 rtp_environment_configs = {
   DB_NAME                                 : "rtp"
-  BASE_URL                                : "https://api-rtp.uat.cstar.pagopa.it/rtp/activation/activations/"
+  BASE_URL                                : "https://api-rtp.uat.cstar.pagopa.it/rtp/activation/"
   SP_BASE_URL                             : "https://api-rtp.uat.cstar.pagopa.it/rtp/rtps/"
   OTEL_TRACES_SAMPLER                     : "always_on"
   EPC_MOCK_URL                            : "https://api-rtp.uat.cstar.pagopa.it/rtp/mock"

@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.utils;
 
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -22,18 +23,17 @@ class DateUtilsTest {
     }
 
     @Test
-    void givenLocalDateTimeWithNanos_whenConvertedToOffsetFormat_thenTruncatesNanoseconds() {
+    void givenLocalDateTimeWithNanos_whenConvertedToOffsetFormat_thenTruncatesToMilliseconds() {
         LocalDateTime localDateTime = LocalDateTime.of(2023, 3, 25, 10, 15, 30, 999_999_999);
         String result = DateUtils.localDateTimeToOffsetFormat(localDateTime);
-        assertTrue(result.endsWith("+01:00") || result.endsWith("+02:00")); // Depends on DST
-        assertFalse(result.contains(".")); // No fractional seconds
+        assertTrue(result.endsWith("+01:00") || result.endsWith("+02:00"));
+        String regex = ".*T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?([+-]\\d{2}:\\d{2})";
+        assertTrue(Pattern.matches(regex, result), "Result has more than milliseconds precision: " + result);
     }
 
     @Test
     void givenNullLocalDateTime_whenConvertedToOffsetFormat_thenThrowsIllegalArgumentException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            DateUtils.localDateTimeToOffsetFormat(null);
-        });
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> DateUtils.localDateTimeToOffsetFormat(null));
         assertEquals("Couldn't convert local datetime to offset format", exception.getMessage());
     }
 

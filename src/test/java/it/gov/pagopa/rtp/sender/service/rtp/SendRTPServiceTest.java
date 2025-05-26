@@ -2,10 +2,13 @@ package it.gov.pagopa.rtp.sender.service.rtp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
 import it.gov.pagopa.rtp.sender.activateClient.model.ActivationDto;
 import it.gov.pagopa.rtp.sender.activateClient.model.PayerDto;
@@ -21,19 +24,14 @@ import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.epcClient.model.SepaRequestToPayRequestResourceDto;
-import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
-import it.gov.pagopa.rtp.sender.service.rtp.SepaRequestToPayMapper;
 import it.gov.pagopa.rtp.sender.service.rtp.handler.SendRtpProcessor;
-
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +39,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -134,7 +131,7 @@ class SendRTPServiceTest {
         .verifyComplete();
     verify(sepaRequestToPayMapper, times(1)).toEpcRequestToPay(any(Rtp.class));
     verify(readApi, times(1)).findActivationByPayerId(any(), any(), any());
-    verify(rtpRepository, times(2)).save(any());
+    verify(rtpRepository, times(1)).save(any());
   }
 
   @Test
@@ -208,85 +205,16 @@ class SendRTPServiceTest {
     verify(rtpRepository, times(1)).save(any());
   }
 
-  @Test
-  void givenRtp_whenSavingFailsOnce_thenRetriesAndSucceeds() {
-    final var resourceId = ResourceID.createNew();
-    final var savingDateTime = LocalDateTime.now();
-
-    final var sourceRtp = mockRtp(RtpStatus.CREATED, resourceId, savingDateTime);
-    final var rtpSent = mockRtp(RtpStatus.SENT, resourceId, savingDateTime);
-
-    when(readApi.findActivationByPayerId(any(), any(), any()))
-        .thenReturn(Mono.just(mockActivationDto()));
-
-    when(sendRtpProcessor.sendRtpToServiceProviderDebtor(any()))
-        .thenReturn(Mono.just(rtpSent));
-
-    /*
-     * Mocks the save method.
-     * The first then return is due to a prior invocation of the method that is not
-     * under retry test.
-     * Subsequent returns are actually testing retry logic.
-     */
-
-    final var saveAttempts = new AtomicInteger();
-    when(rtpRepository.save(any()))
-        .thenAnswer(invocation -> {
-          if (saveAttempts.getAndIncrement() == 2) {
-            return Mono.error(new RuntimeException("Simulated DB failure"));
-          }
-          return Mono.just(invocation.getArgument(0));
-        });
-
-    StepVerifier.create(sendRTPService.send(sourceRtp))
-        .expectNext(rtpSent)
-        .verifyComplete();
-
-    verify(rtpRepository, times(2)).save(any());
-  }
-
-  @Test
-  void givenRtp_whenSavingFailsIndefinitely_thenThrows() {
-    final var sourceRtp = mockRtp();
-
-    when(readApi.findActivationByPayerId(any(), any(), any()))
-        .thenReturn(Mono.just(mockActivationDto()));
-
-    when(sendRtpProcessor.sendRtpToServiceProviderDebtor(any()))
-        .thenReturn(Mono.just(sourceRtp));
-
-    /*
-     * Mocks the save method.
-     * The first then return is due to a prior invocation of the method that is not
-     * under retry test.
-     * Subsequent returns are actually testing retry logic.
-     */
-
-    final var firstSaveAttempt = new AtomicBoolean(true);
-    when(rtpRepository.save(any()))
-        .thenAnswer(invocation -> {
-          if (firstSaveAttempt.getAndSet(false)) {
-            return Mono.just(invocation.getArgument(0));
-          }
-          return Mono.error(new RuntimeException("Simulated DB failure"));
-        });
-
-    StepVerifier.create(sendRTPService.send(sourceRtp))
-        .expectError(RuntimeException.class)
-        .verify();
-
-    verify(rtpRepository, times(2)).save(any());
-  }
-
 
   @Test
   void givenExistingCreatedRtp_whenCancelRtp_thenShouldSetCancelledStatusAndSave() {
     final var rtpId = ResourceID.createNew();
     final var createdRtp = mockRtp(RtpStatus.CREATED, rtpId, LocalDateTime.now());
+    final var cancelRtp = mockRtp(RtpStatus.CANCELLED, rtpId, LocalDateTime.now());
 
     when(rtpRepository.findById(rtpId)).thenReturn(Mono.just(createdRtp));
     when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(createdRtp))
-        .thenReturn(Mono.just(createdRtp));
+        .thenReturn(Mono.just(cancelRtp));
     when(rtpRepository.save(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
     final var result = sendRTPService.cancelRtp(rtpId);
@@ -339,6 +267,7 @@ class SendRTPServiceTest {
         .status(status)
         .flgConf(flgConf)
         .subject(subject)
+        .events(List.of())
         .build();
   }
 

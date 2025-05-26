@@ -4,7 +4,6 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
 import it.gov.pagopa.rtp.sender.activateClient.model.ActivationDto;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
@@ -30,11 +29,8 @@ import it.gov.pagopa.rtp.sender.epcClient.model.SynchronousRequestToPayCancellat
 import it.gov.pagopa.rtp.sender.epcClient.model.SynchronousSepaRequestToPayCreationResponseDto;
 import it.gov.pagopa.rtp.sender.service.rtp.handler.SendRtpProcessor;
 import it.gov.pagopa.rtp.sender.utils.LoggingUtils;
-
-import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
@@ -42,8 +38,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
-import reactor.util.retry.RetryBackoffSpec;
 
 @Service
 @Slf4j
@@ -107,18 +101,7 @@ public class SendRTPServiceImpl implements SendRTPService {
         .doOnError(
             error -> log.error("Error saving Rtp to be sent: {}", error.getMessage(), error));
 
-    final var sentRtp = rtpToSend.flatMap(this.sendRtpProcessor::sendRtpToServiceProviderDebtor)
-        .map(rtp::toRtpSent)
-        .flatMap(
-            rtpToSave -> rtpRepository.save(rtpToSave)
-                .retryWhen(sendRetryPolicy())
-                .doOnError(ex -> log.error("Failed after retries", ex))
-
-        );
-
-    return sentRtp.doOnSuccess(
-            rtpSaved -> log.info("RTP saved with id: {}", rtpSaved.resourceID().getId()))
-        .doOnError(error -> log.error("Error sending RTP: {}", error.getMessage(), error))
+    return rtpToSend.flatMap(this.sendRtpProcessor::sendRtpToServiceProviderDebtor)
         .onErrorMap(WebClientResponseException.class, this::mapExternalSendResponseToException)
         .switchIfEmpty(Mono.error(new PayerNotActivatedException()));
   }
@@ -139,21 +122,17 @@ public class SendRTPServiceImpl implements SendRTPService {
                 rtp.status()))
         .doOnError(error -> log.error("Error retrieving RTP: {}", error.getMessage(), error));
 
-    final var cancellationRequest = rtpToCancel
+    return rtpToCancel
         .doOnError(error -> log.error(error.getMessage(), error))
         .doOnNext(rtp -> LoggingUtils.logAsJson(
             () -> sepaRequestToPayMapper.toEpcRequestToCancel(rtp), objectMapper))
-        .flatMap(this.sendRtpProcessor::sendRtpCancellationToServiceProviderDebtor);
-
-    return cancellationRequest
-        .doOnNext(
-            rtp -> log.debug("Setting status of RTP with id {} to {}", rtp.resourceID().getId(),
-                RtpStatus.CANCELLED))
-        .map(rtp -> rtp.withStatus(RtpStatus.CANCELLED))
-        .doOnNext(
-            rtp -> log.info("Saving {} RTP with id {}", rtp.status(), rtp.resourceID().getId()))
-        .flatMap(this.rtpRepository::save)
+        .flatMap(this.sendRtpProcessor::sendRtpCancellationToServiceProviderDebtor)
+        .doOnNext(rtp -> log.debug("Setting status of RTP with id {} to {}", rtp.resourceID().getId(), RtpStatus.CANCELLED))
+        .flatMap(rtpRepository::save)
+        .doOnSuccess(rtpSaved -> log.info("RTP saved with id: {}", rtpSaved.resourceID().getId()))
+        .doOnError(error -> log.error("Error cancel RTP: {}", error.getMessage(), error))
         .doFinally(f -> MDC.clear());
+
   }
 
 
@@ -163,16 +142,6 @@ public class SendRTPServiceImpl implements SendRTPService {
       case BAD_REQUEST -> new MessageBadFormed(exception.getResponseBodyAsString());
       default -> new RuntimeException("Internal Server Error");
     };
-  }
-
-  private RetryBackoffSpec sendRetryPolicy() {
-    final var maxAttempts = serviceProviderConfig.send().retry().maxAttempts();
-    final var minDurationMillis = serviceProviderConfig.send().retry().backoffMinDuration();
-    final var jitter = serviceProviderConfig.send().retry().backoffJitter();
-
-    return Retry.backoff(maxAttempts, Duration.ofMillis(minDurationMillis))
-        .jitter(jitter)
-        .doAfterRetry(signal -> log.info("Retry number {}", signal.totalRetries()));
   }
 
   private Throwable mapExternalSendResponseToException(WebClientResponseException exception) {
