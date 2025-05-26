@@ -9,6 +9,7 @@ import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
 import it.gov.pagopa.rtp.sender.activateClient.invoker.ApiClient;
 import it.gov.pagopa.rtp.sender.configuration.mtlswebclient.WebClientFactory;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,6 +21,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class ApplicationConfig {
+
+  private final ActivationPropertiesConfig activationPropertiesConfig;
+
+
+  public ApplicationConfig(
+      @NonNull final ActivationPropertiesConfig activationPropertiesConfig) {
+    this.activationPropertiesConfig = Objects.requireNonNull(activationPropertiesConfig);
+  }
 
   @Bean("objectMapper")
   public ObjectMapper objectMapper() {
@@ -48,7 +57,9 @@ public class ApplicationConfig {
 
   @Bean("activationApi")
   public ReadApi readApi(ApiClient apiClient) {
-    return new ReadApi(apiClient);
+    final var readApi = new ReadApi(apiClient);
+    readApi.getApiClient().setBasePath(this.activationPropertiesConfig.baseUrl());
+    return readApi;
   }
 
 }
