@@ -116,7 +116,7 @@ class CallbackHandlerTest {
     }
 
     @Test
-    void givenInvalidTransactionStatus_whenHandle_thenIllegalStateExceptionThrown() {
+    void givenInvalidTransactionStatus_whenHandle_thenErrorTriggeredAndSaved() {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
@@ -125,10 +125,17 @@ class CallbackHandlerTest {
                 .thenReturn(Mono.just(resourceID));
         when(rtpRepository.findById(resourceID))
                 .thenReturn(Mono.just(rtp));
+        when(rtpStatusUpdater.triggerErrorSendRtp(rtp))
+                .thenReturn(Mono.just(rtp));
+        when(rtpRepository.save(any(Rtp.class)))
+                .thenReturn(Mono.just(rtp));
+
 
         StepVerifier.create(callbackHandler.handle(request))
-                .expectError(IllegalStateException.class)
-                .verify();
+                .expectNext(request)
+                .verifyComplete();
+
+        verify(rtpStatusUpdater).triggerErrorSendRtp(rtp);
     }
 
     @Test
@@ -203,6 +210,71 @@ class CallbackHandlerTest {
         verify(rtpStatusUpdater).triggerAcceptRtp(rtp);
         verify(rtpStatusUpdater).triggerRejectRtp(rtp);
         verify(rtpRepository, times(2)).save(rtp);
+    }
+
+    @Test
+    void givenNonexistentRtp_whenHandle_thenThrowsIllegalStateException() {
+        JsonNode request = mock(JsonNode.class);
+
+        when(callbackFieldsExtractor.extractTransactionStatusSend(request))
+                .thenReturn(Flux.just(TransactionStatus.ACCP));
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+                .thenReturn(Mono.just(resourceID));
+        when(rtpRepository.findById(resourceID))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(callbackHandler.handle(request))
+                .expectError(IllegalStateException.class)
+                .verify();
+    }
+
+    @Test
+    void givenErrorInTriggerAcceptRtp_whenHandle_thenErrorPropagated() {
+        JsonNode request = mock(JsonNode.class);
+
+        when(callbackFieldsExtractor.extractTransactionStatusSend(request))
+                .thenReturn(Flux.just(TransactionStatus.ACCP));
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+                .thenReturn(Mono.just(resourceID));
+        when(rtpRepository.findById(resourceID))
+                .thenReturn(Mono.just(rtp));
+        when(rtpStatusUpdater.triggerAcceptRtp(rtp))
+                .thenReturn(Mono.error(new RuntimeException("Business error")));
+
+        StepVerifier.create(callbackHandler.handle(request))
+                .expectError(RuntimeException.class)
+                .verify();
+    }
+
+    @Test
+    void givenNoTransactionStatusInPayload_whenHandle_thenCompletesWithoutTransition() {
+        JsonNode request = mock(JsonNode.class);
+
+        when(callbackFieldsExtractor.extractTransactionStatusSend(request))
+                .thenReturn(Flux.empty());
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+                .thenReturn(Mono.just(resourceID));
+        when(rtpRepository.findById(resourceID))
+                .thenReturn(Mono.just(rtp));
+
+        StepVerifier.create(callbackHandler.handle(request))
+                .expectNext(request)
+                .verifyComplete();
+
+        verifyNoInteractions(rtpStatusUpdater);
+        verify(rtpRepository, never()).save(any());
+    }
+
+    @Test
+    void givenExtractorReturnsMonoError_whenHandle_thenErrorPropagated() {
+        JsonNode request = mock(JsonNode.class);
+
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+                .thenReturn(Mono.error(new RuntimeException("extractor failed")));
+
+        StepVerifier.create(callbackHandler.handle(request))
+                .expectError(RuntimeException.class)
+                .verify();
     }
 
 }

@@ -26,12 +26,12 @@ public class IdentifierUtils {
     private static final String DASHES_INSERTER_PATTERN = "$1-$2-$3-$4-$5";
 
     /**
-     * Checks if the given string is a valid UUID.
+     * Checks if the given string is a valid UUID without dashes.
      *
      * @param uuidString the string to be checked
-     * @return true if the string is a valid UUID, false otherwise
+     * @return true if the string is a valid UUID without dashes, false otherwise
      */
-    public static boolean isValidUuid(final String uuidString) {
+    public static boolean isValidUuidWithoutDashes(final String uuidString) {
         return StringUtils.isNotBlank(uuidString) && uuidString.matches(UUID_WITHOUT_DASHES_PATTERN);
     }
 
@@ -46,7 +46,7 @@ public class IdentifierUtils {
      * @throws IllegalArgumentException if the uuid is null
      */
     @NonNull
-    public static String uuidFormatter(@NonNull final UUID uuid) {
+    public static String formatUuidWithoutHyphens(@NonNull final UUID uuid) {
         return Optional.of(uuid)
                 .map(UUID::toString)
                 .map(s -> s.replaceFirst(UUID_PATTERN, DASHES_REMOVER_PATTERN))

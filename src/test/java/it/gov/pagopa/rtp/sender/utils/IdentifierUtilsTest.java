@@ -10,34 +10,34 @@ import static org.junit.jupiter.api.Assertions.*;
 class IdentifierUtilsTest {
 
   @Test
-  void givenValidUuid_whenUuidFormatter_thenFormattedUuidWithoutHyphens() {
+  void givenValidUuid_whenFormatUuidWithoutHyphens_thenReturnsLowerCaseWithoutHyphens() {
     UUID uuid = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
-    String result = IdentifierUtils.uuidFormatter(uuid);
+    String result = IdentifierUtils.formatUuidWithoutHyphens(uuid);
 
     assertEquals("123e4567e89b12d3a456426614174000", result);
   }
 
   @Test
-  void givenNullUuid_whenUuidFormatter_thenThrowNullPointerException() {
+  void givenNullUuid_whenFormatUuidWithoutHyphens_thenThrowsNullPointerException() {
     UUID uuid = null;
 
-    assertThrows(NullPointerException.class, () -> IdentifierUtils.uuidFormatter(uuid));
+    assertThrows(NullPointerException.class, () -> IdentifierUtils.formatUuidWithoutHyphens(uuid));
   }
 
   @Test
-  void givenValidUpperCaseUuid_whenUuidFormatter_thenFormattedToLowerCaseWithoutHyphens() {
+  void givenUpperCaseUuid_whenFormatUuidWithoutHyphens_thenReturnsLowerCaseWithoutHyphens() {
     UUID uuid = UUID.fromString("123E4567-E89B-12D3-A456-426614174000");
 
-    String result = IdentifierUtils.uuidFormatter(uuid);
+    String result = IdentifierUtils.formatUuidWithoutHyphens(uuid);
 
     assertEquals("123e4567e89b12d3a456426614174000", result);
   }
 
   @Test
-  void givenFormattedUuid_whenRebuilt_thenEqualsOriginal() {
+  void givenValidFormattedUuid_whenUuidRebuilder_thenRebuildsOriginalUuid() {
     UUID originalUuid = UUID.randomUUID();
-    String formatted = IdentifierUtils.uuidFormatter(originalUuid);
+    String formatted = IdentifierUtils.formatUuidWithoutHyphens(originalUuid);
     UUID rebuilt = IdentifierUtils.uuidRebuilder(formatted);
 
     assertEquals(originalUuid, rebuilt);
@@ -45,7 +45,7 @@ class IdentifierUtilsTest {
 
 
   @Test
-  void givenValidUuidWithoutDashes_whenUuidRebuilder_thenReturnsProperUuid() {
+  void givenUuidWithoutHyphens_whenUuidRebuilder_thenReturnsCorrectUuid() {
     String uuidWithoutDashes = "123e4567e89b12d3a456426614174000";
     String expectedFormatted = "123e4567-e89b-12d3-a456-426614174000";
     UUID expectedUuid = UUID.fromString(expectedFormatted);
@@ -56,15 +56,15 @@ class IdentifierUtilsTest {
   }
 
   @Test
-  void givenNonHexUuidWithoutDashes_whenUuidRebuilder_thenThrowsException() {
-    String invalidHex = "123e4567e89b12d3a45642661417400g"; // 'g' è fuori dal range esadecimale
+  void givenUuidWithInvalidHex_whenUuidRebuilder_thenThrowsIllegalArgumentException() {
+    String invalidHex = "123e4567e89b12d3a45642661417400g";
 
     assertThrows(IllegalArgumentException.class, () -> IdentifierUtils.uuidRebuilder(invalidHex));
   }
 
 
   @Test
-  void givenUuidWithDashes_whenUuidRebuilder_thenReturnsSameUuid() {
+  void givenUuidWithHyphens_whenUuidRebuilder_thenReturnsSameUuid() {
     String uuidWithDashes = "123e4567-e89b-12d3-a456-426614174000";
     UUID expectedUuid = UUID.fromString(uuidWithDashes);
 
@@ -74,23 +74,23 @@ class IdentifierUtilsTest {
   }
 
   @Test
-  void givenInvalidUuid_whenUuidRebuilder_thenThrowsIllegalArgumentException() {
+  void givenInvalidUuidString_whenUuidRebuilder_thenThrowsIllegalArgumentException() {
     String invalidUuid = "invalid-uuid-string";
 
     assertThrows(IllegalArgumentException.class, () -> IdentifierUtils.uuidRebuilder(invalidUuid));
   }
 
   @Test
-  void givenNullUuidString_whenUuidRebuilder_thenThrowsNullPointerException() {
+  void givenNullString_whenUuidRebuilder_thenThrowsNullPointerException() {
     String nullUuid = null;
 
     assertThrows(NullPointerException.class, () -> IdentifierUtils.uuidRebuilder(nullUuid));
   }
 
   @Test
-  void givenValidUuidWithoutDashes_whenIsValidUuid_thenReturnsTrue() {
+  void givenValidUuidWithoutHyphens_whenIsValidUuidWithoutDashes_thenReturnsTrue() {
     String input = "123e4567e89b12d3a456426614174000";
-    assertTrue(IdentifierUtils.isValidUuid(input));
+    assertTrue(IdentifierUtils.isValidUuidWithoutDashes(input));
   }
 
   @ParameterizedTest
@@ -100,8 +100,8 @@ class IdentifierUtilsTest {
           " ",
           "123e4567e89b12d3a45642661417zzzz"
   })
-  void givenInvalidUuidInputs_whenIsValidUuid_thenReturnsFalse(String input) {
-    assertFalse(IdentifierUtils.isValidUuid(input));
+  void givenInvalidStrings_whenIsValidUuidWithoutDashes_thenReturnsFalse(String input) {
+    assertFalse(IdentifierUtils.isValidUuidWithoutDashes(input));
   }
 
   @ParameterizedTest
@@ -109,7 +109,8 @@ class IdentifierUtilsTest {
           "123e4567e89b12d3a45642661417400",
           "123e4567e89b12d3a4564266141740000"
   })
-  void givenUuidWithWrongLength_whenIsValidUuid_thenReturnsFalse(String input) {
-    assertFalse(IdentifierUtils.isValidUuid(input));
+  void givenWrongLengthUuidStrings_whenIsValidUuidWithoutDashes_thenReturnsFalse(String input) {
+    assertFalse(IdentifierUtils.isValidUuidWithoutDashes(input));
   }
 }
+

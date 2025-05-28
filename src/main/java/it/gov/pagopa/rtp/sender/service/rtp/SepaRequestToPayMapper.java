@@ -132,7 +132,7 @@ public class SepaRequestToPayMapper {
         .id(party38ChoiceDto);
 
     var groupHeader105EPC25922V30DS02Dto = new GroupHeader105EPC25922V30DS02Dto()
-        .msgId(IdentifierUtils.uuidFormatter(rtp.resourceID().getId()))
+        .msgId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
         .creDtTm(DateUtils.localDateTimeToOffsetFormat(rtp.savingDateTime()))
         .nbOfTxs("1")// FIXED
         .initgPty(partyIdentification135EPC25922V30DS02Dto);
@@ -180,7 +180,7 @@ public class SepaRequestToPayMapper {
         .finInstnId(dbtFinancialInstitutionIdentification18EPC25922V30DS02Dto);
 
     var paymentIdentification6EPC25922V30DS02Dto = new PaymentIdentification6EPC25922V30DS02Dto()
-        .instrId(IdentifierUtils.uuidFormatter(rtp.resourceID().getId()))
+        .instrId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
         .endToEndId(rtp.noticeNumber());
 
     var serviceLevel8ChoiceDto = new ServiceLevel8ChoiceDto()
@@ -318,7 +318,7 @@ public class SepaRequestToPayMapper {
                 .BICFI(rtp.serviceProviderDebtor())));
 
     final var caseAssignment = new CaseAssignment5EPC25922V30DS11Dto() //Assgnmt
-        .id(IdentifierUtils.uuidFormatter(rtp.resourceID().getId()))
+        .id(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
         .assgnr(party40ChoiceAssigner)
         .assgne(party40ChoiceAssignee)
         .creDtTm(DateUtils.localDateTimeToOffsetFormat(rtp.savingDateTime()));
@@ -388,17 +388,17 @@ public class SepaRequestToPayMapper {
                 .IBAN(this.pagoPaConfigProperties.details().iban())));
 
     final var paymentTransaction = List.of(new PaymentTransaction109EPC25922V30DS11Dto()  //TxInf
-        .cxlId(IdentifierUtils.uuidFormatter(rtp.resourceID().getId()))
-        .orgnlInstrId(IdentifierUtils.uuidFormatter(UUID.randomUUID()))
+        .cxlId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
+        .orgnlInstrId(IdentifierUtils.formatUuidWithoutHyphens(UUID.randomUUID()))
         .orgnlEndToEndId(rtp.noticeNumber())
         .cxlRsnInf(paymentCancellationReason)
         .orgnlTxRef(originalTransactionReference28EPC25922V30DS11Dto));
 
     final var originalPaymentInstruction = new OriginalPaymentInstruction34EPC25922V30DS11Dto() //OrgnlPmtInfAndCxl
-        .pmtCxlId(IdentifierUtils.uuidFormatter(rtp.resourceID().getId()))
-        .orgnlPmtInfId(IdentifierUtils.uuidFormatter(rtp.resourceID().getId()))
+        .pmtCxlId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
+        .orgnlPmtInfId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
         .orgnlGrpInf(new OriginalGroupInformation29EPC25922V30DS15RTPDto()
-            .orgnlMsgId(IdentifierUtils.uuidFormatter(rtp.resourceID().getId()))
+            .orgnlMsgId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
             .orgnlMsgNmId("pain.013.001.10")
             .orgnlCreDtTm(DateUtils.localDateTimeToOffsetFormat(rtp.savingDateTime())))
         .txInf(paymentTransaction);

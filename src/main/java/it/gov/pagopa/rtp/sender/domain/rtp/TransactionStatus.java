@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.rtp;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
 
 import java.util.Arrays;
@@ -35,10 +36,13 @@ public enum TransactionStatus {
    */
   @NonNull
   public static TransactionStatus fromString(final String text) {
+
+    if (text == null){
+      throw new IllegalArgumentException("Input text must not be null");
+    }
+
     return Arrays.stream(TransactionStatus.values())
-            .filter(b -> b.value.equals(Optional.ofNullable(text)
-                    .orElseThrow(() -> new IllegalArgumentException("Input text must not be null"))
-            ))
+            .filter(b -> StringUtils.equalsIgnoreCase(b.value, text))
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("No matching Enum"));
   }

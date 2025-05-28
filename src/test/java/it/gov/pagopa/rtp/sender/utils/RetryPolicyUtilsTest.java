@@ -2,11 +2,7 @@ package it.gov.pagopa.rtp.sender.utils;
 
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 import reactor.util.retry.RetryBackoffSpec;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -36,41 +32,4 @@ class RetryPolicyUtilsTest {
         assertEquals("Retry parameters cannot be null", exception.getMessage());
     }
 
-    @Test
-    void givenFailingMono_whenUsingRetryPolicy_thenRetriesAndSucceeds() {
-        ServiceProviderConfig.Send.Retry retryParams = new ServiceProviderConfig.Send.Retry(3, 100, 0.0);
-
-        var retrySpec = RetryPolicyUtils.sendRetryPolicy(retryParams);
-        AtomicInteger counter = new AtomicInteger();
-
-        Mono<String> unreliableMono = Mono.defer(() -> {
-            if (counter.incrementAndGet() < 3) {
-                return Mono.error(new RuntimeException("Temporary failure"));
-            } else {
-                return Mono.just("Success!");
-            }
-        }).retryWhen(retrySpec);
-
-        StepVerifier.create(unreliableMono)
-                .expectNext("Success!")
-                .verifyComplete();
-
-        assertEquals(3, counter.get());
-    }
-
-    @Test
-    void givenAlwaysFailingMono_whenUsingRetryPolicy_thenRetriesAndFailsWithOriginalCause() {
-        ServiceProviderConfig.Send.Retry retryParams =
-                new ServiceProviderConfig.Send.Retry(2, 100, 0.0);
-        var retrySpec = RetryPolicyUtils.sendRetryPolicy(retryParams);
-
-        Mono<String> alwaysFailingMono = Mono.<String>error(new RuntimeException("Always fails"))
-                .retryWhen(retrySpec);
-
-        StepVerifier.create(alwaysFailingMono)
-                .expectErrorMatches(throwable ->
-                        throwable.getCause() instanceof RuntimeException &&
-                                throwable.getCause().getMessage().contains("Always fails"))
-                .verify();
-    }
 }

@@ -8,13 +8,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TransactionStatusTest {
 
-    @Test
-    void givenValidStatusString_whenFromString_thenReturnCorrectEnum() {
-        String input = "ACCP";
-
+    @ParameterizedTest
+    @ValueSource(strings = {"ACCP", "ACWC", "RJCT"})
+    void givenValidStatusString_whenFromString_thenReturnCorrectEnum(String input) {
         TransactionStatus result = TransactionStatus.fromString(input);
-
-        assertEquals(TransactionStatus.ACCP, result);
+        assertEquals(TransactionStatus.valueOf(input), result);
     }
 
     @ParameterizedTest

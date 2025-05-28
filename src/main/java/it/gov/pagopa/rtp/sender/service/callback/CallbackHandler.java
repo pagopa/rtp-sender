@@ -68,6 +68,7 @@ public class CallbackHandler {
 
         return resourceId
                 .flatMap(rtpRepository::findById)
+                .switchIfEmpty(Mono.error(new IllegalStateException("RTP not found for resourceId")))
                 .doOnNext(rtp -> log.info("Retrieved RTP with id {}", rtp.resourceID().getId()))
                 .flatMap(rtpToUpdate -> transactionStatus
                         .doOnNext(status -> log.debug("Processing transaction status: {}", status))
@@ -105,7 +106,7 @@ public class CallbackHandler {
             }
             default -> {
                 log.warn("Received unsupported TransactionStatus: {}", transactionStatus);
-                yield Mono.error(new IllegalStateException("Unsupported TransactionStatus: " + transactionStatus));
+                yield this.triggerAndSave(rtpToUpdate, this.rtpStatusUpdater::triggerErrorSendRtp);
             }
         };
     }
