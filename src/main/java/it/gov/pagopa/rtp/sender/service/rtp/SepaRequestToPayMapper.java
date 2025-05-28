@@ -367,6 +367,7 @@ public class SepaRequestToPayMapper {
 
     final var party40ChoiceEPC25922V30DS113Dto = new Party40ChoiceEPC25922V30DS113Dto()
         .pty(new PartyIdentification135EPC25922V30DS04b3Dto()
+            .nm("PagoPA")
             .id(party38ChoiceEPC25922V30DS04b2Dto));
 
     final var originalTransactionReference28EPC25922V30DS11Dto = new OriginalTransactionReference28EPC25922V30DS11Dto() //OrgnlTxRef
