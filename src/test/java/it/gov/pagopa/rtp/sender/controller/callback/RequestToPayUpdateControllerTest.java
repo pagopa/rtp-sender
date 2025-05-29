@@ -2,18 +2,16 @@ package it.gov.pagopa.rtp.sender.controller.callback;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.errors.IncorrectCertificate;
+import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
 import it.gov.pagopa.rtp.sender.service.callback.CallbackHandler;
+import it.gov.pagopa.rtp.sender.utils.CertificateChecker;
 import it.gov.pagopa.rtp.sender.utils.PayloadInfoExtractor;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -23,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import it.gov.pagopa.rtp.sender.utils.CertificateChecker;
 
 @ExtendWith(MockitoExtension.class)
 class RequestToPayUpdateControllerTest {
@@ -69,27 +66,23 @@ class RequestToPayUpdateControllerTest {
 
   @Test
   void handleRequestToPayUpdateWithInvalidCertificateShouldReturnForbiddenWithoutPopulateMdc() {
-    String invalid = "INVALID";
-    when(certificateChecker.verifyRequestCertificate(any(), eq(invalid)))
+    when(certificateChecker.verifyRequestCertificate(any(), eq("INVALID")))
             .thenReturn(Mono.error(new IncorrectCertificate()));
-    when(callbackHandler.handle(any()))
-            .thenReturn(Mono.just(requestBody));
 
     StepVerifier.create(
-                    controller.handleRequestToPayUpdate(invalid, Mono.just(requestBody))
+                    controller.handleRequestToPayUpdate("INVALID", Mono.just(requestBody))
             )
             .expectNextMatches(response -> response.getStatusCode() == HttpStatus.FORBIDDEN)
             .verifyComplete();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+    verify(callbackHandler, times(0)).handle(any());
   }
 
   @Test
   void handleRequestToPayUpdateWithNonExistingSpIdShouldReturnBadRequestWithoutPopulateMdc() {
     when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
             .thenReturn(Mono.error(new ServiceProviderNotFoundException("Not found")));
-    when(callbackHandler.handle(any()))
-            .thenReturn(Mono.just(requestBody));
 
     StepVerifier.create(
                     controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
@@ -98,14 +91,13 @@ class RequestToPayUpdateControllerTest {
             .verifyComplete();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+    verify(callbackHandler, times(0)).handle(any());
   }
 
   @Test
   void handleRequestToPayUpdateWithOtherErrorShouldPropagateErrorWithoutPopulateMdc() {
     when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
-            .thenReturn(Mono.error(new IllegalStateException("Error")));
-    when(callbackHandler.handle(any()))
-            .thenReturn(Mono.just(requestBody));
+            .thenReturn(Mono.error(new IllegalStateException("Generic error")));
 
     StepVerifier.create(
                     controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
@@ -114,6 +106,7 @@ class RequestToPayUpdateControllerTest {
             .verify();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+    verify(callbackHandler, times(0)).handle(any());
   }
 
   @Test
@@ -125,22 +118,13 @@ class RequestToPayUpdateControllerTest {
             .verifyComplete();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
-  }
-
-  private JsonNode createMockRequestBody(String serviceProviderDebtorId) {
-    final String template =
-            "{\"AsynchronousSepaRequestToPayResponse\":{\"Document\":{"
-                    + "\"CdtrPmtActvtnReqStsRpt\":{\"GrpHdr\":{\"InitgPty\":{"
-                    + "\"Id\":{\"OrgId\":{\"AnyBIC\":\"%s\"}}}}}}}}";
-    try {
-      return new ObjectMapper().readTree(String.format(template, serviceProviderDebtorId));
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    verify(callbackHandler, times(0)).handle(any());
   }
 
   @Test
   void handleRequestToPayUpdateWhenCallbackHandlerThrowsIllegalArgumentExceptionShouldReturnBadRequest() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
     when(callbackHandler.handle(any()))
             .thenReturn(Mono.error(new IllegalArgumentException("Invalid payload")));
 
@@ -155,6 +139,8 @@ class RequestToPayUpdateControllerTest {
 
   @Test
   void handleRequestToPayUpdateWhenCallbackHandlerThrowsServiceProviderNotFoundShouldReturnBadRequest() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
     when(callbackHandler.handle(any()))
             .thenReturn(Mono.error(new ServiceProviderNotFoundException("SP not found")));
 
@@ -169,6 +155,8 @@ class RequestToPayUpdateControllerTest {
 
   @Test
   void handleRequestToPayUpdateWhenCallbackHandlerThrowsUnexpectedErrorShouldPropagateError() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
     when(callbackHandler.handle(any()))
             .thenReturn(Mono.error(new IllegalStateException("Unexpected failure")));
 
@@ -179,5 +167,17 @@ class RequestToPayUpdateControllerTest {
             .verify();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
+
+  private JsonNode createMockRequestBody(String serviceProviderDebtorId) {
+    final String template =
+            "{\"AsynchronousSepaRequestToPayResponse\":{\"Document\":{"
+                    + "\"CdtrPmtActvtnReqStsRpt\":{\"GrpHdr\":{\"InitgPty\":{"
+                    + "\"Id\":{\"OrgId\":{\"AnyBIC\":\"%s\"}}}}}}}}";
+    try {
+      return new ObjectMapper().readTree(String.format(template, serviceProviderDebtorId));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

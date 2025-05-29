@@ -5,9 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import reactor.test.StepVerifier;
 
 import java.util.UUID;
+import java.util.stream.Stream;
 
 
 class CallbackFieldsExtractorTest {
@@ -55,136 +58,97 @@ class CallbackFieldsExtractorTest {
                 .verifyComplete();
     }
 
-    @Test
-    void givenUnknownStatus_whenExtractTransactionStatusSend_thenReturnErrorStatus() throws Exception {
-        String json = """
-                    {
-                      "AsynchronousSepaRequestToPayResponse": {
-                        "Document": {
-                          "CdtrPmtActvtnReqStsRpt": {
-                            "OrgnlPmtInfAndSts": [
-                              {
-                                "TxInfAndSts": [
-                                  {
-                                    "TxSts": ["FOO"]
-                                  }
-                                ]
-                              }
+    @ParameterizedTest
+    @MethodSource("invalidJsonPayloads")
+    void givenInvalidOrUnknownTxSts_whenExtractTransactionStatusSend_thenReturnErrorStatus(String json) throws Exception {
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractTransactionStatusSend(node);
+
+        StepVerifier.create(result)
+                .expectNext(TransactionStatus.ERROR)
+                .verifyComplete();
+    }
+
+    static Stream<String> invalidJsonPayloads() {
+        return Stream.of(
+                // Unknown status
+                """
+                {
+                  "AsynchronousSepaRequestToPayResponse": {
+                    "Document": {
+                      "CdtrPmtActvtnReqStsRpt": {
+                        "OrgnlPmtInfAndSts": [
+                          {
+                            "TxInfAndSts": [
+                              { "TxSts": ["FOO"] }
                             ]
                           }
-                        }
+                        ]
                       }
                     }
-                """;
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractTransactionStatusSend(node);
-
-        StepVerifier.create(result)
-                .expectNext(TransactionStatus.ERROR)
-                .verifyComplete();
-    }
-
-    @Test
-    void givenMissingOrgnlPmtInfAndSts_whenExtractTransactionStatusSend_thenReturnErrorStatus() throws Exception {
-        String json = """
-                    {
-                      "AsynchronousSepaRequestToPayResponse": {
-                        "Document": {
-                          "CdtrPmtActvtnReqStsRpt": {}
-                        }
+                  }
+                }
+                """,
+                // Missing OrgnlPmtInfAndSts
+                """
+                {
+                  "AsynchronousSepaRequestToPayResponse": {
+                    "Document": {
+                      "CdtrPmtActvtnReqStsRpt": {}
+                    }
+                  }
+                }
+                """,
+                // Empty OrgnlPmtInfAndSts array
+                """
+                {
+                  "AsynchronousSepaRequestToPayResponse": {
+                    "Document": {
+                      "CdtrPmtActvtnReqStsRpt": {
+                        "OrgnlPmtInfAndSts": []
                       }
                     }
-                """;
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractTransactionStatusSend(node);
-
-        StepVerifier.create(result)
-                .expectNext(TransactionStatus.ERROR)
-                .verifyComplete();
-    }
-
-    @Test
-    void givenEmptyTxSts_whenExtractTransactionStatusSend_thenReturnErrorStatus() throws Exception {
-        String json = """
-                    {
-                      "AsynchronousSepaRequestToPayResponse": {
-                        "Document": {
-                          "CdtrPmtActvtnReqStsRpt": {
-                            "OrgnlPmtInfAndSts": []
+                  }
+                }
+                """,
+                // Null TxSts
+                """
+                {
+                  "AsynchronousSepaRequestToPayResponse": {
+                    "Document": {
+                      "CdtrPmtActvtnReqStsRpt": {
+                        "OrgnlPmtInfAndSts": [
+                          {
+                            "TxInfAndSts": [
+                              { "TxSts": [null] }
+                            ]
                           }
-                        }
+                        ]
                       }
                     }
-                """;
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractTransactionStatusSend(node);
-
-        StepVerifier.create(result)
-                .expectNext(TransactionStatus.ERROR)
-                .verifyComplete();
-    }
-
-    @Test
-    void givenBlankTxStsValues_whenExtractTransactionStatusSend_thenReturnErrorStatuses() throws Exception {
-        String json = """
-        {
-          "AsynchronousSepaRequestToPayResponse": {
-            "Document": {
-              "CdtrPmtActvtnReqStsRpt": {
-                "OrgnlPmtInfAndSts": [
-                  {
-                    "TxInfAndSts": [
-                      {
-                        "TxSts": [null]
-                      }
-                    ]
                   }
-                ]
-              }
-            }
-          }
-        }
-    """;
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractTransactionStatusSend(node);
-
-        StepVerifier.create(result)
-                .expectNext(TransactionStatus.ERROR)
-                .verifyComplete();
-    }
-
-    @Test
-    void givenInvalidTxStsValues_whenExtractTransactionStatusSend_thenReturnErrorStatuses() throws Exception {
-        String json = """
-        {
-          "AsynchronousSepaRequestToPayResponse": {
-            "Document": {
-              "CdtrPmtActvtnReqStsRpt": {
-                "OrgnlPmtInfAndSts": [
-                  {
-                    "TxInfAndSts": [
-                      {
-                        "TxSts": [""]
+                }
+                """,
+                // Blank TxSts
+                """
+                {
+                  "AsynchronousSepaRequestToPayResponse": {
+                    "Document": {
+                      "CdtrPmtActvtnReqStsRpt": {
+                        "OrgnlPmtInfAndSts": [
+                          {
+                            "TxInfAndSts": [
+                              { "TxSts": [""] }
+                            ]
+                          }
+                        ]
                       }
-                    ]
+                    }
                   }
-                ]
-              }
-            }
-          }
-        }
-    """;
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractTransactionStatusSend(node);
-
-        StepVerifier.create(result)
-                .expectNext(TransactionStatus.ERROR)
-                .verifyComplete();
+                }
+                """
+        );
     }
 
     @Test
