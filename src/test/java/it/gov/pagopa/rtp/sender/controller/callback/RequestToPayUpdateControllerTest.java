@@ -2,20 +2,16 @@ package it.gov.pagopa.rtp.sender.controller.callback;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import it.gov.pagopa.rtp.sender.domain.errors.IncorrectCertificate;
 import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
+import it.gov.pagopa.rtp.sender.service.callback.CallbackHandler;
 import it.gov.pagopa.rtp.sender.utils.CertificateChecker;
 import it.gov.pagopa.rtp.sender.utils.PayloadInfoExtractor;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -30,6 +26,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 class RequestToPayUpdateControllerTest {
 
   @Mock private CertificateChecker certificateChecker;
+  @Mock private CallbackHandler callbackHandler;
 
   private RequestToPayUpdateController controller;
   private MockedStatic<PayloadInfoExtractor> extractorMock;
@@ -42,7 +39,7 @@ class RequestToPayUpdateControllerTest {
     extractorMock.when(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)))
             .thenAnswer(invocation -> null);
 
-    controller = new RequestToPayUpdateController(certificateChecker);
+    controller = new RequestToPayUpdateController(certificateChecker, callbackHandler);
     requestBody = createMockRequestBody("ABCDITMMXXX");
   }
 
@@ -54,6 +51,8 @@ class RequestToPayUpdateControllerTest {
   @Test
   void handleRequestToPayUpdateWithValidCertificateShouldReturnOkAndPopulateMdc() {
     when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
+    when(callbackHandler.handle(any()))
             .thenReturn(Mono.just(requestBody));
 
     StepVerifier.create(
@@ -67,17 +66,17 @@ class RequestToPayUpdateControllerTest {
 
   @Test
   void handleRequestToPayUpdateWithInvalidCertificateShouldReturnForbiddenWithoutPopulateMdc() {
-    String invalid = "INVALID";
-    when(certificateChecker.verifyRequestCertificate(any(), eq(invalid)))
+    when(certificateChecker.verifyRequestCertificate(any(), eq("INVALID")))
             .thenReturn(Mono.error(new IncorrectCertificate()));
 
     StepVerifier.create(
-                    controller.handleRequestToPayUpdate(invalid, Mono.just(requestBody))
+                    controller.handleRequestToPayUpdate("INVALID", Mono.just(requestBody))
             )
             .expectNextMatches(response -> response.getStatusCode() == HttpStatus.FORBIDDEN)
             .verifyComplete();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+    verify(callbackHandler, times(0)).handle(any());
   }
 
   @Test
@@ -92,12 +91,13 @@ class RequestToPayUpdateControllerTest {
             .verifyComplete();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+    verify(callbackHandler, times(0)).handle(any());
   }
 
   @Test
   void handleRequestToPayUpdateWithOtherErrorShouldPropagateErrorWithoutPopulateMdc() {
     when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
-            .thenReturn(Mono.error(new IllegalStateException("Error")));
+            .thenReturn(Mono.error(new IllegalStateException("Generic error")));
 
     StepVerifier.create(
                     controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
@@ -106,6 +106,7 @@ class RequestToPayUpdateControllerTest {
             .verify();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+    verify(callbackHandler, times(0)).handle(any());
   }
 
   @Test
@@ -115,6 +116,55 @@ class RequestToPayUpdateControllerTest {
             )
             .expectNextMatches(response -> response.getStatusCode() == HttpStatus.BAD_REQUEST)
             .verifyComplete();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+    verify(callbackHandler, times(0)).handle(any());
+  }
+
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsIllegalArgumentExceptionShouldReturnBadRequest() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new IllegalArgumentException("Invalid payload")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectNextMatches(response -> response.getStatusCode() == HttpStatus.BAD_REQUEST)
+            .verifyComplete();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
+
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsServiceProviderNotFoundShouldReturnBadRequest() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new ServiceProviderNotFoundException("SP not found")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectNextMatches(response -> response.getStatusCode() == HttpStatus.BAD_REQUEST)
+            .verifyComplete();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
+
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsUnexpectedErrorShouldPropagateError() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new IllegalStateException("Unexpected failure")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectError(IllegalStateException.class)
+            .verify();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
   }
