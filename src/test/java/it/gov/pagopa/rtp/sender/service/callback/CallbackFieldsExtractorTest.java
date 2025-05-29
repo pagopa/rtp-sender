@@ -24,27 +24,27 @@ class CallbackFieldsExtractorTest {
     @Test
     void givenValidJson_whenExtractTransactionStatusSend_thenReturnTransactionStatuses() throws Exception {
         String json = """
-            {
-              "AsynchronousSepaRequestToPayResponse": {
-                "Document": {
-                  "CdtrPmtActvtnReqStsRpt": {
-                    "OrgnlPmtInfAndSts": [
-                      {
-                        "TxInfAndSts": [
-                          {
-                            "TxSts": ["ACCP"]
-                          },
-                          {
-                            "TxSts": ["RJCT"]
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlPmtInfAndSts": [
+                              {
+                                "TxInfAndSts": [
+                                  {
+                                    "TxSts": ["ACCP"]
+                                  },
+                                  {
+                                    "TxSts": ["RJCT"]
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        }
                       }
-                    ]
-                  }
-                }
-              }
-            }
-        """;
+                    }
+                """;
         JsonNode node = objectMapper.readTree(json);
 
         var result = extractor.extractTransactionStatusSend(node);
@@ -58,24 +58,24 @@ class CallbackFieldsExtractorTest {
     @Test
     void givenUnknownStatus_whenExtractTransactionStatusSend_thenReturnErrorStatus() throws Exception {
         String json = """
-            {
-              "AsynchronousSepaRequestToPayResponse": {
-                "Document": {
-                  "CdtrPmtActvtnReqStsRpt": {
-                    "OrgnlPmtInfAndSts": [
-                      {
-                        "TxInfAndSts": [
-                          {
-                            "TxSts": ["FOO"]
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlPmtInfAndSts": [
+                              {
+                                "TxInfAndSts": [
+                                  {
+                                    "TxSts": ["FOO"]
+                                  }
+                                ]
+                              }
+                            ]
                           }
-                        ]
+                        }
                       }
-                    ]
-                  }
-                }
-              }
-            }
-        """;
+                    }
+                """;
         JsonNode node = objectMapper.readTree(json);
 
         var result = extractor.extractTransactionStatusSend(node);
@@ -86,43 +86,123 @@ class CallbackFieldsExtractorTest {
     }
 
     @Test
-    void givenMissingOrgnlPmtInfAndSts_whenExtractTransactionStatusSend_thenThrow() throws Exception {
+    void givenMissingOrgnlPmtInfAndSts_whenExtractTransactionStatusSend_thenReturnErrorStatus() throws Exception {
         String json = """
-            {
-              "AsynchronousSepaRequestToPayResponse": {
-                "Document": {
-                  "CdtrPmtActvtnReqStsRpt": {}
-                }
-              }
-            }
-        """;
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {}
+                        }
+                      }
+                    }
+                """;
         JsonNode node = objectMapper.readTree(json);
 
         var result = extractor.extractTransactionStatusSend(node);
 
         StepVerifier.create(result)
-                .expectErrorMatches(e ->
-                        e instanceof IllegalArgumentException &&
-                                e.getMessage().equals("Missing field"))
-                .verify();
+                .expectNext(TransactionStatus.ERROR)
+                .verifyComplete();
+    }
+
+    @Test
+    void givenEmptyTxSts_whenExtractTransactionStatusSend_thenReturnErrorStatus() throws Exception {
+        String json = """
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlPmtInfAndSts": []
+                          }
+                        }
+                      }
+                    }
+                """;
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractTransactionStatusSend(node);
+
+        StepVerifier.create(result)
+                .expectNext(TransactionStatus.ERROR)
+                .verifyComplete();
+    }
+
+    @Test
+    void givenBlankTxStsValues_whenExtractTransactionStatusSend_thenReturnErrorStatuses() throws Exception {
+        String json = """
+        {
+          "AsynchronousSepaRequestToPayResponse": {
+            "Document": {
+              "CdtrPmtActvtnReqStsRpt": {
+                "OrgnlPmtInfAndSts": [
+                  {
+                    "TxInfAndSts": [
+                      {
+                        "TxSts": [null]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+    """;
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractTransactionStatusSend(node);
+
+        StepVerifier.create(result)
+                .expectNext(TransactionStatus.ERROR)
+                .verifyComplete();
+    }
+
+    @Test
+    void givenInvalidTxStsValues_whenExtractTransactionStatusSend_thenReturnErrorStatuses() throws Exception {
+        String json = """
+        {
+          "AsynchronousSepaRequestToPayResponse": {
+            "Document": {
+              "CdtrPmtActvtnReqStsRpt": {
+                "OrgnlPmtInfAndSts": [
+                  {
+                    "TxInfAndSts": [
+                      {
+                        "TxSts": [""]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+    """;
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractTransactionStatusSend(node);
+
+        StepVerifier.create(result)
+                .expectNext(TransactionStatus.ERROR)
+                .verifyComplete();
     }
 
     @Test
     void givenValidJson_whenExtractResourceIDSend_thenReturnResourceID() throws Exception {
         String uuid = UUID.randomUUID().toString();
         String json = """
-            {
-              "AsynchronousSepaRequestToPayResponse": {
-                "Document": {
-                  "CdtrPmtActvtnReqStsRpt": {
-                    "OrgnlGrpInfAndSts": {
-                      "OrgnlMsgId": "%s"
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlGrpInfAndSts": {
+                              "OrgnlMsgId": "%s"
+                            }
+                          }
+                        }
+                      }
                     }
-                  }
-                }
-              }
-            }
-        """.formatted(uuid);
+                """.formatted(uuid);
         JsonNode node = objectMapper.readTree(json);
 
         var result = extractor.extractResourceIDSend(node);
@@ -135,16 +215,16 @@ class CallbackFieldsExtractorTest {
     @Test
     void givenMissingMsgId_whenExtractResourceIDSend_thenThrow() throws Exception {
         String json = """
-            {
-              "AsynchronousSepaRequestToPayResponse": {
-                "Document": {
-                  "CdtrPmtActvtnReqStsRpt": {
-                    "OrgnlGrpInfAndSts": {}
-                  }
-                }
-              }
-            }
-        """;
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlGrpInfAndSts": {}
+                          }
+                        }
+                      }
+                    }
+                """;
         JsonNode node = objectMapper.readTree(json);
 
         var result = extractor.extractResourceIDSend(node);
@@ -159,18 +239,18 @@ class CallbackFieldsExtractorTest {
     @Test
     void givenInvalidUuid_whenExtractResourceIDSend_thenThrow() throws Exception {
         String json = """
-            {
-              "AsynchronousSepaRequestToPayResponse": {
-                "Document": {
-                  "CdtrPmtActvtnReqStsRpt": {
-                    "OrgnlGrpInfAndSts": {
-                      "OrgnlMsgId": "not-a-uuid"
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlGrpInfAndSts": {
+                              "OrgnlMsgId": "not-a-uuid"
+                            }
+                          }
+                        }
+                      }
                     }
-                  }
-                }
-              }
-            }
-        """;
+                """;
         JsonNode node = objectMapper.readTree(json);
 
         var result = extractor.extractResourceIDSend(node);

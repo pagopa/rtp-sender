@@ -138,4 +138,46 @@ class RequestToPayUpdateControllerTest {
       throw new RuntimeException(e);
     }
   }
+
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsIllegalArgumentExceptionShouldReturnBadRequest() {
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new IllegalArgumentException("Invalid payload")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectNextMatches(response -> response.getStatusCode() == HttpStatus.BAD_REQUEST)
+            .verifyComplete();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
+
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsServiceProviderNotFoundShouldReturnBadRequest() {
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new ServiceProviderNotFoundException("SP not found")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectNextMatches(response -> response.getStatusCode() == HttpStatus.BAD_REQUEST)
+            .verifyComplete();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
+
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsUnexpectedErrorShouldPropagateError() {
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new IllegalStateException("Unexpected failure")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectError(IllegalStateException.class)
+            .verify();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
 }
