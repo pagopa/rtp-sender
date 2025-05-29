@@ -62,17 +62,14 @@ public class CallbackFieldsExtractor {
                 .map(JsonNode::asText)
                 .map(StringUtils::trim)
                 .doOnNext(txSt -> log.debug("Extracted raw transaction status: '{}'", txSt))
-                .map(txtSt -> {
-                    try {
-                        TransactionStatus status = TransactionStatus.fromString(txtSt);
-                        log.info("Mapped transaction status to enum: {}", status);
-                        return status;
-                    } catch (IllegalArgumentException e) {
-                        log.warn("Invalid transaction status '{}', defaulting to ERROR", txtSt);
-                        return TransactionStatus.ERROR;
-                    }
-                })
-                .switchIfEmpty(Flux.just(TransactionStatus.ERROR));
+                .map(TransactionStatus::valueOf)
+                .doOnComplete(() -> log.info("Mapped transaction status to enum successfully"))
+                .doOnError(e -> log.error("Mapped transaction status to enum error: {}", e))
+                .onErrorResume( e -> Flux.just(TransactionStatus.ERROR))
+                .switchIfEmpty(Flux.defer(() -> {
+                    log.warn("No valid transaction status found, defaulting to ERROR");
+                    return Flux.just(TransactionStatus.ERROR);
+                }));
     }
 
     /**

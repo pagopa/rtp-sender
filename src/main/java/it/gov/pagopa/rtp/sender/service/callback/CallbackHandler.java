@@ -87,7 +87,8 @@ public class CallbackHandler {
      * @return a {@link Mono} containing the updated RTP after applying the transition
      * @throws IllegalStateException if the transaction status is unsupported
      */
-    private Mono<Rtp> triggerStatus(@NonNull final TransactionStatus transactionStatus, @NonNull final Rtp rtpToUpdate) {
+    private Mono<Rtp> triggerStatus(final TransactionStatus transactionStatus,
+                                    @NonNull final Rtp rtpToUpdate) {
 
         log.debug("Handling TransactionStatus: {}", transactionStatus);
 
