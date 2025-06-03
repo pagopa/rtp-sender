@@ -23,19 +23,19 @@ spring:
 
     stream:
       bindings:
-        <consumer-name>-in-0:
+        gdpMessageConsumer-in-0:
           destination: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
           group: $Default
           content-type: application/json
 
       eventhubs:
         bindings:
-          <consumer-name>-in-0:
+          gdpMessageConsumer-in-0:
             consumer:
               checkpoint:
                 mode: MANUAL
       function:
-        definition: consume
+        definition: gdpMessageConsumer
 
 activation.base-url: ${BASE_URL:http://localhost}
 
