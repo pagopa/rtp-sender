@@ -3,7 +3,6 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
 import com.azure.spring.messaging.AzureHeaders;
 import com.azure.spring.messaging.checkpoint.Checkpointer;
 import com.azure.spring.messaging.eventhubs.support.EventHubsHeaders;
-import java.util.Optional;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
@@ -33,16 +32,12 @@ public class GdpEventHandler {
             message.getHeaders().get(EventHubsHeaders.ENQUEUED_TIME)
         ))
         .doOnNext(message -> log.info("Payload: {}", message.getPayload()))
-        .flatMap(message -> {
 
-          final var checkpointer = Optional.of(message)
-              .map(Message::getHeaders)
-              .map(headers -> headers.get(AzureHeaders.CHECKPOINTER))
-              .map(Checkpointer.class::cast)
-              .orElseThrow(() -> new IllegalStateException("Checkpointer not found"));
+        .map(Message::getHeaders)
+        .mapNotNull(headers -> headers.get(AzureHeaders.CHECKPOINTER))
+        .map(Checkpointer.class::cast)
+        .flatMap(Checkpointer::success)
 
-          return checkpointer.success();
-        })
         .doOnEach(success -> log.info("Message successfully checkpointed"))
         .doOnError(error -> log.error("Exception found", error))
         .then();
