@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 public record GdpMessage(
     long id,
     @NotNull Operation operation,
-    @NotNull Long timestamp,
+    long timestamp,
     String iuv,
     String subject,
     String description,
