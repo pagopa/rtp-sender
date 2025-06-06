@@ -131,6 +131,20 @@ public class SendRTPServiceImpl implements SendRTPService {
 
   }
 
+  @NonNull
+  @Override
+  public Mono<Rtp> findRtp(@NonNull UUID rtpId) {
+    return Mono.just(rtpId)
+            .map(ResourceID::new)
+            .doFirst(() -> log.info("Starting retrieval of RTP with id: {}", rtpId))
+            .doOnNext(id -> log.debug("Converted UUID to ResourceID: {}", id))
+            .flatMap(this.rtpRepository::findById)
+            .switchIfEmpty(Mono.error(new RtpNotFoundException(rtpId)))
+            .doOnSuccess(rtp -> MDC.put("debtor_service_provider", rtp.serviceProviderDebtor()))
+            .doOnSuccess(rtp -> MDC.put("creditor_service_provider", rtp.serviceProviderCreditor()))
+            .doOnSuccess(rtp -> MDC.put("payee_name", rtp.payeeName()))
+            .doOnSuccess(rtp -> log.info("Successfully retrieved RTP with id: {}", rtp.resourceID().getId()));
+  }
 
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {
     return switch (exception.getStatusCode()) {
