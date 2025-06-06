@@ -12,7 +12,10 @@ import org.springframework.lang.NonNull;
 
 @Configuration
 public class AzureConfig {
-    
+
+    private static final String FULL_ACCOUNT_NAME_TEMPLATE = "https://%s.blob.core.windows.net";
+
+
     @Bean
     public BlobServiceClientBuilder blobServiceClientBuilder() {
         return new BlobServiceClientBuilder();
@@ -35,7 +38,7 @@ public class AzureConfig {
             .map(BlobStorageConfig::storageAccountName)
             .map(StringUtils::trimToNull)
             .map(storageAccountName ->
-                String.format("https://%s.blob.core.windows.net", storageAccountName))
+                String.format(FULL_ACCOUNT_NAME_TEMPLATE, storageAccountName))
             .orElseThrow(() -> new IllegalArgumentException("Couldn't create blob service client"));
 
         return blobServiceClientBuilder
