@@ -9,6 +9,7 @@ import it.gov.pagopa.rtp.sender.domain.errors.SepaRequestException;
 import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.model.generated.send.CreateRtpDto;
+import it.gov.pagopa.rtp.sender.model.generated.send.RtpDto;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import it.gov.pagopa.rtp.sender.utils.TokenInfo;
 
@@ -82,6 +83,25 @@ public class SendAPIControllerImpl implements RtpsApi {
         .onErrorReturn(RtpNotFoundException.class,
             ResponseEntity.notFound().build())
         .doOnError(a -> log.error("Error cancelling RTP {}", a.getMessage()));
+  }
+
+  @Override
+  @PreAuthorize("hasRole('write_rtp_send')")
+  public Mono<ResponseEntity<RtpDto>> findRtpById(UUID requestId, UUID rtpId,
+                                                  String version, ServerWebExchange exchange) {
+    log.info("Received request to find RTP by id. requestId: {}, rtpId: {}", requestId, rtpId);
+    return Mono.just(rtpId)
+            .doOnNext(id -> log.debug("Processing findRtpById for id: {}", id))
+            .flatMap(sendRTPService::findRtp)
+            .doOnNext(rtp -> log.debug("RTP retrieved from sendRTPService" ))
+            .map(rtpDtoMapper::toRtpDto)
+            .doOnNext(dto -> log.debug("Mapped RTP to DTO: {}", dto))
+            .map(ResponseEntity::ok)
+            .onErrorResume(RtpNotFoundException.class, ex -> {
+              log.warn("Error retrieving: {}", ex.getMessage());
+              return Mono.just(ResponseEntity.notFound().build());
+            })
+            .doOnError(a -> log.error("Error retriving RTP {}", a.getMessage()));
   }
 
 }
