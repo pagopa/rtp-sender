@@ -66,11 +66,11 @@ public class BlobStorageClientAzure implements BlobStorageClient {
    */
   @Override
   public Mono<ServiceProviderDataResponse> getServiceProviderData() {
-    log.info("Starting getServiceProviderData for container: {} blob: {}",
-        blobStorageConfig.containerName(),
-        blobStorageConfig.blobName());
 
     return Mono.just(blobServiceClient)
+        .doFirst(() -> log.info("Starting getServiceProviderData for container: {} blob: {}",
+            blobStorageConfig.containerName(),
+            blobStorageConfig.blobName()))
         .map(serviceClient ->
             serviceClient.getBlobContainerAsyncClient(blobStorageConfig.containerName()))
         .map(containerClient ->
