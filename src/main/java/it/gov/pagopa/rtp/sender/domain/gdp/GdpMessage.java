@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 public record GdpMessage(
-    @NotBlank UUID id,
+    long id,
     @NotNull Operation operation,
     @NotNull Long timestamp,
     String iuv,
