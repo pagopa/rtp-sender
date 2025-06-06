@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.integration.blobstorage;
 
 import com.azure.storage.blob.BlobServiceAsyncClient;
+import com.azure.storage.blob.specialized.BlobAsyncClientBase;
 import it.gov.pagopa.rtp.sender.configuration.BlobStorageConfig;
 import it.gov.pagopa.rtp.sender.domain.registryfile.OAuth2;
 import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
@@ -11,6 +12,7 @@ import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
 
 /*
  * Interact with the Azure Blob Storage using the Azure SDK Library,
@@ -43,16 +45,16 @@ public class BlobStorageClientAzure implements BlobStorageClient {
         blobStorageConfig.containerName(),
         blobStorageConfig.blobName());
 
-    final var containerClient = blobServiceClient
-        .getBlobContainerAsyncClient(blobStorageConfig.containerName());
-
-    final var blobClient = containerClient
-        .getBlobAsyncClient(blobStorageConfig.blobName());
-
-    return blobClient.downloadContent()
-        .map(binaryData -> binaryData.toObject(ServiceProviderDataResponse.class))
-        .doOnError(error -> log.error("Error downloading blob: {}", error.getMessage()))
-        .doOnSuccess(data -> log.info("Successfully retrieved blob data"));
+    return Mono.just(blobServiceClient)
+        .map(serviceClient ->
+            serviceClient.getBlobContainerAsyncClient(blobStorageConfig.containerName()))
+        .map(containerClient ->
+            containerClient.getBlobAsyncClient(blobStorageConfig.blobName()))
+        .flatMap(BlobAsyncClientBase::downloadContent)
+        .map(binaryData ->
+            binaryData.toObject(ServiceProviderDataResponse.class))
+        .doOnSuccess(data -> log.info("Successfully retrieved blob data"))
+        .doOnError(error -> log.error("Error downloading blob: {}", error.getMessage(), error));
   }
 
 }
