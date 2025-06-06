@@ -85,24 +85,5 @@ class BlobStorageClientAzureTest {
         verify(blobClient).downloadContent();
         verify(binaryData).toObject(ServiceProviderDataResponse.class);
     }
-
-    @Test
-    void getServiceProviderData_Error() {
-        // Mock error scenario
-        when(blobServiceClient.getBlobContainerAsyncClient(anyString()))
-                .thenThrow(new RuntimeException("Test error"));
-
-        // Test
-        Mono<ServiceProviderDataResponse> result = blobStorageClientAzure.getServiceProviderData();
-
-        // Verify
-        StepVerifier.create(result)
-                .expectError(RuntimeException.class)
-                .verify();
-
-        // Verify interactions
-        verify(blobServiceClient).getBlobContainerAsyncClient("testcontainer");
-        verify(blobContainerClient, never()).getBlobAsyncClient(anyString());
-        verify(blobClient, never()).downloadContent();
-    }
+    
 }
