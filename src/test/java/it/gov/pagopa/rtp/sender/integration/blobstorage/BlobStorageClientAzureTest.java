@@ -1,11 +1,9 @@
 package it.gov.pagopa.rtp.sender.integration.blobstorage;
 
 import com.azure.core.util.BinaryData;
-import com.azure.identity.DefaultAzureCredential;
-import com.azure.storage.blob.BlobClient;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.BlobAsyncClient;
+import com.azure.storage.blob.BlobContainerAsyncClient;
+import com.azure.storage.blob.BlobServiceAsyncClient;
 
 import it.gov.pagopa.rtp.sender.configuration.BlobStorageConfig;
 import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
@@ -20,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -31,16 +28,13 @@ class BlobStorageClientAzureTest {
     private BlobStorageConfig blobStorageConfig;
 
     @Mock
-    private BlobServiceClientBuilder blobServiceClientBuilder;
+    private BlobServiceAsyncClient blobServiceClient;
 
     @Mock
-    private BlobServiceClient blobServiceClient;
+    private BlobContainerAsyncClient blobContainerClient;
 
     @Mock
-    private BlobContainerClient blobContainerClient;
-
-    @Mock
-    private BlobClient blobClient;
+    private BlobAsyncClient blobClient;
 
     @Mock
     private BinaryData binaryData;
@@ -50,17 +44,11 @@ class BlobStorageClientAzureTest {
     @BeforeEach
     void setUp() {
         // Mock configuration
-        when(blobStorageConfig.storageAccountName()).thenReturn("teststorage");
         when(blobStorageConfig.containerName()).thenReturn("testcontainer");
         when(blobStorageConfig.blobName()).thenReturn("testblob.json");
 
-        // Mock the builder chain
-        when(blobServiceClientBuilder.endpoint(anyString())).thenReturn(blobServiceClientBuilder);
-        when(blobServiceClientBuilder.credential(any(DefaultAzureCredential.class))).thenReturn(blobServiceClientBuilder);
-        when(blobServiceClientBuilder.buildClient()).thenReturn(blobServiceClient);
-
         // Create test instance
-        blobStorageClientAzure = new BlobStorageClientAzure(blobStorageConfig, blobServiceClientBuilder);
+        blobStorageClientAzure = new BlobStorageClientAzure(blobStorageConfig, blobServiceClient);
     }
 
     @Test
@@ -78,9 +66,9 @@ class BlobStorageClientAzureTest {
         );
         
         // Mock the blob storage chain
-        when(blobServiceClient.getBlobContainerClient(anyString())).thenReturn(blobContainerClient);
-        when(blobContainerClient.getBlobClient(anyString())).thenReturn(blobClient);
-        when(blobClient.downloadContent()).thenReturn(binaryData);
+        when(blobServiceClient.getBlobContainerAsyncClient(anyString())).thenReturn(blobContainerClient);
+        when(blobContainerClient.getBlobAsyncClient(anyString())).thenReturn(blobClient);
+        when(blobClient.downloadContent()).thenReturn(Mono.just(binaryData));
         when(binaryData.toObject(ServiceProviderDataResponse.class)).thenReturn(expectedResponse);
 
         // Test
@@ -92,8 +80,8 @@ class BlobStorageClientAzureTest {
                 .verifyComplete();
 
         // Verify interactions
-        verify(blobServiceClient).getBlobContainerClient("testcontainer");
-        verify(blobContainerClient).getBlobClient("testblob.json");
+        verify(blobServiceClient).getBlobContainerAsyncClient("testcontainer");
+        verify(blobContainerClient).getBlobAsyncClient("testblob.json");
         verify(blobClient).downloadContent();
         verify(binaryData).toObject(ServiceProviderDataResponse.class);
     }
@@ -101,7 +89,7 @@ class BlobStorageClientAzureTest {
     @Test
     void getServiceProviderData_Error() {
         // Mock error scenario
-        when(blobServiceClient.getBlobContainerClient(anyString()))
+        when(blobServiceClient.getBlobContainerAsyncClient(anyString()))
                 .thenThrow(new RuntimeException("Test error"));
 
         // Test
@@ -113,8 +101,26 @@ class BlobStorageClientAzureTest {
                 .verify();
 
         // Verify interactions
-        verify(blobServiceClient).getBlobContainerClient("testcontainer");
-        verify(blobContainerClient, never()).getBlobClient(anyString());
+        verify(blobServiceClient).getBlobContainerAsyncClient("testcontainer");
+        verify(blobContainerClient, never()).getBlobAsyncClient(anyString());
         verify(blobClient, never()).downloadContent();
+    }
+
+    @Test
+    void givenBlobDownloadError_whenGetServiceProviderData_thenErrorIsLoggedAndPropagated() {
+
+        when(blobServiceClient.getBlobContainerAsyncClient(anyString()))
+            .thenReturn(blobContainerClient);
+        when(blobContainerClient.getBlobAsyncClient(anyString()))
+            .thenReturn(blobClient);
+        when(blobClient.downloadContent())
+            .thenReturn(Mono.error(new RuntimeException("Download failed")));
+
+        final var resultMono = blobStorageClientAzure.getServiceProviderData();
+
+        StepVerifier.create(resultMono)
+            .expectErrorMatches(error -> error instanceof RuntimeException &&
+                error.getMessage().equals("Download failed"))
+            .verify();
     }
 }

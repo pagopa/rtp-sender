@@ -1,24 +1,25 @@
 package it.gov.pagopa.rtp.sender.integration.blobstorage;
 
-import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
-import org.springframework.stereotype.Component;
-import com.azure.identity.DefaultAzureCredentialBuilder;
-import com.azure.storage.blob.BlobClient;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-
+import com.azure.storage.blob.BlobServiceAsyncClient;
+import com.azure.storage.blob.specialized.BlobAsyncClientBase;
 import it.gov.pagopa.rtp.sender.configuration.BlobStorageConfig;
 import it.gov.pagopa.rtp.sender.domain.registryfile.OAuth2;
 import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
 import it.gov.pagopa.rtp.sender.domain.registryfile.TechnicalServiceProvider;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
-/*
- * Interact with the Azure Blob Storage using the Azure SDK Library, 
- * and performing 
+
+/**
+ * Azure-based implementation of {@link BlobStorageClient} for interacting with Azure Blob Storage using the Azure SDK.
+ * <p>
+ * This component is responsible for downloading and deserializing JSON blob content into Java objects
+ * defined in the domain (e.g., {@link ServiceProviderDataResponse}).
+ * </p>
  */
 @Component
 @Slf4j
@@ -31,38 +32,54 @@ import lombok.extern.slf4j.Slf4j;
 public class BlobStorageClientAzure implements BlobStorageClient {
 
   private final BlobStorageConfig blobStorageConfig;
-  private final BlobServiceClient blobServiceClient;
+  private final BlobServiceAsyncClient blobServiceClient;
 
-  public BlobStorageClientAzure(BlobStorageConfig blobStorageConfig,
-      BlobServiceClientBuilder blobServiceClientBuilder) {
-    this.blobStorageConfig = blobStorageConfig;
-    String endpoint = String.format("https://%s.blob.core.windows.net",
-        blobStorageConfig.storageAccountName());
 
-    this.blobServiceClient = blobServiceClientBuilder
-        .endpoint(endpoint)
-        .credential(new DefaultAzureCredentialBuilder().build())
-        .buildClient();
+  /**
+   * Constructs a new {@link BlobStorageClientAzure} instance.
+   *
+   * @param blobStorageConfig      the configuration for accessing the Blob Storage (container and blob name)
+   * @param blobServiceClient      the asynchronous Azure Blob Storage client
+   * @throws NullPointerException if any argument is {@code null}
+   */
+  public BlobStorageClientAzure(
+      @NonNull final BlobStorageConfig blobStorageConfig,
+      @NonNull final BlobServiceAsyncClient blobServiceClient) {
+
+    this.blobStorageConfig = Objects.requireNonNull(blobStorageConfig);
+    this.blobServiceClient = Objects.requireNonNull(blobServiceClient);
   }
 
+
+  /**
+   * Retrieves and deserializes the blob content from Azure Blob Storage into a {@link ServiceProviderDataResponse}.
+   * <p>
+   * This method performs the following:
+   * <ul>
+   *   <li>Retrieves the target container and blob client based on configuration</li>
+   *   <li>Downloads the blob content as binary data</li>
+   *   <li>Converts the binary data to a {@link ServiceProviderDataResponse} object</li>
+   * </ul>
+   * </p>
+   *
+   * @return a {@link Mono} emitting the deserialized {@link ServiceProviderDataResponse}
+   */
   @Override
   public Mono<ServiceProviderDataResponse> getServiceProviderData() {
-    return Mono.fromCallable(() -> {
-      log.info("Starting getServiceProviderData for container: {} blob: {}",
-          blobStorageConfig.containerName(),
-          blobStorageConfig.blobName());
 
-      BlobContainerClient containerClient = blobServiceClient
-          .getBlobContainerClient(blobStorageConfig.containerName());
-
-      BlobClient blobClient = containerClient
-          .getBlobClient(blobStorageConfig.blobName());
-
-      return blobClient.downloadContent().toObject(ServiceProviderDataResponse.class);
-    })
-        .subscribeOn(Schedulers.boundedElastic())
-        .doOnError(error -> log.error("Error downloading blob: {}", error.getMessage()))
-        .doOnSuccess(data -> log.info("Successfully retrieved blob data"));
+    return Mono.just(blobServiceClient)
+        .doFirst(() -> log.info("Starting getServiceProviderData for container: {} blob: {}",
+            blobStorageConfig.containerName(),
+            blobStorageConfig.blobName()))
+        .map(serviceClient ->
+            serviceClient.getBlobContainerAsyncClient(blobStorageConfig.containerName()))
+        .map(containerClient ->
+            containerClient.getBlobAsyncClient(blobStorageConfig.blobName()))
+        .flatMap(BlobAsyncClientBase::downloadContent)
+        .map(binaryData ->
+            binaryData.toObject(ServiceProviderDataResponse.class))
+        .doOnSuccess(data -> log.info("Successfully retrieved blob data"))
+        .doOnError(error -> log.error("Error downloading blob: {}", error.getMessage(), error));
   }
 
 }
