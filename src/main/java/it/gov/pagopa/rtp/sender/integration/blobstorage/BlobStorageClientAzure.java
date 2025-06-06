@@ -1,24 +1,20 @@
 package it.gov.pagopa.rtp.sender.integration.blobstorage;
 
-import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
-import org.springframework.stereotype.Component;
-import com.azure.identity.DefaultAzureCredentialBuilder;
-import com.azure.storage.blob.BlobClient;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-
+import com.azure.storage.blob.BlobServiceAsyncClient;
 import it.gov.pagopa.rtp.sender.configuration.BlobStorageConfig;
 import it.gov.pagopa.rtp.sender.domain.registryfile.OAuth2;
 import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
 import it.gov.pagopa.rtp.sender.domain.registryfile.TechnicalServiceProvider;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 /*
- * Interact with the Azure Blob Storage using the Azure SDK Library, 
- * and performing 
+ * Interact with the Azure Blob Storage using the Azure SDK Library,
+ * and performing
  */
 @Component
 @Slf4j
@@ -31,36 +27,30 @@ import lombok.extern.slf4j.Slf4j;
 public class BlobStorageClientAzure implements BlobStorageClient {
 
   private final BlobStorageConfig blobStorageConfig;
-  private final BlobServiceClient blobServiceClient;
+  private final BlobServiceAsyncClient blobServiceClient;
 
-  public BlobStorageClientAzure(BlobStorageConfig blobStorageConfig,
-      BlobServiceClientBuilder blobServiceClientBuilder) {
-    this.blobStorageConfig = blobStorageConfig;
-    String endpoint = String.format("https://%s.blob.core.windows.net",
-        blobStorageConfig.storageAccountName());
+  public BlobStorageClientAzure(
+      @NonNull final BlobStorageConfig blobStorageConfig,
+      @NonNull final BlobServiceAsyncClient blobServiceClient) {
 
-    this.blobServiceClient = blobServiceClientBuilder
-        .endpoint(endpoint)
-        .credential(new DefaultAzureCredentialBuilder().build())
-        .buildClient();
+    this.blobStorageConfig = Objects.requireNonNull(blobStorageConfig);
+    this.blobServiceClient = Objects.requireNonNull(blobServiceClient);
   }
 
   @Override
   public Mono<ServiceProviderDataResponse> getServiceProviderData() {
-    return Mono.fromCallable(() -> {
-      log.info("Starting getServiceProviderData for container: {} blob: {}",
-          blobStorageConfig.containerName(),
-          blobStorageConfig.blobName());
+    log.info("Starting getServiceProviderData for container: {} blob: {}",
+        blobStorageConfig.containerName(),
+        blobStorageConfig.blobName());
 
-      BlobContainerClient containerClient = blobServiceClient
-          .getBlobContainerClient(blobStorageConfig.containerName());
+    final var containerClient = blobServiceClient
+        .getBlobContainerAsyncClient(blobStorageConfig.containerName());
 
-      BlobClient blobClient = containerClient
-          .getBlobClient(blobStorageConfig.blobName());
+    final var blobClient = containerClient
+        .getBlobAsyncClient(blobStorageConfig.blobName());
 
-      return blobClient.downloadContent().toObject(ServiceProviderDataResponse.class);
-    })
-        .subscribeOn(Schedulers.boundedElastic())
+    return blobClient.downloadContent()
+        .map(binaryData -> binaryData.toObject(ServiceProviderDataResponse.class))
         .doOnError(error -> log.error("Error downloading blob: {}", error.getMessage()))
         .doOnSuccess(data -> log.info("Successfully retrieved blob data"));
   }
