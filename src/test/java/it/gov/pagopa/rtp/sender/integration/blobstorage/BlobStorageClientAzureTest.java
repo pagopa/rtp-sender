@@ -87,6 +87,26 @@ class BlobStorageClientAzureTest {
     }
 
     @Test
+    void getServiceProviderData_Error() {
+        // Mock error scenario
+        when(blobServiceClient.getBlobContainerAsyncClient(anyString()))
+                .thenThrow(new RuntimeException("Test error"));
+
+        // Test
+        Mono<ServiceProviderDataResponse> result = blobStorageClientAzure.getServiceProviderData();
+
+        // Verify
+        StepVerifier.create(result)
+                .expectError(RuntimeException.class)
+                .verify();
+
+        // Verify interactions
+        verify(blobServiceClient).getBlobContainerAsyncClient("testcontainer");
+        verify(blobContainerClient, never()).getBlobAsyncClient(anyString());
+        verify(blobClient, never()).downloadContent();
+    }
+
+    @Test
     void givenBlobDownloadError_whenGetServiceProviderData_thenErrorIsLoggedAndPropagated() {
 
         when(blobServiceClient.getBlobContainerAsyncClient(anyString()))
@@ -103,5 +123,4 @@ class BlobStorageClientAzureTest {
                 error.getMessage().equals("Download failed"))
             .verify();
     }
-
 }
