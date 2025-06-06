@@ -9,7 +9,9 @@ import it.gov.pagopa.rtp.sender.service.rtp.SepaRequestToPayMapper;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -96,13 +98,19 @@ public class SendRtpHandler extends EpcApiInvokerHandler implements RequestHandl
 
     log.warn("Handling error upon sending RTP to {}", request.serviceProviderFullData().tsp().serviceEndpoint());
 
-    return Optional.of(ex)
+    final var statusCodeOptional = Optional.of(ex)
         .filter(Exceptions::isRetryExhausted)
         .map(Throwable::getCause)
         .filter(WebClientResponseException.class::isInstance)
         .map(WebClientResponseException.class::cast)
-        .map(WebClientResponseException::getStatusCode)
-        .filter(httpStatusCode -> httpStatusCode.isSameCodeAs(HttpStatus.BAD_REQUEST))
+        .map(WebClientResponseException::getStatusCode);
+
+    statusCodeOptional
+            .map(HttpStatusCode::value)
+            .map(String::valueOf)
+            .ifPresent(httpStatusCode -> MDC.put("status_code", httpStatusCode));
+
+    return statusCodeOptional.filter(httpStatusCode -> httpStatusCode.isSameCodeAs(HttpStatus.BAD_REQUEST))
         .map(statusCode -> Mono.just(request.withResponse(TransactionStatus.RJCT)))
         .orElse(Mono.just(request.withResponse(TransactionStatus.ERROR)));
   }
