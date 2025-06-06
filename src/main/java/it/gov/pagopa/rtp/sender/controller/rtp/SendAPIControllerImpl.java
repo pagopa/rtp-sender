@@ -54,6 +54,7 @@ public class SendAPIControllerImpl implements RtpsApi {
         .doOnNext(rtpSaved -> MDC.put("creditor_service_provider", rtpSaved.serviceProviderCreditor()))
         .doOnNext(rtpSaved -> MDC.put("payee_name", rtpSaved.payeeName()))
         .doOnSuccess(rtpSaved -> log.info("RTP sent with id: {}", rtpSaved.resourceID().getId()))
+        .doOnError(a -> log.error("Error creating RTP {}", a.getMessage()))
         .<ResponseEntity<Void>>map(rtp -> ResponseEntity
             .created(URI.create(serviceProviderConfig.baseUrl() + rtp.resourceID().getId()))
             .build())
@@ -63,7 +64,6 @@ public class SendAPIControllerImpl implements RtpsApi {
             ResponseEntity.unprocessableEntity().build())
         .onErrorReturn(SepaRequestException.class,
             ResponseEntity.unprocessableEntity().build())
-        .doOnError(a -> log.error("Error creating RTP {}", a.getMessage()))
         .doFinally(f -> MDC.clear());
   }
 
