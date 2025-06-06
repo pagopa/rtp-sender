@@ -14,9 +14,12 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 
-/*
- * Interact with the Azure Blob Storage using the Azure SDK Library,
- * and performing
+/**
+ * Azure-based implementation of {@link BlobStorageClient} for interacting with Azure Blob Storage using the Azure SDK.
+ * <p>
+ * This component is responsible for downloading and deserializing JSON blob content into Java objects
+ * defined in the domain (e.g., {@link ServiceProviderDataResponse}).
+ * </p>
  */
 @Component
 @Slf4j
@@ -31,6 +34,14 @@ public class BlobStorageClientAzure implements BlobStorageClient {
   private final BlobStorageConfig blobStorageConfig;
   private final BlobServiceAsyncClient blobServiceClient;
 
+
+  /**
+   * Constructs a new {@link BlobStorageClientAzure} instance.
+   *
+   * @param blobStorageConfig      the configuration for accessing the Blob Storage (container and blob name)
+   * @param blobServiceClient      the asynchronous Azure Blob Storage client
+   * @throws NullPointerException if any argument is {@code null}
+   */
   public BlobStorageClientAzure(
       @NonNull final BlobStorageConfig blobStorageConfig,
       @NonNull final BlobServiceAsyncClient blobServiceClient) {
@@ -39,6 +50,20 @@ public class BlobStorageClientAzure implements BlobStorageClient {
     this.blobServiceClient = Objects.requireNonNull(blobServiceClient);
   }
 
+
+  /**
+   * Retrieves and deserializes the blob content from Azure Blob Storage into a {@link ServiceProviderDataResponse}.
+   * <p>
+   * This method performs the following:
+   * <ul>
+   *   <li>Retrieves the target container and blob client based on configuration</li>
+   *   <li>Downloads the blob content as binary data</li>
+   *   <li>Converts the binary data to a {@link ServiceProviderDataResponse} object</li>
+   * </ul>
+   * </p>
+   *
+   * @return a {@link Mono} emitting the deserialized {@link ServiceProviderDataResponse}
+   */
   @Override
   public Mono<ServiceProviderDataResponse> getServiceProviderData() {
     log.info("Starting getServiceProviderData for container: {} blob: {}",
