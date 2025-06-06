@@ -17,9 +17,7 @@ spring:
 
       eventhubs:
         connection-string: ${GDP_EVENTHUB_CONNECTION_STRING:}
-        processor:
-          checkpoint-store:
-            connection-string: ${GDP_STORAGE_CONNECTION_STRING:}
+        event-hub-name: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
 
     stream:
       bindings:
