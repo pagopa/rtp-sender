@@ -1,11 +1,10 @@
 package it.gov.pagopa.rtp.sender.controller.rtp;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.springSecurity;
 
 import it.gov.pagopa.rtp.sender.activateClient.model.ErrorDto;
@@ -19,12 +18,9 @@ import it.gov.pagopa.rtp.sender.domain.errors.SepaRequestException;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.model.generated.send.CreateRtpDto;
-import it.gov.pagopa.rtp.sender.model.generated.send.PayeeDto;
-import it.gov.pagopa.rtp.sender.model.generated.send.PayerDto;
-import it.gov.pagopa.rtp.sender.model.generated.send.PaymentNoticeDto;
+import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
-import it.gov.pagopa.rtp.sender.utils.Users.RtpSenderWriter;
+import it.gov.pagopa.rtp.sender.utils.Users.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,7 +40,9 @@ import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = {SendAPIControllerImpl.class})
@@ -67,6 +65,9 @@ class SendAPIControllerImplTest {
   private ApplicationContext context;
 
   private Rtp expectedRtp;
+
+  @Autowired
+  private SendAPIControllerImpl sendAPIController;
 
   @BeforeEach
   void setup() {
@@ -347,6 +348,69 @@ class SendAPIControllerImplTest {
         .expectStatus().is5xxServerError();
   }
 
+  @Test
+  @RtpSenderReader
+  void givenValidId_whenFindRtpById_thenReturnDtoInResponseEntityOk() {
+    UUID requestId = UUID.randomUUID();
+    UUID rtpId = UUID.randomUUID();
+    Rtp rtp = mock(Rtp.class);
+    RtpDto dto = mock(RtpDto.class);
+
+    when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.just(rtp));
+    when(rtpDtoMapper.toRtpDto(rtp)).thenReturn(dto);
+
+    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
+            .expectNextMatches(response ->
+                    response.getStatusCode().is2xxSuccessful() &&
+                            response.getBody().equals(dto)
+            )
+            .verifyComplete();
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenNonexistentId_whenFindRtpById_thenReturnNotFound() {
+    UUID requestId = UUID.randomUUID();
+    UUID rtpId = UUID.randomUUID();
+
+    when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.error(new RtpNotFoundException(rtpId)));
+
+    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
+            .expectNextMatches(response ->
+                    response.getStatusCode().is4xxClientError() &&
+                            response.getStatusCode().value() == 404
+            )
+            .verifyComplete();
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenUnexpectedError_whenFindRtpById_thenErrorIsLogged() {
+    UUID requestId = UUID.randomUUID();
+    UUID rtpId = UUID.randomUUID();
+
+    when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.error(new RuntimeException("Something went wrong")));
+
+    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
+            .expectErrorMatches(throwable ->
+                    throwable instanceof RuntimeException &&
+                            throwable.getMessage().equals("Something went wrong")
+            )
+            .verify();
+  }
+
+  @Test
+  @WithMockUser(username = "unauthorized")
+  void whenUserWithoutRoleAccessesFindRtpById_thenAccessDenied() {
+    UUID requestId = UUID.randomUUID();
+    UUID rtpId = UUID.randomUUID();
+
+    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
+            .expectErrorSatisfies(error -> assertThat(error)
+                    .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                    .hasMessageContaining("Access Denied"))
+            .verify();
+  }
 
   private CreateRtpDto generateSendRequest() {
 
