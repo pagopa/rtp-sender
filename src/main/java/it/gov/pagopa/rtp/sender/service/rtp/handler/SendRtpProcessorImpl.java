@@ -4,6 +4,7 @@ import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.utils.ExceptionUtils;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -78,7 +79,12 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
   @Override
   public Mono<Rtp> sendRtpToServiceProviderDebtor(@NonNull final Rtp rtpToSend) {
     return Mono.just(rtpToSend)
-        .doFirst(() -> log.info("Sending RTP to {}", rtpToSend.serviceProviderDebtor()))
+        .doFirst(() -> {
+          MDC.put("debtor_service_provider", rtpToSend.serviceProviderDebtor());
+          MDC.put("creditor_service_provider", rtpToSend.serviceProviderCreditor());
+          MDC.put("payee_name", rtpToSend.payeeName());
+          log.info("Sending RTP to service provider debtor: {}", rtpToSend.serviceProviderDebtor());
+        })
         .doOnNext(rtp -> log.debug("Creating EPC request."))
         .map(EpcRequest::of)
         .flatMap(this::handleIntermediateSteps)
@@ -92,7 +98,8 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
         .doOnSuccess(rtpSent -> log.info("RTP sent to {} with id: {}",
             rtpSent.serviceProviderDebtor(), rtpSent.resourceID().getId()))
         .doOnError(error -> log.error("Error sending RTP to {}: {}",
-            rtpToSend.serviceProviderDebtor(), error.getMessage()));
+            rtpToSend.serviceProviderDebtor(), error.getMessage()))
+        .doFinally(signal -> MDC.clear());
   }
 
 
@@ -116,6 +123,12 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
   public Mono<Rtp> sendRtpCancellationToServiceProviderDebtor(@NonNull final Rtp rtpToSend) {
     return Mono.just(rtpToSend)
         .doFirst(() -> log.info("Sending RTP cancellation to {}", rtpToSend.serviceProviderDebtor()))
+        .doFirst(() -> {
+          MDC.put("debtor_service_provider", rtpToSend.serviceProviderDebtor());
+          MDC.put("creditor_service_provider", rtpToSend.serviceProviderCreditor());
+          MDC.put("payee_name", rtpToSend.payeeName());
+          log.info("Cancelling RTP to service provider debtor: {}", rtpToSend.serviceProviderDebtor());
+        })
         .doOnNext(rtp -> log.debug("Creating EPC request for cancellation."))
         .map(EpcRequest::of)
         .flatMap(this::handleIntermediateSteps)
@@ -129,7 +142,8 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
         .doOnSuccess(rtpSent -> log.info("RTP cancellation sent to {} with id: {}",
             rtpSent.serviceProviderDebtor(), rtpSent.resourceID().getId()))
         .doOnError(error -> log.error("Error sending RTP cancellation to {}: {}",
-            rtpToSend.serviceProviderDebtor(), error.getMessage()));
+            rtpToSend.serviceProviderDebtor(), error.getMessage()))
+        .doFinally(signal -> MDC.clear());
   }
 
 
