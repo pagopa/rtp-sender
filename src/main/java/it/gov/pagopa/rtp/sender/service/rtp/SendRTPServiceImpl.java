@@ -83,7 +83,7 @@ public class SendRTPServiceImpl implements SendRTPService {
             rtp.payerId(),
             serviceProviderConfig.activation().apiVersion())
         .doFirst(() -> log.info("Finding activation data for payerId: {}", rtp.payerId()))
-        .doOnSuccess(act -> log.info("Activation data found. payerId: {}, serviceProviderDebtor: {}", rtp.payerId(), rtp.serviceProviderDebtor()))
+        .doOnSuccess(act -> log.info("Activation data found for the requested payerId"))
         .doOnError(
             error -> log.error("Error finding activation data for payerId: {}", rtp.payerId(),
                 error))
