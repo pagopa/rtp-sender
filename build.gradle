@@ -72,6 +72,7 @@ dependencies {
 
 	// Azure Event Hub
 	implementation("com.azure.spring:spring-cloud-azure-starter-stream-eventhubs:${springCloudAzureVersion}")
+	implementation("org.springframework.cloud:spring-cloud-starter-stream-kafka:4.3.0")
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
