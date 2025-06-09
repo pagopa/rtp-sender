@@ -16,7 +16,6 @@ import it.gov.pagopa.rtp.sender.utils.TokenInfo;
 import java.net.URI;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
