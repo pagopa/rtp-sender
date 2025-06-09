@@ -9,6 +9,7 @@ import it.gov.pagopa.rtp.sender.domain.errors.SepaRequestException;
 import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.model.generated.send.CreateRtpDto;
+import it.gov.pagopa.rtp.sender.model.generated.send.RtpDto;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import it.gov.pagopa.rtp.sender.utils.TokenInfo;
 
@@ -78,6 +79,12 @@ public class SendAPIControllerImpl implements RtpsApi {
         .onErrorReturn(RtpNotFoundException.class,
             ResponseEntity.notFound().build())
         .doOnError(a -> log.error("Error cancelling RTP {}", a.getMessage()));
+  }
+
+
+  @Override
+  public Mono<ResponseEntity<RtpDto>> findRtpById(UUID requestId, UUID rtpId, String version, ServerWebExchange exchange) {
+    return Mono.error(new UnsupportedOperationException("Not implemented yet"));
   }
 
 }

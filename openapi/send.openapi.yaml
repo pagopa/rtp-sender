@@ -95,6 +95,49 @@ paths:
           #description: Unexpected error
           $ref: '#/components/responses/Error'
 
+  /rtps/{rtpId}:
+    get:
+      operationId: findRtpById
+      summary: Retrieve a RTP by its ID
+      description: Returns RTP data associated with the given ID
+      tags: [ rtps ]
+      security:
+        - oAuth2: [ admin_rtp_send, read_rtp_send ]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/Version'
+        - $ref: '#/components/parameters/RtpId'
+      responses:
+        "200":
+          $ref: '#/components/responses/findRtp'
+        "400":
+          #description: Bad request.
+          $ref: '#/components/responses/Error'
+        "401":
+          #description: Wrong credentials.
+          $ref: '#/components/responses/Error'
+        "403":
+          #description: Forbidden.
+          $ref: '#/components/responses/Error'
+        "404":
+          #description: Not found.
+          $ref: '#/components/responses/Error'
+        "406":
+          #description: Not acceptable. Did you require application/json?
+          $ref: '#/components/responses/Error'
+        "429":
+          #description: Too many requests
+          $ref: '#/components/responses/Error'
+        "500":
+          #description: Server error.
+          $ref: '#/components/responses/Error'
+        "504":
+          #description: Timeout communicating with Debtor Service Provider.
+          $ref: '#/components/responses/Error'
+        default:
+          #description: Unexpected error.
+          $ref: '#/components/responses/Error'
+
 components:
   schemas:
     AccessControlAllowOrigin:
@@ -370,6 +413,166 @@ components:
         - paymentNotice
         - payer
         - payee
+
+    Rtp:
+      type: object
+      properties:
+        resourceID:
+          type: string
+          format: uuid
+          minLength: 36
+          maxLength: 36
+          pattern: "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        noticeNumber:
+          type: string
+          minLength: 18
+          maxLength: 18
+          pattern: "^\\d{18}$"
+          example: "311111111112222123"
+        amount:
+          type: number
+          format: double
+          example: 1050.75
+        description:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: "^[ -~]{1,255}$"
+          example: "Paga questo avviso"
+        expiryDate:
+          type: string
+          format: date
+          minLength: 10
+          maxLength: 30
+          pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+          example: "2025-12-31"
+        payerName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: "^[ -~]{1,255}$"
+          example: "Pigrolo"
+        payerId:
+          type: string
+          minLength: 11
+          maxLength: 16
+          pattern: "^(([A-Z]{6}\\d{2}[A-Z]\\d{2}[A-Z]\\d{3}[A-Z])|(\\d{11}))$"
+          example: "RSSMRA85T10A562S"
+        payeeName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: "^[ -~]{1,255}$"
+          example: "Comune di Roma"
+        payeeId:
+          type: string
+          minLength: 11
+          maxLength: 16
+          pattern: "\\d{11}|\\d{16}"
+          example: "77777777777"
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: "^[ -~]{1,255}$"
+          example: "TARI 2025"
+        savingDateTime:
+          type: string
+          format: date-time
+          minLength: 10
+          maxLength: 30
+          pattern: "^((?:(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?))(Z|[\\+-]\\d{2}:\\d{2})?)$"
+          example: "2025-06-06T08:40:16.781Z"
+        serviceProviderDebtor:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: "^[ -~]{1,100}$"
+          example: "FAKESP01"
+        iban:
+          type: string
+          minLength: 15
+          maxLength: 34
+          pattern: "^[A-Z]{2}\\d{2}[A-Z0-9]{1,30}$"
+          example: "IT60X0542811101000000123456"
+        payTrxRef:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: "^[ -~]{1,64}$"
+          example: "ABC/124"
+        flgConf:
+          type: string
+          minLength: 1
+          maxLength: 10
+          pattern: "^[a-zA-Z_]{1,10}$"
+          example: "flgConf"
+        status:
+          $ref: '#/components/schemas/RtpStatus'
+        serviceProviderCreditor:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: "^[ -~]{1,100}$"
+          example: "PA123456789"
+        events:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Event'
+          example:
+            - timestamp: "2025-06-06T08:40:16.781Z"
+              precStatus: "CREATED"
+              triggerEvent: "CREATE_RTP"
+
+    Event:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          maxLength: 30
+          pattern: "^((?:(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?))(Z|[\\+-]\\d{2}:\\d{2})?)$"
+        precStatus:
+          $ref: '#/components/schemas/RtpStatus'
+        triggerEvent:
+          $ref: '#/components/schemas/RtpEvent'
+      required:
+        - timestamp
+        - triggerEvent
+
+    RtpStatus:
+      type: string
+      enum:
+        - CREATED
+        - SENT
+        - CANCELLED
+        - ACCEPTED
+        - REJECTED
+        - USER_ACCEPTED
+        - USER_REJECTED
+        - PAYED
+        - ERROR_SEND
+        - CANCELLED_ACCR
+        - CANCELLED_REJECTED
+        - ERROR_CANCEL
+
+    RtpEvent:
+      type: string
+      enum:
+        - CREATE_RTP
+        - SEND_RTP
+        - CANCEL_RTP
+        - ACCEPT_RTP
+        - REJECT_RTP
+        - USER_ACCEPT_RTP
+        - USER_REJECT_RTP
+        - PAY_RTP
+        - ERROR_SEND_RTP
+        - ERROR_CANCEL_RTP
+        - CANCEL_RTP_ACCR
+        - CANCEL_RTP_REJECTED
   
     MalformedRequestErrorResponse:
       type: object
@@ -435,6 +638,37 @@ components:
           required: false
           schema:
             $ref: '#/components/schemas/RetryAfter'
+
+    findRtp:
+      description: RTP successfully retrieved by ID.
+      headers:
+        Access-Control-Allow-Origin:
+          description: |
+            Indicates whether the response can be shared with requesting code
+            from the given origin.
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccessControlAllowOrigin'
+        RateLimit-Limit:
+          description: The number of allowed requests in the current period.
+          required: false
+          schema:
+            $ref: '#/components/schemas/RateLimitLimit'
+        RateLimit-Reset:
+          description: The number of seconds left in the current period.
+          required: false
+          schema:
+            $ref: '#/components/schemas/RateLimitReset'
+        Retry-After:
+          description: |
+            The number of seconds to wait before allowing a follow-up request.
+          required: false
+          schema:
+            $ref: '#/components/schemas/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Rtp'
 
     Error:
       description: Response returned when an error occured.
