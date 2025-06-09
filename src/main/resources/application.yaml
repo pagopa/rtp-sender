@@ -17,23 +17,38 @@ spring:
 
       eventhubs:
         connection-string: ${GDP_EVENTHUB_CONNECTION_STRING:}
-        event-hub-name: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
 
     stream:
+      kafka:
+        binder:
+          configuration:
+            security.protocol: SASL_SSL
+            sasl.mechanism: PLAIN
+
       bindings:
         gdpMessageConsumer-in-0:
           destination: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
           group: $Default
           content-type: application/json
+          binder: gdp-consumer
+          consumer:
+            max-attempts: 1
 
-      eventhubs:
-        bindings:
-          gdpMessageConsumer-in-0:
-            consumer:
-              checkpoint:
-                mode: MANUAL
-      function:
-        definition: gdpMessageConsumer
+      binders:
+        gdp-consumer:
+          type: kafka
+          environment.spring.cloud.stream.kafka:
+            binder:
+              auto-create-topics: false
+              brokers: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}.servicebus.windows.net:9093
+              configuration:
+                sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="${GDP_EVENTHUB_CONNECTION_STRING:}";
+              consumerProperties:
+                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+    function:
+      definition: gdpMessageConsumer
 
 activation.base-url: ${BASE_URL:http://localhost}
 
