@@ -30,12 +30,12 @@ spring:
           destination: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
           group: $Default
           content-type: application/json
-          binder: gdp-consumer
+          binder: gdpconsumer
           consumer:
             max-attempts: 1
 
       binders:
-        gdp-consumer:
+        gdpconsumer:
           type: kafka
           environment.spring.cloud.stream.kafka:
             binder:
