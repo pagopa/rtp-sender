@@ -50,9 +50,9 @@ public class SendAPIControllerImpl implements RtpsApi {
         .flatMap(rtpDto -> TokenInfo.getTokenSubject()
             .map(sub -> rtpDtoMapper.toRtpWithServiceProviderCreditor(rtpDto, sub)))
         .flatMap(sendRTPService::send)
-        .doOnNext(rtpSaved -> MDC.put("debtor_service_provider", rtpSaved.serviceProviderDebtor()))
-        .doOnNext(rtpSaved -> MDC.put("creditor_service_provider", rtpSaved.serviceProviderCreditor()))
-        .doOnNext(rtpSaved -> MDC.put("payee_name", rtpSaved.payeeName()))
+//        .doOnNext(rtpSaved -> MDC.put("debtor_service_provider", rtpSaved.serviceProviderDebtor()))
+//        .doOnNext(rtpSaved -> MDC.put("creditor_service_provider", rtpSaved.serviceProviderCreditor()))
+//        .doOnNext(rtpSaved -> MDC.put("payee_name", rtpSaved.payeeName()))
         .doOnSuccess(rtpSaved -> log.info("RTP sent with id: {}", rtpSaved.resourceID().getId()))
         .doOnError(a -> log.error("Error creating RTP {}", a.getMessage()))
         .<ResponseEntity<Void>>map(rtp -> ResponseEntity
@@ -63,8 +63,8 @@ public class SendAPIControllerImpl implements RtpsApi {
         .onErrorReturn(ServiceProviderNotFoundException.class,
             ResponseEntity.unprocessableEntity().build())
         .onErrorReturn(SepaRequestException.class,
-            ResponseEntity.unprocessableEntity().build())
-        .doFinally(f -> MDC.clear());
+            ResponseEntity.unprocessableEntity().build());
+//        .doFinally(f -> MDC.clear());
   }
 
 
