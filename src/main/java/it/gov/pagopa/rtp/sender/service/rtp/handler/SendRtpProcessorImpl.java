@@ -79,7 +79,6 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
   @Override
   public Mono<Rtp> sendRtpToServiceProviderDebtor(@NonNull final Rtp rtpToSend) {
     return Mono.just(rtpToSend)
-//        .doFirst(() -> log.info("Sending RTP to {}", rtpToSend.serviceProviderDebtor()))
         .doFirst(() -> {
           MDC.put("debtor_service_provider", rtpToSend.serviceProviderDebtor());
           MDC.put("creditor_service_provider", rtpToSend.serviceProviderCreditor());

@@ -114,9 +114,6 @@ public class SendRTPServiceImpl implements SendRTPService {
         .findById(rtpId)
         .doFirst(() -> log.info("Retrieving RTP with id {}", rtpId.getId()))
         .switchIfEmpty(Mono.error(() -> new RtpNotFoundException(rtpId.getId())))
-        .doOnSuccess(rtp -> MDC.put("debtor_service_provider", rtp.serviceProviderDebtor()))
-        .doOnSuccess(rtp -> MDC.put("creditor_service_provider", rtp.serviceProviderCreditor()))
-        .doOnSuccess(rtp -> MDC.put("payee_name", rtp.payeeName()))
         .doOnSuccess(
             rtp -> log.info("RTP retrieved with id {} and status {}", rtp.resourceID().getId(),
                 rtp.status()))
@@ -130,8 +127,7 @@ public class SendRTPServiceImpl implements SendRTPService {
         .doOnNext(rtp -> log.debug("Setting status of RTP with id {} to {}", rtp.resourceID().getId(), RtpStatus.CANCELLED))
         .flatMap(rtpRepository::save)
         .doOnSuccess(rtpSaved -> log.info("RTP saved with id: {}", rtpSaved.resourceID().getId()))
-        .doOnError(error -> log.error("Error cancel RTP: {}", error.getMessage(), error))
-        .doFinally(f -> MDC.clear());
+        .doOnError(error -> log.error("Error cancel RTP: {}", error.getMessage(), error));
 
   }
 
