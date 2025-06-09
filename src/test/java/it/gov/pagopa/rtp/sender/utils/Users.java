@@ -24,6 +24,7 @@ public class Users {
   public static final String ACTIVATION_WRITE_ROLE = "write_rtp_activations";
   public static final String ACTIVATION_READ_ROLE = "read_rtp_activations";
   public static final String SENDER_WRITER_ROLE = "write_rtp_send";
+  public static final String SENDER_READ_ROLE = "read_rtp_send";
 
   @Retention(RetentionPolicy.RUNTIME)
   @WithMockUser(value = SERVICE_PROVIDER_ID, roles = ACTIVATION_WRITE_ROLE)
@@ -44,6 +45,17 @@ public class Users {
 
     String[] roles() default { SENDER_WRITER_ROLE };
   }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @WithSecurityContext(factory = RtpSenderReaderSecurityContextFactory.class)
+  public @interface RtpSenderReader {
+    String username() default SERVICE_PROVIDER_ID;
+
+    String subject() default SUBJECT;
+
+    String[] roles() default { SENDER_READ_ROLE };
+  }
+
 
   public static class RtpSenderWriterSecurityContextFactory implements WithSecurityContextFactory<RtpSenderWriter> {
     @Override
@@ -67,6 +79,34 @@ public class Users {
           jwt,
           authorities,
           annotation.username());
+      context.setAuthentication(auth);
+
+      return context;
+    }
+  }
+
+  public static class RtpSenderReaderSecurityContextFactory implements WithSecurityContextFactory<RtpSenderReader> {
+    @Override
+    public SecurityContext createSecurityContext(RtpSenderReader annotation) {
+      SecurityContext context = SecurityContextHolder.createEmptyContext();
+
+      List<GrantedAuthority> authorities = Arrays.stream(annotation.roles())
+              .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+              .collect(Collectors.toList());
+
+      var claims = new HashMap<String, Object>();
+      claims.put("sub", annotation.subject());
+
+      Jwt jwt = Jwt.withTokenValue("test-token")
+              .header("alg", "none")
+              .claims(c -> c.putAll(claims))
+              .claim("username", annotation.username())
+              .build();
+
+      JwtAuthenticationToken auth = new JwtAuthenticationToken(
+              jwt,
+              authorities,
+              annotation.username());
       context.setAuthentication(auth);
 
       return context;
