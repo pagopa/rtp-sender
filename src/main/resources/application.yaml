@@ -24,11 +24,15 @@ spring:
           configuration:
             security.protocol: SASL_SSL
             sasl.mechanism: PLAIN
+        bindings:
+          gdpMessageConsumer-in-0:
+            consumer:
+              start-offset: earliest
 
       bindings:
         gdpMessageConsumer-in-0:
-          destination: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
-          group: $Default
+          destination: rtp-events
+          group: rtp-events-processor
           content-type: application/json
           binder: gdpconsumer
           consumer:
