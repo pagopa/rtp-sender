@@ -86,7 +86,7 @@ public class SendAPIControllerImpl implements RtpsApi {
   }
 
   @Override
-  @PreAuthorize("hasRole('write_rtp_send')")
+  @PreAuthorize("hasRole('read_rtp_send')")
   public Mono<ResponseEntity<RtpDto>> findRtpById(UUID requestId, UUID rtpId,
                                                   String version, ServerWebExchange exchange) {
     log.info("Received request to find RTP by id. requestId: {}, rtpId: {}", requestId, rtpId);

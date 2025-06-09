@@ -147,7 +147,8 @@ public class SendRTPServiceImpl implements SendRTPService {
             .doOnSuccess(rtp -> MDC.put("debtor_service_provider", rtp.serviceProviderDebtor()))
             .doOnSuccess(rtp -> MDC.put("creditor_service_provider", rtp.serviceProviderCreditor()))
             .doOnSuccess(rtp -> MDC.put("payee_name", rtp.payeeName()))
-            .doOnSuccess(rtp -> log.info("Successfully retrieved RTP with id: {}", rtp.resourceID().getId()));
+            .doOnSuccess(rtp -> log.info("Successfully retrieved RTP with id: {}", rtp.resourceID().getId()))
+            .doFinally(f -> MDC.clear());
   }
 
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {
