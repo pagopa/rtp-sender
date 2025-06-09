@@ -83,7 +83,7 @@ public class SendRTPServiceImpl implements SendRTPService {
             rtp.payerId(),
             serviceProviderConfig.activation().apiVersion())
         .doFirst(() -> log.info("Finding activation data for payerId: {}", rtp.payerId()))
-        .doOnSuccess(act -> log.info("Activation data found for payerId: {}", rtp.payerId()))
+        .doOnSuccess(act -> log.info("Activation data found for the requested payerId"))
         .doOnError(
             error -> log.error("Error finding activation data for payerId: {}", rtp.payerId(),
                 error))
@@ -114,9 +114,6 @@ public class SendRTPServiceImpl implements SendRTPService {
         .findById(rtpId)
         .doFirst(() -> log.info("Retrieving RTP with id {}", rtpId.getId()))
         .switchIfEmpty(Mono.error(() -> new RtpNotFoundException(rtpId.getId())))
-        .doOnSuccess(rtp -> MDC.put("debtor_service_provider", rtp.serviceProviderDebtor()))
-        .doOnSuccess(rtp -> MDC.put("creditor_service_provider", rtp.serviceProviderCreditor()))
-        .doOnSuccess(rtp -> MDC.put("payee_name", rtp.payeeName()))
         .doOnSuccess(
             rtp -> log.info("RTP retrieved with id {} and status {}", rtp.resourceID().getId(),
                 rtp.status()))
@@ -130,8 +127,7 @@ public class SendRTPServiceImpl implements SendRTPService {
         .doOnNext(rtp -> log.debug("Setting status of RTP with id {} to {}", rtp.resourceID().getId(), RtpStatus.CANCELLED))
         .flatMap(rtpRepository::save)
         .doOnSuccess(rtpSaved -> log.info("RTP saved with id: {}", rtpSaved.resourceID().getId()))
-        .doOnError(error -> log.error("Error cancel RTP: {}", error.getMessage(), error))
-        .doFinally(f -> MDC.clear());
+        .doOnError(error -> log.error("Error cancel RTP: {}", error.getMessage(), error));
 
   }
 
