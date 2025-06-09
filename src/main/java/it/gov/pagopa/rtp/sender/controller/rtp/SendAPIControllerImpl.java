@@ -88,7 +88,7 @@ public class SendAPIControllerImpl implements RtpsApi {
 
   @Override
   public Mono<ResponseEntity<RtpDto>> findRtpById(UUID requestId, UUID rtpId, String version, ServerWebExchange exchange) {
-    return null;
+    return Mono.error(new UnsupportedOperationException("Not implemented yet"));
   }
 
 }
