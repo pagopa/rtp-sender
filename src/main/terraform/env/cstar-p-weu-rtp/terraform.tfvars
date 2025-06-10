@@ -49,7 +49,6 @@ rtp_environment_secrets = {
   JKS_TRUST_STORE_PATH                  : "jks-trust-store-path"
   JKS_TRUST_STORE_PASSWORD              : "jks-trust-store-password"
   GDP_EVENTHUB_CONNECTION_STRING        : "gdp-eventhub-connection-string"
-  GDP_STORAGE_CONNECTION_STRING         : "gdp-storage-connection-string"
 }
 
 rtp_environment_configs = {
