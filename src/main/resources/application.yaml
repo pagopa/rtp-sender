@@ -15,9 +15,6 @@ spring:
       monitor:
         connection-string: ${APPLICATIONINSIGHTS_CONNECTION_STRING:}
 
-      eventhubs:
-        connection-string: ${GDP_EVENTHUB_CONNECTION_STRING:}
-
     stream:
       kafka:
         binder:
@@ -31,8 +28,8 @@ spring:
 
       bindings:
         gdpMessageConsumer-in-0:
-          destination: rtp-events
-          group: rtp-events-processor
+          destination: ${GDP_EVENTHUB_TOPIC:rtp-events}
+          group: ${GDP_EVENTHUB_CONSUMER_GROUP:rtp-events-processor}
           content-type: application/json
           binder: gdpconsumer
           consumer:
