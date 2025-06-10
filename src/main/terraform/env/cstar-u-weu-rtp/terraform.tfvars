@@ -68,4 +68,6 @@ rtp_environment_configs = {
   AZURE_BLOB_NAME                         : "serviceregistry.json"
   CALLBACK_BASE_URL                       : "https://api-rtp-cb.uat.cstar.pagopa.it/rtp/cb"
   GDP_EVENTHUB_NAME                       : "pagopa-u-itn-gps-rtp-evh"
+  GDP_EVENTHUB_TOPIC                      : "rtp-events"
+  GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
 }
