@@ -18,7 +18,7 @@ import reactor.test.StepVerifier;
 
 @SpringBootTest
 @Import(TestChannelBinderConfiguration.class)
-public class GdpEventHandlerTest {
+class GdpEventHandlerTest {
 
   @Value("${test.kafka.topic}")
   private String topic;
@@ -30,13 +30,13 @@ public class GdpEventHandlerTest {
 
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     gdpEventHandler = new GdpEventHandler();
   }
 
 
   @Test
-  public void givenValidGdpMessage_whenConsumed_thenProcessedSuccessfully() {
+  void givenValidGdpMessage_whenConsumed_thenProcessedSuccessfully() {
     final var validMessage = createValidGdpMessage(1L);
     final var message = createKafkaMessage(validMessage, 0, 123L);
 
@@ -49,7 +49,7 @@ public class GdpEventHandlerTest {
   }
 
   @Test
-  public void givenMultipleMessages_whenConsumed_thenAllProcessed() {
+  void givenMultipleMessages_whenConsumed_thenAllProcessed() {
     final var msg1 = createValidGdpMessage(1L);
     final var msg2 = createValidGdpMessage(2L);
 
