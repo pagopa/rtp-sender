@@ -288,12 +288,6 @@ class SendRTPServiceTest {
   void givenValidId_whenFindRtp_thenReturnRtpMono() {
     UUID rtpId = UUID.randomUUID();
     Rtp mockRtp = mock(Rtp.class);
-    ResourceID expectedId = new ResourceID(rtpId);
-
-    when(mockRtp.resourceID()).thenReturn(expectedId);
-    when(mockRtp.serviceProviderDebtor()).thenReturn("DebtorSP");
-    when(mockRtp.serviceProviderCreditor()).thenReturn("CreditorSP");
-    when(mockRtp.payeeName()).thenReturn("PayeeName");
 
     when(rtpRepository.findById(argThat(id -> rtpId.equals(id.getId()))))
             .thenReturn(Mono.just(mockRtp));
