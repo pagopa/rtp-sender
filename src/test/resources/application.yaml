@@ -1,6 +1,8 @@
 logging.level.org.springframework.security: DEBUG
 activation.baseUrl: http://localhost:8080/
 
+test.kafka.topic: test-topic
+
 spring:
   cloud:
     azure:
@@ -12,7 +14,7 @@ spring:
     stream:
       bindings:
         gdpMessageConsumer-in-0:
-          destination: test-destination
+          destination: ${test.kafka.topic}
           group: test-group
           content-type: application/json
           binder: test-binder
