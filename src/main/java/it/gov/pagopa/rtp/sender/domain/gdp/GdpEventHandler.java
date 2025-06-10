@@ -26,7 +26,7 @@ public class GdpEventHandler {
         .doOnNext(message -> log.info(
             "New GDP message received: '{}', partition key: {}, sequence number: {}, offset: {}, enqueued time: {}",
             message.getPayload(),
-            message.getHeaders().get(EventHubsHeaders.PARTITION_KEY),
+            message.getHeaders().get(AzureHeaders.PARTITION_KEY),
             message.getHeaders().get(EventHubsHeaders.SEQUENCE_NUMBER),
             message.getHeaders().get(EventHubsHeaders.OFFSET),
             message.getHeaders().get(EventHubsHeaders.ENQUEUED_TIME)
