@@ -32,7 +32,6 @@ import it.gov.pagopa.rtp.sender.utils.LoggingUtils;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -139,12 +138,8 @@ public class SendRTPServiceImpl implements SendRTPService {
             .doFirst(() -> log.info("Starting retrieval of RTP with id: {}", rtpId))
             .doOnNext(id -> log.debug("Converted UUID to ResourceID: {}", id))
             .flatMap(this.rtpRepository::findById)
-            .switchIfEmpty(Mono.error(new RtpNotFoundException(rtpId)))
-            .doOnSuccess(rtp -> MDC.put("debtor_service_provider", rtp.serviceProviderDebtor()))
-            .doOnSuccess(rtp -> MDC.put("creditor_service_provider", rtp.serviceProviderCreditor()))
-            .doOnSuccess(rtp -> MDC.put("payee_name", rtp.payeeName()))
-            .doOnSuccess(rtp -> log.info("Successfully retrieved RTP with id: {}", rtp.resourceID().getId()))
-            .doFinally(f -> MDC.clear());
+            .doOnNext(rtp -> log.info("RTP retrieved with id: {}", rtpId))
+            .switchIfEmpty(Mono.error(new RtpNotFoundException(rtpId)));
   }
 
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {
