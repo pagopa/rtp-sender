@@ -18,54 +18,6 @@ import org.springframework.stereotype.Component;
 @Component("gdpMapper")
 public class GdpMapper {
 
-  /*
-  public record Rtp(String noticeNumber, BigDecimal amount, String description, LocalDate expiryDate,
-                  String payerId, String payerName, String payeeName, String payeeId,
-                  ResourceID resourceID,
-                  String subject, LocalDateTime savingDateTime, String serviceProviderDebtor,
-                  String iban,
-                  String payTrxRef, String flgConf, RtpStatus status,
-                  String serviceProviderCreditor, List<Event> events)
-   */
-
-  /*
-  public record GdpMessage(
-    long id,
-    @NotNull Operation operation,
-    long timestamp,
-    String iuv,
-    String subject,
-    String description,
-    String ecTaxCode,
-    String debtorTaxCode,
-    String nav,
-    LocalDate dueDate,
-    @Positive int amount,
-    Status status,
-    String pspCode,
-    String pspTaxCode
-) {
-
-  public enum Operation {
-    CREATE,
-    UPDATE,
-    DELETE
-  }
-
-  public enum Status {
-    VALID,
-    PARTIALLY_VALID,
-    PAID,
-    EXPIRED,
-    INVALID,
-    DRAFT,
-    PUBLISHED
-  }
-
-}
-   */
-
-
   @Nullable
   public Rtp toRtp(@Nullable final GdpMessage gdpMessage) {
     if (gdpMessage == null) {
