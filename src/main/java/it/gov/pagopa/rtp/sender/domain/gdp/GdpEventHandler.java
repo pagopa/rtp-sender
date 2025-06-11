@@ -14,12 +14,16 @@ import reactor.core.publisher.Mono;
 
 
 /**
- * Configuration class for handling GDP (Generic Digital Payment) messages from a Kafka topic.
- * This class defines a reactive message consumer that processes incoming GDP messages,
- * logs their details, and handles any processing errors.
+ * Configuration class that defines the reactive Kafka consumer for GDP messages.
+ * <p>
+ * This class registers a Spring Cloud Function bean named {@code gdpMessageConsumer} that consumes
+ * Kafka messages containing {@link GdpMessage} payloads. It uses a {@link GdpMapper} to transform
+ * incoming GDP messages into RTP payloads and logs relevant processing details.
+ * </p>
  *
- * <p>The consumer is registered as a Spring Cloud Function with binding name "gdpMessageConsumer".
- * It processes messages in a reactive stream using Project Reactor's Flux and Mono types.</p>
+ * <p>
+ * The consumer leverages Project Reactor's {@link Flux} and {@link Mono} for non-blocking, asynchronous processing.
+ * </p>
  */
 @Configuration("gdpEventHandler")
 @RegisterReflectionForBinding(GdpMessage.class)
@@ -28,38 +32,36 @@ public class GdpEventHandler {
 
   private final GdpMapper gdpMapper;
 
-
+  /**
+   * Constructs the GDP event handler with the provided mapper.
+   *
+   * @param gdpMapper The mapper responsible for transforming GDP messages to RTP format.
+   * @throws NullPointerException if {@code gdpMapper} is null
+   */
   public GdpEventHandler(@NonNull final GdpMapper gdpMapper) {
     this.gdpMapper = Objects.requireNonNull(gdpMapper);
   }
 
-
   /**
-   * Creates a reactive function for consuming GDP messages from a Kafka topic.
+   * Defines a Spring Cloud Stream consumer function that processes GDP messages from Kafka.
    *
-   * <p>The function performs the following operations for each message:
-   * <ol>
-   *   <li>Logs message metadata (partition, offset, timestamp)</li>
-   *   <li>Logs the complete message payload</li>
-   *   <li>Handles any errors that occur during processing</li>
-   * </ol>
-   * </p>
+   * <p>Each message is handled as follows:</p>
+   * <ul>
+   *   <li>Logs Kafka metadata headers such as partition, offset, and timestamp.</li>
+   *   <li>Logs the full GDP message payload.</li>
+   *   <li>Maps the GDP payload to an RTP representation using {@link GdpMapper}.</li>
+   *   <li>Logs the resulting RTP object’s resource ID.</li>
+   *   <li>Handles and logs any exceptions that occur during processing.</li>
+   * </ul>
    *
-   * <p>The function completes when the input stream completes (Mono<Void>).</p>
+   * <p>If the mapping returns {@code null}, an {@link IllegalStateException} is thrown.</p>
    *
-   * @return A reactive function that consumes a Flux of GDP messages and returns a Mono<Void>
-   *         to signal completion. The function is registered with the name "gdpMessageConsumer".
+   * @return A {@link Function} that consumes a {@link Flux} of Kafka {@link Message} objects
+   *         with {@link GdpMessage} payloads and returns a {@link Mono<Void>} upon completion.
    *
-   * @see org.springframework.messaging.Message
-   * @see reactor.core.publisher.Flux
-   * @see reactor.core.publisher.Mono
-   *
-   * @throws NullPointerException if the input message flux is null (enforced by @NonNull)
-   *
-   * @implNote The function uses the following Kafka headers if present:
-   *           - {@link org.springframework.kafka.support.KafkaHeaders#PARTITION}
-   *           - {@link org.springframework.kafka.support.KafkaHeaders#OFFSET}
-   *           - {@link org.springframework.kafka.support.KafkaHeaders#TIMESTAMP}
+   * @implNote This function is bound to the Spring Cloud Function binding named {@code gdpMessageConsumer}.
+   * @see org.springframework.kafka.support.KafkaHeaders
+   * @see GdpMessage
    */
   @Bean("gdpMessageConsumer")
   @NonNull
