@@ -73,11 +73,11 @@ public class GdpEventHandler {
         ))
 
         .map(Message::getPayload)
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("No GDP payload found")))
         .doOnNext(payload -> log.info("Payload: {}", payload))
 
         .doOnNext(payload -> log.info("Mapping GDP payload to RTP"))
         .mapNotNull(this.gdpMapper::toRtp)
-        .switchIfEmpty(Mono.error(new IllegalStateException("No RTP payload found")))
 
         .doOnNext(rtp -> log.info("RTP created. Resource Id {}", rtp.resourceID().getId()))
         .doOnError(error -> log.error("Exception found", error))
