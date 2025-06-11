@@ -15,9 +15,22 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 
+/**
+ * Component responsible for mapping {@link GdpMessage} instances into {@link Rtp} domain objects.
+ * <p>
+ * This mapper is to be used in message processing flows to convert incoming GDP messages into
+ * an internal RTP representation used throughout the application.
+ * </p>
+ */
 @Component("gdpMapper")
 public class GdpMapper {
 
+  /**
+   * Maps a {@link GdpMessage} to a new {@link Rtp} instance.
+   *
+   * @param gdpMessage the source GDP message to convert; may be {@code null}
+   * @return a new {@link Rtp} instance mapped from the given {@link GdpMessage}, or {@code null} if input is {@code null}
+   */
   @Nullable
   public Rtp toRtp(@Nullable final GdpMessage gdpMessage) {
     if (gdpMessage == null) {
@@ -49,8 +62,5 @@ public class GdpMapper {
                 .build()
         ))
         .build();
-
   }
-
-
 }
