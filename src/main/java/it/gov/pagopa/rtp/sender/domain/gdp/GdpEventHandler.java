@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import java.util.Objects;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
@@ -24,6 +25,14 @@ import reactor.core.publisher.Mono;
 @RegisterReflectionForBinding(GdpMessage.class)
 @Slf4j
 public class GdpEventHandler {
+
+  private final GdpMapper gdpMapper;
+
+
+  public GdpEventHandler(@NonNull final GdpMapper gdpMapper) {
+    this.gdpMapper = Objects.requireNonNull(gdpMapper);
+  }
+
 
   /**
    * Creates a reactive function for consuming GDP messages from a Kafka topic.
@@ -57,13 +66,20 @@ public class GdpEventHandler {
   public Function<Flux<Message<GdpMessage>>, Mono<Void>> gdpMessageConsumer() {
     return gdpMessage -> gdpMessage
         .doOnNext(message -> log.info(
-            "New GDP message received: '{}', partition: {}, offset: {}, enqueued time: {}",
-            message.getPayload(),
+            "New GDP message received. partition: {}, offset: {}, enqueued time: {}",
             message.getHeaders().get(KafkaHeaders.PARTITION),
             message.getHeaders().get(KafkaHeaders.OFFSET),
             message.getHeaders().get(KafkaHeaders.TIMESTAMP)
         ))
-        .doOnNext(message -> log.info("Payload: {}", message.getPayload()))
+
+        .map(Message::getPayload)
+        .doOnNext(payload -> log.info("Payload: {}", payload))
+
+        .doOnNext(payload -> log.info("Mapping GDP payload to RTP"))
+        .mapNotNull(this.gdpMapper::toRtp)
+        .switchIfEmpty(Mono.error(new IllegalStateException("No RTP payload found")))
+
+        .doOnNext(rtp -> log.info("RTP created. Resource Id {}", rtp.resourceID().getId()))
         .doOnError(error -> log.error("Exception found", error))
         .then();
   }

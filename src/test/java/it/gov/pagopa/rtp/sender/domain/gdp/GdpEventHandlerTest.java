@@ -26,12 +26,15 @@ class GdpEventHandlerTest {
   @Autowired
   private InputDestination inputDestination;
 
+  @Autowired
+  private GdpMapper gdpMapper;
+
   private GdpEventHandler gdpEventHandler;
 
 
   @BeforeEach
   void setUp() {
-    gdpEventHandler = new GdpEventHandler();
+    gdpEventHandler = new GdpEventHandler(gdpMapper);
   }
 
 
