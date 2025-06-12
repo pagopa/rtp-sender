@@ -1,6 +1,5 @@
 package it.gov.pagopa.rtp.sender.controller.rtp;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -15,16 +14,17 @@ import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
 import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.errors.SepaRequestException;
-import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
-import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
+import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import it.gov.pagopa.rtp.sender.utils.Users.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,9 +40,7 @@ import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = {SendAPIControllerImpl.class})
@@ -65,9 +63,6 @@ class SendAPIControllerImplTest {
   private ApplicationContext context;
 
   private Rtp expectedRtp;
-
-  @Autowired
-  private SendAPIControllerImpl sendAPIController;
 
   @BeforeEach
   void setup() {
@@ -352,19 +347,20 @@ class SendAPIControllerImplTest {
   @RtpSenderReader
   void givenValidId_whenFindRtpById_thenReturnDtoInResponseEntityOk() {
     UUID requestId = UUID.randomUUID();
-    UUID rtpId = UUID.randomUUID();
-    Rtp rtp = mock(Rtp.class);
-    RtpDto dto = mock(RtpDto.class);
+    Rtp rtp = generateRtp();
+    RtpDto dto = generateRtpDto();
 
-    when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.just(rtp));
+    when(sendRTPService.findRtp(rtp.resourceID().getId())).thenReturn(Mono.just(rtp));
     when(rtpDtoMapper.toRtpDto(rtp)).thenReturn(dto);
 
-    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
-            .expectNextMatches(response ->
-                    response.getStatusCode().is2xxSuccessful() &&
-                            response.getBody().equals(dto)
-            )
-            .verifyComplete();
+    webTestClient.get()
+            .uri("/rtps/{id}", rtp.resourceID().getId())
+            .header("requestId", requestId.toString())
+            .header("api-version", "v1")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody(RtpDto.class)
+            .isEqualTo(dto);
   }
 
   @Test
@@ -375,41 +371,42 @@ class SendAPIControllerImplTest {
 
     when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.error(new RtpNotFoundException(rtpId)));
 
-    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
-            .expectNextMatches(response ->
-                    response.getStatusCode().is4xxClientError() &&
-                            response.getStatusCode().value() == 404
-            )
-            .verifyComplete();
+    webTestClient.get()
+            .uri("/rtps/{id}", rtpId)
+            .header("requestId", requestId.toString())
+            .header("api-version", "v1")
+            .exchange()
+            .expectStatus().isNotFound();
   }
 
   @Test
   @RtpSenderReader
-  void givenUnexpectedError_whenFindRtpById_thenErrorIsLogged() {
+  void givenUnexpectedError_whenFindRtpById_thenReturnServerError() {
     UUID requestId = UUID.randomUUID();
     UUID rtpId = UUID.randomUUID();
 
     when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.error(new RuntimeException("Something went wrong")));
 
-    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
-            .expectErrorMatches(throwable ->
-                    throwable instanceof RuntimeException &&
-                            throwable.getMessage().equals("Something went wrong")
-            )
-            .verify();
+    webTestClient.get()
+            .uri("/rtps/{id}", rtpId)
+            .header("requestId", requestId.toString())
+            .header("api-version", "v1")
+            .exchange()
+            .expectStatus().is5xxServerError();
   }
 
   @Test
-  @WithMockUser(username = "unauthorized")
+  @WithMockUser
   void whenUserWithoutRoleAccessesFindRtpById_thenAccessDenied() {
     UUID requestId = UUID.randomUUID();
     UUID rtpId = UUID.randomUUID();
 
-    StepVerifier.create(sendAPIController.findRtpById(requestId, rtpId, "1.0", mock(ServerWebExchange.class)))
-            .expectErrorSatisfies(error -> assertThat(error)
-                    .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
-                    .hasMessageContaining("Access Denied"))
-            .verify();
+    webTestClient.get()
+            .uri("/rtps/{id}", rtpId)
+            .header("requestId", requestId.toString())
+            .header("api-version", "v1")
+            .exchange()
+            .expectStatus().isForbidden();
   }
 
   private CreateRtpDto generateSendRequest() {
@@ -490,5 +487,65 @@ class SendAPIControllerImplTest {
     newError.setCode("code");
     errors.addErrorsItem(newError);
     return new MessageBadFormed(errors);
+  }
+
+  private Rtp generateRtp() {
+
+    UUID uuid = UUID.fromString("76a185a7-4f8f-44ad-b08e-2da722e25ff8");
+    LocalDateTime localDateTime = LocalDateTime.of(2025, 1, 1, 1, 0, 0);
+    Instant dateInstant = localDateTime.toInstant(ZoneOffset.UTC);
+    LocalDate expiry = LocalDate.of(2025, 1, 1);
+    Event event = new Event(dateInstant, RtpStatus.CREATED, RtpEvent.SEND_RTP);
+
+    return Rtp.builder()
+            .noticeNumber("123456789")
+            .amount(BigDecimal.valueOf(150.75))
+            .description("Pagamento TARI")
+            .expiryDate(expiry)
+            .payerId("payer-001")
+            .payerName("Mario Rossi")
+            .payeeName("Comune di Roma")
+            .payeeId("payee-002")
+            .resourceID(new ResourceID(uuid))
+            .subject("TARI 2025")
+            .savingDateTime(localDateTime)
+            .serviceProviderDebtor("DEBTOR-001")
+            .iban("IT60X0542811101000000123456")
+            .payTrxRef("TX123456")
+            .flgConf("Y")
+            .status(RtpStatus.SENT)
+            .serviceProviderCreditor("CREDITOR-001")
+            .events(List.of(event))
+            .build();
+  }
+
+  private RtpDto generateRtpDto() {
+
+    UUID uuid = UUID.fromString("76a185a7-4f8f-44ad-b08e-2da722e25ff8");
+    LocalDateTime date = LocalDateTime.of(2025,1,1,1,0,0);
+    LocalDate expiry = LocalDate.of(2025,1,1);
+    EventDto event = new EventDto()
+            .timestamp(date)
+            .precStatus(RtpStatusDto.CREATED)
+            .triggerEvent(RtpEventDto.SEND_RTP);
+
+    return new RtpDto()
+            .noticeNumber("123456789")
+            .amount(150.75)
+            .expiryDate(expiry)
+            .payerId("payer-001")
+            .payerName("Mario Rossi")
+            .payeeName("Comune di Roma")
+            .payeeId("payee-002")
+            .resourceID(uuid)
+            .subject("TARI 2025")
+            .savingDateTime(date)
+            .serviceProviderDebtor("DEBTOR-001")
+            .iban("IT60X0542811101000000123456")
+            .payTrxRef("TX123456")
+            .flgConf("Y")
+            .status(RtpStatusDto.SENT)
+            .serviceProviderCreditor("CREDITOR-001")
+            .events(List.of(event));
   }
 }
