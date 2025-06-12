@@ -75,7 +75,7 @@ public class GdpEventHandler {
         ))
 
         .map(Message::getPayload)
-        .switchIfEmpty(Mono.error(new IllegalArgumentException("No GDP payload found")))
+        .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null")))
         .doOnNext(payload -> log.info("Payload: {}", payload))
 
         .doOnNext(payload -> log.info("Mapping GDP payload to RTP"))
