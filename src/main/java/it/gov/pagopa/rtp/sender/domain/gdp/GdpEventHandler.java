@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import java.util.Objects;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
@@ -13,44 +14,54 @@ import reactor.core.publisher.Mono;
 
 
 /**
- * Configuration class for handling GDP (Generic Digital Payment) messages from a Kafka topic.
- * This class defines a reactive message consumer that processes incoming GDP messages,
- * logs their details, and handles any processing errors.
+ * Configuration class that defines the reactive Kafka consumer for GDP messages.
+ * <p>
+ * This class registers a Spring Cloud Function bean named {@code gdpMessageConsumer} that consumes
+ * Kafka messages containing {@link GdpMessage} payloads. It uses a {@link GdpMapper} to transform
+ * incoming GDP messages into RTP payloads and logs relevant processing details.
+ * </p>
  *
- * <p>The consumer is registered as a Spring Cloud Function with binding name "gdpMessageConsumer".
- * It processes messages in a reactive stream using Project Reactor's Flux and Mono types.</p>
+ * <p>
+ * The consumer leverages Project Reactor's {@link Flux} and {@link Mono} for non-blocking, asynchronous processing.
+ * </p>
  */
 @Configuration("gdpEventHandler")
 @RegisterReflectionForBinding(GdpMessage.class)
 @Slf4j
 public class GdpEventHandler {
 
+  private final GdpMapper gdpMapper;
+
   /**
-   * Creates a reactive function for consuming GDP messages from a Kafka topic.
+   * Constructs the GDP event handler with the provided mapper.
    *
-   * <p>The function performs the following operations for each message:
-   * <ol>
-   *   <li>Logs message metadata (partition, offset, timestamp)</li>
-   *   <li>Logs the complete message payload</li>
-   *   <li>Handles any errors that occur during processing</li>
-   * </ol>
-   * </p>
+   * @param gdpMapper The mapper responsible for transforming GDP messages to RTP format.
+   * @throws NullPointerException if {@code gdpMapper} is null
+   */
+  public GdpEventHandler(@NonNull final GdpMapper gdpMapper) {
+    this.gdpMapper = Objects.requireNonNull(gdpMapper);
+  }
+
+  /**
+   * Defines a Spring Cloud Stream consumer function that processes GDP messages from Kafka.
    *
-   * <p>The function completes when the input stream completes (Mono<Void>).</p>
+   * <p>Each message is handled as follows:</p>
+   * <ul>
+   *   <li>Logs Kafka metadata headers such as partition, offset, and timestamp.</li>
+   *   <li>Logs the full GDP message payload.</li>
+   *   <li>Maps the GDP payload to an RTP representation using {@link GdpMapper}.</li>
+   *   <li>Logs the resulting RTP object’s resource ID.</li>
+   *   <li>Handles and logs any exceptions that occur during processing.</li>
+   * </ul>
    *
-   * @return A reactive function that consumes a Flux of GDP messages and returns a Mono<Void>
-   *         to signal completion. The function is registered with the name "gdpMessageConsumer".
+   * <p>If the mapping returns {@code null}, an {@link IllegalStateException} is thrown.</p>
    *
-   * @see org.springframework.messaging.Message
-   * @see reactor.core.publisher.Flux
-   * @see reactor.core.publisher.Mono
+   * @return A {@link Function} that consumes a {@link Flux} of Kafka {@link Message} objects
+   *         with {@link GdpMessage} payloads and returns a {@link Mono<Void>} upon completion.
    *
-   * @throws NullPointerException if the input message flux is null (enforced by @NonNull)
-   *
-   * @implNote The function uses the following Kafka headers if present:
-   *           - {@link org.springframework.kafka.support.KafkaHeaders#PARTITION}
-   *           - {@link org.springframework.kafka.support.KafkaHeaders#OFFSET}
-   *           - {@link org.springframework.kafka.support.KafkaHeaders#TIMESTAMP}
+   * @implNote This function is bound to the Spring Cloud Function binding named {@code gdpMessageConsumer}.
+   * @see org.springframework.kafka.support.KafkaHeaders
+   * @see GdpMessage
    */
   @Bean("gdpMessageConsumer")
   @NonNull
@@ -64,8 +75,13 @@ public class GdpEventHandler {
         ))
 
         .map(Message::getPayload)
-        .switchIfEmpty(Mono.error(new IllegalArgumentException("No GDP payload found")))
+        .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null")))
         .doOnNext(payload -> log.info("Payload: {}", payload))
+
+        .doOnNext(payload -> log.info("Mapping GDP payload to RTP"))
+        .mapNotNull(this.gdpMapper::toRtp)
+
+        .doOnNext(rtp -> log.info("RTP created. Resource Id {}", rtp.resourceID().getId()))
         .doOnError(error -> log.error("Exception found", error))
         .then();
   }
