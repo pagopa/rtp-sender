@@ -1,11 +1,39 @@
 logging.level.org.springframework.security: DEBUG
 activation.baseUrl: http://localhost:8080/
 
+test.kafka.topic: test-topic
+
 spring:
   cloud:
     azure:
       monitor:
         connection-string: ${APPLICATIONINSIGHTS_CONNECTION_STRING:InstrumentationKey=fe73c58e-6bc0-449d-b59a-eb7d8cbb0d82;Ing}
+
+    function:
+      definition: gdpMessageConsumer
+    stream:
+      bindings:
+        gdpMessageConsumer-in-0:
+          destination: ${test.kafka.topic}
+          group: test-group
+          content-type: application/json
+          binder: test-binder
+      binders:
+        test-binder:
+          type: kafka
+          environment:
+            spring:
+              cloud:
+                stream:
+                  kafka:
+                    binder:
+                      auto-create-topics: false
+                      brokers: ${spring.embedded.kafka.brokers}
+                      consumerProperties:
+                        key:
+                          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                        value:
+                          deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 
 azure.cosmos:
