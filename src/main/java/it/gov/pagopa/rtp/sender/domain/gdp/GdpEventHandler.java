@@ -57,13 +57,15 @@ public class GdpEventHandler {
   public Function<Flux<Message<GdpMessage>>, Mono<Void>> gdpMessageConsumer() {
     return gdpMessage -> gdpMessage
         .doOnNext(message -> log.info(
-            "New GDP message received: '{}', partition: {}, offset: {}, enqueued time: {}",
-            message.getPayload(),
+            "New GDP message received. partition: {}, offset: {}, enqueued time: {}",
             message.getHeaders().get(KafkaHeaders.PARTITION),
             message.getHeaders().get(KafkaHeaders.OFFSET),
             message.getHeaders().get(KafkaHeaders.TIMESTAMP)
         ))
-        .doOnNext(message -> log.info("Payload: {}", message.getPayload()))
+
+        .map(Message::getPayload)
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("No GDP payload found")))
+        .doOnNext(payload -> log.info("Payload: {}", payload))
         .doOnError(error -> log.error("Exception found", error))
         .then();
   }
