@@ -1,12 +1,9 @@
 package it.gov.pagopa.rtp.sender.service.rtp;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
@@ -285,6 +282,35 @@ class SendRTPServiceTest {
     fakeActivationDto.setPayer(payerDto);
 
     return fakeActivationDto;
+  }
+
+  @Test
+  void givenValidId_whenFindRtp_thenReturnRtpMono() {
+    UUID rtpId = UUID.randomUUID();
+    Rtp mockRtp = mock(Rtp.class);
+
+    when(rtpRepository.findById(argThat(id -> rtpId.equals(id.getId()))))
+            .thenReturn(Mono.just(mockRtp));
+
+    StepVerifier.create(sendRTPService.findRtp(rtpId))
+            .expectNext(mockRtp)
+            .verifyComplete();
+  }
+
+  @Test
+  void givenNonexistentId_whenFindRtp_thenThrowRtpNotFoundException() {
+    UUID rtpId = UUID.randomUUID();
+
+    when(rtpRepository.findById(argThat(id -> id.getId().equals(rtpId))))
+            .thenReturn(Mono.empty());
+
+    StepVerifier.create(sendRTPService.findRtp(rtpId))
+            .expectErrorSatisfies(throwable -> {
+              assertThat(throwable)
+                      .isInstanceOf(RtpNotFoundException.class)
+                      .hasMessageContaining(rtpId.toString());
+            })
+            .verify();
   }
 
 }
