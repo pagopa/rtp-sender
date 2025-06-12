@@ -32,7 +32,6 @@ import it.gov.pagopa.rtp.sender.utils.LoggingUtils;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -131,6 +130,17 @@ public class SendRTPServiceImpl implements SendRTPService {
 
   }
 
+  @NonNull
+  @Override
+  public Mono<Rtp> findRtp(@NonNull UUID rtpId) {
+    return Mono.just(rtpId)
+            .map(ResourceID::new)
+            .doFirst(() -> log.info("Starting retrieval of RTP with id: {}", rtpId))
+            .doOnNext(id -> log.debug("Converted UUID to ResourceID: {}", id))
+            .flatMap(this.rtpRepository::findById)
+            .doOnNext(rtp -> log.info("RTP retrieved with id: {}", rtpId))
+            .switchIfEmpty(Mono.error(new RtpNotFoundException(rtpId)));
+  }
 
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {
     return switch (exception.getStatusCode()) {

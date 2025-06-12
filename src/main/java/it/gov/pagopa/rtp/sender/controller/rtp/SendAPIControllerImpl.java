@@ -16,7 +16,6 @@ import it.gov.pagopa.rtp.sender.utils.TokenInfo;
 import java.net.URI;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -81,10 +80,23 @@ public class SendAPIControllerImpl implements RtpsApi {
         .doOnError(a -> log.error("Error cancelling RTP {}", a.getMessage()));
   }
 
-
   @Override
-  public Mono<ResponseEntity<RtpDto>> findRtpById(UUID requestId, UUID rtpId, String version, ServerWebExchange exchange) {
-    return Mono.error(new UnsupportedOperationException("Not implemented yet"));
+  @PreAuthorize("hasRole('read_rtp_send')")
+  public Mono<ResponseEntity<RtpDto>> findRtpById(UUID requestId, UUID rtpId,
+                                                  String version, ServerWebExchange exchange) {
+    log.info("Received request to find RTP by id. requestId: {}, rtpId: {}", requestId, rtpId);
+    return Mono.just(rtpId)
+            .doOnNext(id -> log.debug("Processing findRtpById for id: {}", id))
+            .flatMap(sendRTPService::findRtp)
+            .doOnNext(rtp -> log.debug("RTP retrieved from sendRTPService" ))
+            .map(rtpDtoMapper::toRtpDto)
+            .doOnNext(dto -> log.debug("Mapped RTP to DTO: {}", dto))
+            .map(ResponseEntity::ok)
+            .onErrorResume(RtpNotFoundException.class, ex -> {
+              log.warn("Error retrieving: {}", ex.getMessage());
+              return Mono.just(ResponseEntity.notFound().build());
+            })
+            .doOnError(a -> log.error("Error retriving RTP {}", a.getMessage()));
   }
 
 }

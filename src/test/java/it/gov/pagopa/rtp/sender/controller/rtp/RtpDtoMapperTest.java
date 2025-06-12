@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.controller.rtp;
 
-import org.junit.jupiter.api.BeforeEach;
+import it.gov.pagopa.rtp.sender.domain.rtp.*;
+import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -9,15 +10,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
 import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties.Details;
-import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
-import it.gov.pagopa.rtp.sender.model.generated.send.CreateRtpDto;
-import it.gov.pagopa.rtp.sender.model.generated.send.PayeeDto;
-import it.gov.pagopa.rtp.sender.model.generated.send.PayerDto;
-import it.gov.pagopa.rtp.sender.model.generated.send.PaymentNoticeDto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,14 +32,10 @@ class RtpDtoMapperTest {
   @InjectMocks
   private RtpDtoMapper rtpDtoMapper;
 
-    @BeforeEach
-    void setUp() {
-        when(this.config.details())
-                .thenReturn(new Details("iban", "fiscalCode"));
-    }
 
   @Test
   void testToRtp() {
+    when(config.details()).thenReturn(new Details("iban", "fiscalCode"));
     CreateRtpDto createRtpDto = new CreateRtpDto();
     PaymentNoticeDto paymentNoticeDto = new PaymentNoticeDto();
     PayeeDto payeeDto = new PayeeDto();
@@ -77,6 +76,7 @@ class RtpDtoMapperTest {
 
   @Test
   void testTtoRtpWithSpCroRtp() {
+    when(config.details()).thenReturn(new Details("iban", "fiscalCode"));
     CreateRtpDto createRtpDto = new CreateRtpDto();
     PaymentNoticeDto paymentNoticeDto = new PaymentNoticeDto();
     PayeeDto payeeDto = new PayeeDto();
@@ -115,5 +115,63 @@ class RtpDtoMapperTest {
     assertThat(rtp.payTrxRef()).isEqualTo(createRtpDto.getPayee().getPayTrxRef());
     assertThat(rtp.flgConf()).isEqualTo("flgConf");
     assertThat(rtp.serviceProviderCreditor()).isEqualTo(subject);
+  }
+  
+  @Test
+  void givenValidRtp_whenToRtpDto_thenCorrectlyMapped() {
+    UUID uuid = UUID.randomUUID();
+    Instant nowInstant = Instant.now();
+    LocalDateTime nowLdt = LocalDateTime.ofInstant(nowInstant, ZoneOffset.UTC);
+    LocalDate expiry = LocalDate.now().plusDays(10);
+
+    Event event = new Event(nowInstant, RtpStatus.CREATED, RtpEvent.SEND_RTP);
+    Rtp rtp = new Rtp(
+            "123456789",
+            BigDecimal.valueOf(150.75),
+            "Pagamento TARI",
+            expiry,
+            "payer-001",
+            "Mario Rossi",
+            "Comune di Roma",
+            "payee-002",
+            new ResourceID(uuid),
+            "TARI 2025",
+            nowLdt,
+            "DEBTOR-001",
+            "IT60X0542811101000000123456",
+            "TX123456",
+            "Y",
+            RtpStatus.SENT,
+            "CREDITOR-001",
+            List.of(event)
+    );
+
+    RtpDto dto = rtpDtoMapper.toRtpDto(rtp);
+
+    assertNotNull(dto);
+    assertEquals(uuid, dto.getResourceID());
+    assertEquals("123456789", dto.getNoticeNumber());
+    assertEquals(150.75, dto.getAmount());
+    assertEquals("Pagamento TARI", dto.getDescription());
+    assertEquals(expiry, dto.getExpiryDate());
+    assertEquals("Mario Rossi", dto.getPayerName());
+    assertEquals("payer-001", dto.getPayerId());
+    assertEquals("Comune di Roma", dto.getPayeeName());
+    assertEquals("payee-002", dto.getPayeeId());
+    assertEquals("TARI 2025", dto.getSubject());
+    assertEquals(nowLdt, dto.getSavingDateTime());
+    assertEquals("DEBTOR-001", dto.getServiceProviderDebtor());
+    assertEquals("IT60X0542811101000000123456", dto.getIban());
+    assertEquals("TX123456", dto.getPayTrxRef());
+    assertEquals("Y", dto.getFlgConf());
+    assertEquals(RtpStatusDto.SENT, dto.getStatus());
+    assertEquals("CREDITOR-001", dto.getServiceProviderCreditor());
+
+    assertNotNull(dto.getEvents());
+    assertEquals(1, dto.getEvents().size());
+    EventDto eventDto = dto.getEvents().getFirst();
+    assertEquals(LocalDateTime.ofInstant(nowInstant, ZoneOffset.UTC), eventDto.getTimestamp());
+    assertEquals(RtpStatusDto.CREATED, eventDto.getPrecStatus());
+    assertEquals(RtpEventDto.SEND_RTP, eventDto.getTriggerEvent());
   }
 }
