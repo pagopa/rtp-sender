@@ -15,6 +15,47 @@ spring:
       monitor:
         connection-string: ${APPLICATIONINSIGHTS_CONNECTION_STRING:}
 
+    stream:
+      kafka:
+        binder:
+          configuration:
+            security.protocol: SASL_SSL
+            sasl.mechanism: PLAIN
+            #                        Recommended Values for both consumer and producer for azure eventhub
+            metadata.max.age.ms: 180000
+            connections.max.idle.ms: 180000
+            #                        The service will close connections if requests larger than 1046528 bytes are sent
+            max.request.size: 1000000
+        bindings:
+          gdpMessageConsumer-in-0:
+            consumer:
+              start-offset: earliest
+
+      bindings:
+        gdpMessageConsumer-in-0:
+          destination: ${GDP_EVENTHUB_TOPIC:rtp-events}
+          group: ${GDP_EVENTHUB_CONSUMER_GROUP:rtp-events-processor}
+          content-type: application/json
+          binder: gdpconsumer
+          consumer:
+            max-attempts: 1
+
+      binders:
+        gdpconsumer:
+          type: kafka
+          environment.spring.cloud.stream.kafka:
+            binder:
+              auto-create-topics: false
+              brokers: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}.servicebus.windows.net:9093
+              configuration:
+                sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="${GDP_EVENTHUB_CONNECTION_STRING:}";
+              consumerProperties:
+                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+    function:
+      definition: gdpMessageConsumer
+
 activation.base-url: ${BASE_URL:http://localhost}
 
 pagopa:

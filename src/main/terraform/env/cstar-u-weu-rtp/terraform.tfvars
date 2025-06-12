@@ -49,6 +49,7 @@ rtp_environment_secrets = {
   CLIENT_SECRET_CBI                     : "client-secret-cbi"
   JKS_TRUST_STORE_PATH                  : "jks-trust-store-path"
   JKS_TRUST_STORE_PASSWORD              : "jks-trust-store-password"
+  GDP_EVENTHUB_CONNECTION_STRING        : "gdp-eventhub-connection-string"
 }
 
 
@@ -66,4 +67,7 @@ rtp_environment_configs = {
   AZURE_STORAGE_CONTAINER_NAME            : "rtp-debtor-service-provider"
   AZURE_BLOB_NAME                         : "serviceregistry.json"
   CALLBACK_BASE_URL                       : "https://api-rtp-cb.uat.cstar.pagopa.it/rtp/cb"
+  GDP_EVENTHUB_NAME                       : "pagopa-u-itn-gps-rtp-evh"
+  GDP_EVENTHUB_TOPIC                      : "rtp-events"
+  GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
 }

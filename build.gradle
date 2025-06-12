@@ -26,6 +26,7 @@ repositories {
 ext {
 	set('springCloudAzureVersion', "5.19.0")
 	set('otelInstrumentationVersion','2.14.0')
+	set('springCloudStreamVersion', '4.3.0')
 }
 
 dependencies {
@@ -70,9 +71,12 @@ dependencies {
 	implementation 'com.azure:azure-storage-blob:12.30.0-beta.1'
 	implementation 'com.microsoft.azure:msal4j:1.19.0'
 
+	// Azure Event Hub
+	implementation "org.springframework.cloud:spring-cloud-starter-stream-kafka:${springCloudStreamVersion}"
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation "org.springframework.cloud:spring-cloud-stream-test-binder:${springCloudStreamVersion}"
 	testImplementation 'io.projectreactor:reactor-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	annotationProcessor("org.projectlombok:lombok")
