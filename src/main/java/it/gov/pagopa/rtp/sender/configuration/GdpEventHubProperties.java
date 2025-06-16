@@ -23,8 +23,8 @@ public record GdpEventHubProperties(
 
   @NonNull
   public String eventDispatcher() {
-    return name() +
-        "-" + consumer().topic()
+    return name()
+        + "-" + consumer().topic()
         + "-" + consumer().group();
   }
 }
