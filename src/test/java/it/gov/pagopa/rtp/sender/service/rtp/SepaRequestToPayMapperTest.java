@@ -5,10 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 
+import it.gov.pagopa.rtp.sender.utils.DateUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -232,6 +231,7 @@ class SepaRequestToPayMapperTest {
     String serviceProviderCreditor = "serviceProviderCreditor";
     String serviceProviderDebtor = "serviceProviderDebtor";
     String expectedDate = "2025-01-01T12:31:20+01:00";
+    String expectedCreationDateTime = DateUtils.localDateTimeToOffsetFormat(LocalDateTime.now());
 
     final var nRtp = Rtp.builder()
         .resourceID(resourceId)
@@ -299,8 +299,10 @@ class SepaRequestToPayMapperTest {
     final var caseAssignment = result.getDocument().getCstmrPmtCxlReq().getAssgnmt();
     assertEquals(resourceId.getId().toString().replace("-",""),
         caseAssignment.getId());
-    assertEquals(expectedDate,
-        caseAssignment.getCreDtTm());
+    assertTrue(Duration.between(
+            OffsetDateTime.parse(expectedCreationDateTime),
+            OffsetDateTime.parse(caseAssignment.getCreDtTm())
+    ).abs().toMillis() < 1000);
     assertEquals(pagoPaConfigProperties.details().fiscalCode(),
         caseAssignment.getAssgnr().getPty().getId().getOrgId().getOthr().getId());
     assertEquals(serviceProviderDebtor,
