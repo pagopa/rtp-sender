@@ -1,8 +1,6 @@
 logging.level.org.springframework.security: DEBUG
 activation.baseUrl: http://localhost:8080/
 
-test.kafka.topic: test-topic
-
 spring:
   cloud:
     azure:
@@ -14,8 +12,8 @@ spring:
     stream:
       bindings:
         gdpMessageConsumer-in-0:
-          destination: ${test.kafka.topic}
-          group: test-group
+          destination: ${gdp.eventhub.consumer.topic}
+          group: ${gdp.eventhub.consumer.group}
           content-type: application/json
           binder: test-binder
       binders:
@@ -35,6 +33,13 @@ spring:
                         value:
                           deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
+gdp:
+  eventhub:
+    name: test-name
+    connection-string: Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=${gdp.eventhub.name};SharedAccessKey=test"
+    consumer:
+      topic: test-topic
+      group: test-group
 
 azure.cosmos:
   uri: https://example.com/db/endpoint

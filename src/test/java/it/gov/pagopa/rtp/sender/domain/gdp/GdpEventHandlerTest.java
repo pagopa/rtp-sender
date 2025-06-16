@@ -20,7 +20,7 @@ import reactor.test.StepVerifier;
 @Import(TestChannelBinderConfiguration.class)
 class GdpEventHandlerTest {
 
-  @Value("${test.kafka.topic}")
+  @Value("${gdp.eventhub.consumer.topic}")
   private String topic;
 
   @Autowired
