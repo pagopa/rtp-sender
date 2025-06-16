@@ -1,17 +1,21 @@
 package it.gov.pagopa.rtp.sender.configuration;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 
 @ConfigurationProperties(prefix = "gdp.eventhub")
+@Validated
 public record GdpEventHubProperties(
-    String name,
-    String connectionString,
-    Consumer consumer
+    @NotBlank String name,
+    @NotBlank String connectionString,
+    @NotNull Consumer consumer
 ) {
 
   public record Consumer(
-      String topic,
-      String group
+      @NotBlank String topic,
+      @NotBlank String group
   ) {}
 }
