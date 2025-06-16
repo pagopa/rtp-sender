@@ -143,7 +143,9 @@ class RtpDtoMapperTest {
             "Y",
             RtpStatus.SENT,
             "CREDITOR-001",
-            List.of(event)
+            List.of(event),
+            1L,
+            "eventDispatcher"
     );
 
     RtpDto dto = rtpDtoMapper.toRtpDto(rtp);
