@@ -31,6 +31,12 @@ public class GdpMapper {
   private final GdpEventHubProperties gdpEventHubProperties;
 
 
+  /**
+   * Constructs a new {@link GdpMapper} with the given {@link GdpEventHubProperties}.
+   *
+   * @param gdpEventHubProperties configuration properties related to the Event Hub; must not be null
+   * @throws NullPointerException if {@code gdpEventHubProperties} is null
+   */
   public GdpMapper(
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
