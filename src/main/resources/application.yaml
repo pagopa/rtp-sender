@@ -33,8 +33,8 @@ spring:
 
       bindings:
         gdpMessageConsumer-in-0:
-          destination: ${GDP_EVENTHUB_TOPIC:rtp-events}
-          group: ${GDP_EVENTHUB_CONSUMER_GROUP:rtp-events-processor}
+          destination: ${gdp.eventhub.consumer.topic}
+          group: ${gdp.eventhub.consumer.group}
           content-type: application/json
           binder: gdpconsumer
           consumer:
@@ -46,15 +46,23 @@ spring:
           environment.spring.cloud.stream.kafka:
             binder:
               auto-create-topics: false
-              brokers: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}.servicebus.windows.net:9093
+              brokers: ${gdp.eventhub.name}.servicebus.windows.net:9093
               configuration:
-                sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="${GDP_EVENTHUB_CONNECTION_STRING:}";
+                sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="${gdp.eventhub.connection-string}";
               consumerProperties:
                 key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
                 value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
     function:
       definition: gdpMessageConsumer
+
+gdp:
+  eventhub:
+    name: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
+    connection-string: ${GDP_EVENTHUB_CONNECTION_STRING:}
+    consumer:
+      topic: ${GDP_EVENTHUB_TOPIC:rtp-events}
+      group: ${GDP_EVENTHUB_CONSUMER_GROUP:rtp-events-processor}
 
 activation.base-url: ${BASE_URL:http://localhost}
 
