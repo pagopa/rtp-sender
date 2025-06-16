@@ -44,5 +44,7 @@ public class RtpEntity {
   private RtpStatus status;
   private String serviceProviderCreditor;
   private List<Event> events;
+  private Long operationId;
+  private String eventDispatcher;
 
 }

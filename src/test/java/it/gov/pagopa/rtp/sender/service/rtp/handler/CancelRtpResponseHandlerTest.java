@@ -141,25 +141,11 @@ class CancelRtpResponseHandlerTest {
   }
 
   private Rtp createRtpWithStatus() {
-    return new Rtp(
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        new ResourceID(UUID.randomUUID()),
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        RtpStatus.SENT,
-        null,
-        new ArrayList<>());
+    return Rtp.builder()
+        .resourceID(new ResourceID(UUID.randomUUID()))
+        .status(RtpStatus.SENT)
+        .events(new ArrayList<>())
+        .build();
   }
 
   private Rtp cancelRtpWithSameEvents(Rtp original) {
