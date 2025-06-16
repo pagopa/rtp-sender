@@ -5,7 +5,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -389,7 +388,7 @@ public class SepaRequestToPayMapper {
 
     final var paymentTransaction = List.of(new PaymentTransaction109EPC25922V30DS11Dto()  //TxInf
         .cxlId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
-        .orgnlInstrId(IdentifierUtils.formatUuidWithoutHyphens(UUID.randomUUID()))
+        .orgnlInstrId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
         .orgnlEndToEndId(rtp.noticeNumber())
         .cxlRsnInf(paymentCancellationReason)
         .orgnlTxRef(originalTransactionReference28EPC25922V30DS11Dto));
