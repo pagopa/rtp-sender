@@ -58,11 +58,6 @@ public class GdpMapper {
       return null;
     }
 
-    final var eventDispatcher = Optional.of(this.gdpEventHubProperties)
-        .map(props ->
-            props.name() + "-" + props.consumer().topic() + "-" + props.consumer().group())
-        .orElseThrow(() -> new IllegalArgumentException("Couldn't create event dispatcher"));
-
     final var savingDateTime = Optional.of(gdpMessage)
         .map(GdpMessage::timestamp)
         .map(Instant::ofEpochMilli)
@@ -88,7 +83,7 @@ public class GdpMapper {
                 .build()
         ))
         .operationId(gdpMessage.id())
-        .eventDispatcher(eventDispatcher)
+        .eventDispatcher(this.gdpEventHubProperties.eventDispatcher())
         .build();
   }
 }

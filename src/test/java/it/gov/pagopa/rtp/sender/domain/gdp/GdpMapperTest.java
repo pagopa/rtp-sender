@@ -57,9 +57,7 @@ class GdpMapperTest {
         .pspTaxCode("PSPTAX01")
         .build();
 
-    final var expectedEventDispatcer = this.gdpEventHubProperties.name()
-        + "-" + this.gdpEventHubProperties.consumer().topic()
-        + "-" + this.gdpEventHubProperties.consumer().group();
+    final var expectedEventDispatcer = this.gdpEventHubProperties.eventDispatcher();
 
     final var result = gdpMapper.toRtp(gdpMessage);
 
