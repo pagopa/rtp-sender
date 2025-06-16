@@ -17,7 +17,8 @@ public record Rtp(String noticeNumber, BigDecimal amount, String description, Lo
                   String subject, LocalDateTime savingDateTime, String serviceProviderDebtor,
                   String iban,
                   String payTrxRef, String flgConf, RtpStatus status,
-                  String serviceProviderCreditor, List<Event> events) {
+                  String serviceProviderCreditor, List<Event> events,
+                  Long operationId, String eventDispatcher) {
 
   public Rtp toRtpWithActivationInfo(String rtpSpId) {
     return Rtp.builder()
