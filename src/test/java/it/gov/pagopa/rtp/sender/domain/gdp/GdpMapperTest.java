@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import java.time.Instant;
@@ -16,11 +17,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GdpMapperTest {
 
+  private GdpEventHubProperties gdpEventHubProperties;
   private GdpMapper gdpMapper;
 
   @BeforeEach
   void setUp() {
-    gdpMapper = new GdpMapper();
+    this.gdpEventHubProperties = new GdpEventHubProperties(
+        "test-name",
+        "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test",
+        new GdpEventHubProperties.Consumer("test-topic", "test-consumer")
+    );
+
+    gdpMapper = new GdpMapper(gdpEventHubProperties);
   }
 
   @Test
@@ -49,6 +57,10 @@ class GdpMapperTest {
         .pspTaxCode("PSPTAX01")
         .build();
 
+    final var expectedEventDispatcer = this.gdpEventHubProperties.name()
+        + "-" + this.gdpEventHubProperties.consumer().topic()
+        + "-" + this.gdpEventHubProperties.consumer().group();
+
     final var result = gdpMapper.toRtp(gdpMessage);
 
     assertThat(result).isNotNull();
@@ -66,5 +78,7 @@ class GdpMapperTest {
     assertThat(result.events())
         .hasSize(1)
         .allSatisfy(event -> assertThat(event.triggerEvent()).isEqualTo(RtpEvent.CREATE_RTP));
+    assertThat(result.operationId()).isEqualTo(1L);
+    assertThat(result.eventDispatcher()).isEqualTo(expectedEventDispatcer);
   }
 }
