@@ -5,7 +5,6 @@ import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import jakarta.annotation.Nonnull;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.EnumMap;
 import java.util.Map;
