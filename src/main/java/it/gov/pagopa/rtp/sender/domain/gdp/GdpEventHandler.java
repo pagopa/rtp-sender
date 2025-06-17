@@ -1,5 +1,8 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
+import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
+import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import java.util.Objects;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +33,8 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class GdpEventHandler {
 
-  private final GdpMapper gdpMapper;
+  private final MessageProcessor<GdpMessage, Mono<Rtp>> gdProcessor;
+
 
   /**
    * Constructs the GDP event handler with the provided mapper.
@@ -38,8 +42,9 @@ public class GdpEventHandler {
    * @param gdpMapper The mapper responsible for transforming GDP messages to RTP format.
    * @throws NullPointerException if {@code gdpMapper} is null
    */
-  public GdpEventHandler(@NonNull final GdpMapper gdpMapper) {
-    this.gdpMapper = Objects.requireNonNull(gdpMapper);
+  public GdpEventHandler(
+      @NonNull final MessageProcessor<GdpMessage, Mono<Rtp>> gdProcessor) {
+    this.gdProcessor = Objects.requireNonNull(gdProcessor);
   }
 
   /**
@@ -78,10 +83,10 @@ public class GdpEventHandler {
         .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null")))
         .doOnNext(payload -> log.info("Payload: {}", payload))
 
-        .doOnNext(payload -> log.info("Mapping GDP payload to RTP"))
-        .mapNotNull(this.gdpMapper::toRtp)
+        .flatMap(this.gdProcessor::processMessage)
+        .onErrorContinue((e, rtp) ->
+          log.error("Error processing message: ResourceId: {}", rtp, e))
 
-        .doOnNext(rtp -> log.info("RTP created. Resource Id {}", rtp.resourceID().getId()))
         .doOnError(error -> log.error("Exception found", error))
         .then();
   }
