@@ -16,7 +16,8 @@ import reactor.core.publisher.Hooks;
     SslContextProps.class,
     CallbackProperties.class,
     ApplicationInsightsProperties.class,
-    PagoPaConfigProperties.class
+    PagoPaConfigProperties.class,
+    GdpEventHubProperties.class,
 })
 public class RtpSenderApplication {
 

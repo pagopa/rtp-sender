@@ -1,10 +1,10 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.InputDestination;
 import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
@@ -20,8 +20,8 @@ import reactor.test.StepVerifier;
 @Import(TestChannelBinderConfiguration.class)
 class GdpEventHandlerTest {
 
-  @Value("${test.kafka.topic}")
-  private String topic;
+  @Autowired
+  private GdpEventHubProperties gdpEventHubProperties;
 
   @Autowired
   private InputDestination inputDestination;
@@ -42,6 +42,9 @@ class GdpEventHandlerTest {
   void givenValidGdpMessage_whenConsumed_thenProcessedSuccessfully() {
     final var validMessage = createValidGdpMessage(1L);
     final var message = createKafkaMessage(validMessage, 0, 123L);
+    final var topic = this.gdpEventHubProperties
+        .consumer()
+        .topic();
 
     inputDestination.send(message, topic);
 

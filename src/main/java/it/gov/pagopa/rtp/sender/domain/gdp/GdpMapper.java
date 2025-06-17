@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.Event;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
@@ -10,7 +11,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +28,22 @@ import org.springframework.stereotype.Component;
 @Component("gdpMapper")
 public class GdpMapper {
 
+  private final GdpEventHubProperties gdpEventHubProperties;
+
+
+  /**
+   * Constructs a new {@link GdpMapper} with the given {@link GdpEventHubProperties}.
+   *
+   * @param gdpEventHubProperties configuration properties related to the Event Hub; must not be null
+   * @throws NullPointerException if {@code gdpEventHubProperties} is null
+   */
+  public GdpMapper(
+      @NonNull final GdpEventHubProperties gdpEventHubProperties) {
+
+    this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
+  }
+
+
   /**
    * Maps a {@link GdpMessage} to a new {@link Rtp} instance.
    *
@@ -32,7 +51,9 @@ public class GdpMapper {
    * @return a new {@link Rtp} instance mapped from the given {@link GdpMessage}, or {@code null} if input is {@code null}
    */
   @Nullable
-  public Rtp toRtp(@Nullable final GdpMessage gdpMessage) {
+  public Rtp toRtp(
+      @Nullable final GdpMessage gdpMessage) {
+
     if (gdpMessage == null) {
       return null;
     }
@@ -61,6 +82,8 @@ public class GdpMapper {
                 .triggerEvent(RtpEvent.CREATE_RTP)
                 .build()
         ))
+        .operationId(gdpMessage.id())
+        .eventDispatcher(this.gdpEventHubProperties.eventDispatcher())
         .build();
   }
 }
