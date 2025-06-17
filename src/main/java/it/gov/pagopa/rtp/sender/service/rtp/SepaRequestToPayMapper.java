@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.service.rtp;
 
 import it.gov.pagopa.rtp.sender.utils.IdentifierUtils;
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -320,7 +321,7 @@ public class SepaRequestToPayMapper {
         .id(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
         .assgnr(party40ChoiceAssigner)
         .assgne(party40ChoiceAssignee)
-        .creDtTm(DateUtils.localDateTimeToOffsetFormat(rtp.savingDateTime()));
+        .creDtTm(DateUtils.localDateTimeToOffsetFormat(LocalDateTime.now()));
 
     final var organisationIdentification29EPC25922V30DS112Dto = new OrganisationIdentification29EPC25922V30DS112Dto() //OrgId
         .othr(new GenericOrganisationIdentification1EPC25922V30DS112Dto()
