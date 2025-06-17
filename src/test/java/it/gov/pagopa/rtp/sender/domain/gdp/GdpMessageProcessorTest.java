@@ -2,12 +2,12 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
+import it.gov.pagopa.rtp.sender.domain.gdp.business.OperationProcessor;
+import it.gov.pagopa.rtp.sender.domain.gdp.business.OperationProcessorFactory;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
-import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,13 +22,13 @@ import reactor.test.StepVerifier;
 class GdpMessageProcessorTest {
 
   @Mock
-  private GdpMapper gdpMapper;
-
-  @Mock
-  private SendRTPService sendRTPService;
+  private OperationProcessorFactory operationProcessorFactory;
 
   @InjectMocks
   private GdpMessageProcessor gdpMessageProcessor;
+
+  @Mock
+  private OperationProcessor operationProcessor;
 
   @ParameterizedTest
   @EnumSource(value = Operation.class, names = "CREATE")
@@ -39,9 +39,9 @@ class GdpMessageProcessorTest {
 
     final var rtp = Rtp.builder().build();
 
-    when(gdpMapper.toRtp(message))
-        .thenReturn(rtp);
-    when(sendRTPService.send(rtp))
+    when(this.operationProcessorFactory.getProcessor(message))
+        .thenReturn(Mono.just(this.operationProcessor));
+    when(this.operationProcessor.processOperation(message))
         .thenReturn(Mono.just(rtp));
 
     final var result = gdpMessageProcessor.processMessage(message);
@@ -50,8 +50,7 @@ class GdpMessageProcessorTest {
         .expectNext(rtp)
         .verifyComplete();
 
-    verify(gdpMapper).toRtp(message);
-    verify(sendRTPService).send(rtp);
+    verify(this.operationProcessorFactory).getProcessor(message);
   }
 
   @ParameterizedTest
@@ -61,30 +60,15 @@ class GdpMessageProcessorTest {
         .operation(unsupportedOperation)
         .build();
 
-    final var result = gdpMessageProcessor.processMessage(message);
-
-    StepVerifier.create(result)
-        .verifyComplete();
-
-    verifyNoInteractions(gdpMapper, sendRTPService);
-  }
-
-  @Test
-  void givenCreateOperation_whenMappingReturnsNull_thenProcessingStops() {
-    final var message = GdpMessage.builder()
-        .operation(Operation.CREATE)
-        .build();
-
-    when(gdpMapper.toRtp(message))
-        .thenReturn(null);
+    when(this.operationProcessorFactory.getProcessor(message))
+        .thenReturn(Mono.error(new UnsupportedOperationException()));
 
     final var result = gdpMessageProcessor.processMessage(message);
 
     StepVerifier.create(result)
-        .verifyComplete();
+        .verifyError(UnsupportedOperationException.class);
 
-    verify(gdpMapper).toRtp(message);
-    verifyNoInteractions(sendRTPService);
+    verify(this.operationProcessorFactory).getProcessor(message);
   }
 
   @Test
