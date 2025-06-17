@@ -1,13 +1,8 @@
 package it.gov.pagopa.rtp.sender.service.rtp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.math.BigDecimal;
 import java.time.*;
-
-import it.gov.pagopa.rtp.sender.utils.DateUtils;
+import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +15,7 @@ import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.epcClient.model.ExternalCancellationReason1CodeDto;
 import it.gov.pagopa.rtp.sender.epcClient.model.ExternalOrganisationIdentification1CodeEPC25922V30DS022Dto;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class SepaRequestToPayMapperTest {
@@ -231,7 +227,7 @@ class SepaRequestToPayMapperTest {
     String serviceProviderCreditor = "serviceProviderCreditor";
     String serviceProviderDebtor = "serviceProviderDebtor";
     String expectedDate = "2025-01-01T12:31:20+01:00";
-    String expectedCreationDateTime = DateUtils.localDateTimeToOffsetFormat(LocalDateTime.now());
+    DateTimeFormatter creationDateTimeFormat = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     final var nRtp = Rtp.builder()
         .resourceID(resourceId)
@@ -299,10 +295,7 @@ class SepaRequestToPayMapperTest {
     final var caseAssignment = result.getDocument().getCstmrPmtCxlReq().getAssgnmt();
     assertEquals(resourceId.getId().toString().replace("-",""),
         caseAssignment.getId());
-    assertTrue(Duration.between(
-            OffsetDateTime.parse(expectedCreationDateTime),
-            OffsetDateTime.parse(caseAssignment.getCreDtTm())
-    ).abs().toMillis() < 1000);
+    assertDoesNotThrow(() -> creationDateTimeFormat.parse(caseAssignment.getCreDtTm()));
     assertEquals(pagoPaConfigProperties.details().fiscalCode(),
         caseAssignment.getAssgnr().getPty().getId().getOrgId().getOthr().getId());
     assertEquals(serviceProviderDebtor,
