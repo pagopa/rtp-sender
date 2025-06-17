@@ -3,6 +3,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp.business;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
+import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import jakarta.annotation.Nonnull;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -26,10 +27,15 @@ public class OperationProcessorFactory {
 
 
   private final GdpMapper gdpMapper;
+  private final SendRTPService sendRTPService;
 
 
-  public OperationProcessorFactory(@NonNull final GdpMapper gdpMapper) {
+  public OperationProcessorFactory(
+      @NonNull final GdpMapper gdpMapper,
+      @NonNull final SendRTPService sendRTPService) {
+
     this.gdpMapper = Objects.requireNonNull(gdpMapper);
+    this.sendRTPService = Objects.requireNonNull(sendRTPService);
   }
 
 
@@ -40,8 +46,7 @@ public class OperationProcessorFactory {
     return Mono.just(gdpMessage)
         .map(GdpMessage::operation)
         .mapNotNull(PROCESSOR_MAP::get)
-        .mapNotNull(processorClass -> this.getProcessorInstance(
-            processorClass, this.gdpMapper))
+        .mapNotNull(this::getProcessorInstance)
         .switchIfEmpty(
             Mono.error(new UnsupportedOperationException(gdpMessage.operation().toString())));
   }
@@ -49,12 +54,13 @@ public class OperationProcessorFactory {
 
   @Nonnull
   private OperationProcessor getProcessorInstance(
-      @Nonnull final Class<? extends OperationProcessor> processorClass,
-      @Nonnull final GdpMapper gdpMapper
+      @Nonnull final Class<? extends OperationProcessor> processorClass
   ) {
     try {
-      Constructor<? extends OperationProcessor> constructor = processorClass.getConstructor(gdpMapper.getClass());
-      return constructor.newInstance(gdpMapper);
+      final var constructor = processorClass.getConstructor(
+          this.gdpMapper.getClass(), this.sendRTPService.getClass());
+
+      return constructor.newInstance(this.gdpMapper, this.sendRTPService);
 
     } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
              IllegalAccessException e)
