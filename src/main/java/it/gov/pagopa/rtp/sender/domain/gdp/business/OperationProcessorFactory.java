@@ -31,6 +31,7 @@ public class OperationProcessorFactory {
   private final GdpMapper gdpMapper;
   private final SendRTPService sendRTPService;
 
+
   /**
    * Constructs a new {@code OperationProcessorFactory} with the required dependencies.
    *
@@ -45,6 +46,7 @@ public class OperationProcessorFactory {
     this.gdpMapper = Objects.requireNonNull(gdpMapper);
     this.sendRTPService = Objects.requireNonNull(sendRTPService);
   }
+
 
   /**
    * Retrieves an appropriate {@link OperationProcessor} based on the {@link Operation} of the given {@link GdpMessage}.
@@ -68,6 +70,7 @@ public class OperationProcessorFactory {
         .doOnSuccess(processor -> log.debug("Created processor instance for operation {}", gdpMessage.operation()))
         .doOnError(error -> log.error("Error creating processor instance for operation {}", gdpMessage.operation(), error));
   }
+
 
   /**
    * Internal method to instantiate the {@link OperationProcessor} for a given {@link Operation}.
