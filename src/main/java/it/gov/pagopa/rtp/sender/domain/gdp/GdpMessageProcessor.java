@@ -13,10 +13,10 @@ import reactor.core.publisher.Mono;
 
 /**
  * Message processor responsible for handling incoming {@link GdpMessage} instances by delegating
- * the processing to an appropriate {@link OperationProcessor} based on the message's {@link GdpMessage.Operation} type.
+ * the processing to an appropriate {@link OperationProcessor} based on the message's {@link Operation} type.
  *
  * <p>This component enables dynamic routing of processing logic, supporting extensibility for multiple operation types
- * (e.g., {@link GdpMessage.Operation#CREATE}, {@link GdpMessage.Operation#UPDATE}, etc.),
+ * (e.g., {@link Operation#CREATE}, {@link Operation#UPDATE}, etc.),
  * each handled by a different implementation of {@link OperationProcessor}.</p>
  *
  * <p>The processing is asynchronous and returns a {@link Mono} containing the resulting {@link Rtp} instance,
