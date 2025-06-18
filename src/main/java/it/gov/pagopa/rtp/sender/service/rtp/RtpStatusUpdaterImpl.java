@@ -155,6 +155,11 @@ public class RtpStatusUpdaterImpl implements RtpStatusUpdater {
     return this.triggerEvent(rtp, RtpEvent.CANCEL_RTP_REJECTED);
   }
 
+  @Override
+  public Mono<Boolean> canTriggerEvent(@NonNull final Rtp rtp, @NonNull final RtpEvent event) {
+    return this.canTransition(rtp, event);
+  }
+
 
   /**
    * Triggers the given {@link RtpEvent} on the provided {@link Rtp} instance using the state machine.
@@ -182,6 +187,24 @@ public class RtpStatusUpdaterImpl implements RtpStatusUpdater {
             Mono.from(this.stateMachine.transition(rtpEntity, event)))
         .doOnNext(rtp -> log.debug("Mapping RTP entity to RTP model."))
         .map(this.rtpMapper::toDomain);
+  }
+
+  @NonNull
+  private Mono<Boolean> canTransition(
+          @NonNull final Rtp sourceRtp,
+          @NonNull final RtpEvent event) {
+
+    Objects.requireNonNull(sourceRtp, "Rtp cannot be null");
+    Objects.requireNonNull(event, "Event cannot be null");
+
+    return Mono.just(sourceRtp)
+            .doOnNext(rtp -> log.debug("Checking transition possibility for RTP id {} in status {} with event {}",
+                    rtp.resourceID().getId(), rtp.status(), event))
+            .map(this.rtpMapper::toDbEntity)
+            .flatMap(rtpEntity -> Mono.from(this.stateMachine.canTransition(rtpEntity, event)))
+            .doOnNext(canTransition -> log.debug("Can transition result for RTP id {} with event {}: {}",
+                    sourceRtp.resourceID().getId(), event, canTransition));
+
   }
 }
 

@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.service.rtp;
 
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import reactor.core.publisher.Mono;
 
 /**
@@ -33,4 +34,6 @@ public interface RtpStatusUpdater {
   Mono<Rtp> triggerCancelRtpAccr(Rtp rtp);
 
   Mono<Rtp> triggerCancelRtpRejected(Rtp rtp);
+
+  Mono<Boolean> canTriggerEvent(Rtp rtp, RtpEvent event);
 }
