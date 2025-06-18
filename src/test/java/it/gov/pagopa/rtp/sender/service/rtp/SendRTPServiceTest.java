@@ -248,7 +248,7 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void cancelRtp_shouldSucceed_whenTransitionIsAllowed() {
+  void givenRtpInCreatedStatus_whenCancelRtp_thenShouldSucceed() {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.CREATED, rtpId);
@@ -269,7 +269,7 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void cancelRtp_shouldFail_whenTransitionIsNotAllowed() {
+  void givenRtpInNotAllowedStatus_whenCancelRtp_thenThrowsIllegalStateException() {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.PAYED, rtpId);
@@ -290,7 +290,7 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void cancelRtp_shouldFail_whenRtpNotFound() {
+  void givenNonExistentRtp_whenCancelRtp_thenThrowsRtpNotFoundException() {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
 
