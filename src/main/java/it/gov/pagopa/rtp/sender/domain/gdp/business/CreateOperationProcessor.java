@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import java.util.Objects;
@@ -11,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 
 /**
- * Processor responsible for handling {@link GdpMessage.Operation#CREATE} GDP messages.
+ * Processor responsible for handling {@link Operation#CREATE} GDP messages.
  *
  * <p>This implementation of {@link OperationProcessor} processes messages with a CREATE operation by:
  * <ul>
@@ -22,7 +23,7 @@ import reactor.core.publisher.Mono;
  * <p>If the mapping to RTP returns {@code null}, processing stops and the returned {@link Mono} completes empty.</p>
  *
  * @see OperationProcessor
- * @see GdpMessage.Operation
+ * @see Operation
  * @see GdpMapper
  * @see Rtp
  * @see SendRTPService
