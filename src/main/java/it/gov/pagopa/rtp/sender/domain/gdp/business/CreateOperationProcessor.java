@@ -10,6 +10,23 @@ import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * Processor responsible for handling {@link GdpMessage.Operation#CREATE} GDP messages.
+ *
+ * <p>This implementation of {@link OperationProcessor} processes messages with a CREATE operation by:
+ * <ul>
+ *   <li>Mapping the {@link GdpMessage} to an {@link Rtp} object using {@link GdpMapper}.</li>
+ *   <li>Sending the RTP using the {@link SendRTPService}.</li>
+ * </ul>
+ *
+ * <p>If the mapping to RTP returns {@code null}, processing stops and the returned {@link Mono} completes empty.</p>
+ *
+ * @see OperationProcessor
+ * @see GdpMessage.Operation
+ * @see GdpMapper
+ * @see Rtp
+ * @see SendRTPService
+ */
 @Slf4j
 public class CreateOperationProcessor implements OperationProcessor {
 
@@ -17,6 +34,13 @@ public class CreateOperationProcessor implements OperationProcessor {
   private final SendRTPService sendRTPService;
 
 
+  /**
+   * Constructs a new {@code CreateOperationProcessor} with the required dependencies.
+   *
+   * @param gdpMapper       the mapper to convert GDP messages to RTP objects; must not be {@code null}
+   * @param sendRTPService  the service used to send the resulting RTP; must not be {@code null}
+   * @throws NullPointerException if any argument is {@code null}
+   */
   public CreateOperationProcessor(
       @NonNull final GdpMapper gdpMapper,
       @NonNull final SendRTPService sendRTPService) {
@@ -26,6 +50,15 @@ public class CreateOperationProcessor implements OperationProcessor {
   }
 
 
+  /**
+   * Processes a {@link GdpMessage} with a CREATE operation.
+   *
+   * <p>Maps the message to an {@link Rtp} and sends it using the configured service.</p>
+   *
+   * @param gdpMessage the message to process; must not be {@code null}
+   * @return a {@link Mono} emitting the sent {@link Rtp}, or completing empty if mapping returns {@code null}
+   * @throws NullPointerException if {@code gdpMessage} is {@code null}
+   */
   @Override
   @NonNull
   public Mono<Rtp> processOperation(@NonNull final GdpMessage gdpMessage) {
@@ -38,3 +71,4 @@ public class CreateOperationProcessor implements OperationProcessor {
         .flatMap(this.sendRTPService::send);
   }
 }
+
