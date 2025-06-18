@@ -10,10 +10,7 @@ import it.gov.pagopa.rtp.sender.activateClient.model.ErrorDto;
 import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import it.gov.pagopa.rtp.sender.configuration.SecurityConfig;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
-import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
-import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
-import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
-import it.gov.pagopa.rtp.sender.domain.errors.SepaRequestException;
+import it.gov.pagopa.rtp.sender.domain.errors.*;
 import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
@@ -341,6 +338,22 @@ class SendAPIControllerImplTest {
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus().is5xxServerError();
+  }
+
+  @Test
+  @RtpSenderWriter
+  void givenInvalidRtpStatus_whenCancelRtp_thenReturnUnprocessableEntity() {
+    final var rtpId = UUID.randomUUID();
+
+    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+            .thenReturn(Mono.error(new InvalidRtpStatusException(rtpId, RtpStatus.SENT)));
+
+    webTestClient.post()
+            .uri("/rtps/{rtpId}/cancel", rtpId)
+            .header("RequestId", UUID.randomUUID().toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
   }
 
   @Test
