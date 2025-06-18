@@ -253,7 +253,7 @@ class SendRTPServiceTest {
     ResourceID resourceID = new ResourceID(rtpId);
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.CREATED, rtpId);
 
-    when(rtpRepository.findById(eq(resourceID))).thenReturn(Mono.just(mockRtp));
+    when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
     when(rtpStatusUpdater.canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(true));
     when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(mockRtp)).thenReturn(Mono.just(mockRtp));
     when(rtpRepository.save(mockRtp)).thenReturn(Mono.just(mockRtp));
@@ -262,7 +262,7 @@ class SendRTPServiceTest {
             .expectNext(mockRtp)
             .verifyComplete();
 
-    verify(rtpRepository).findById(eq(resourceID));
+    verify(rtpRepository).findById(resourceID);
     verify(rtpStatusUpdater).canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP);
     verify(sendRtpProcessor).sendRtpCancellationToServiceProviderDebtor(mockRtp);
     verify(rtpRepository).save(mockRtp);
@@ -274,7 +274,7 @@ class SendRTPServiceTest {
     ResourceID resourceID = new ResourceID(rtpId);
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.PAYED, rtpId);
 
-    when(rtpRepository.findById(eq(resourceID))).thenReturn(Mono.just(mockRtp));
+    when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
     when(rtpStatusUpdater.canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(false));
 
     StepVerifier.create(sendRTPService.cancelRtp(resourceID))
@@ -283,7 +283,7 @@ class SendRTPServiceTest {
                             err.getMessage().contains(rtpId.toString()))
             .verify();
 
-    verify(rtpRepository).findById(eq(resourceID));
+    verify(rtpRepository).findById(resourceID);
     verify(rtpStatusUpdater).canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP);
     verifyNoInteractions(sendRtpProcessor);
     verify(rtpRepository, never()).save(any());
@@ -294,13 +294,13 @@ class SendRTPServiceTest {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
 
-    when(rtpRepository.findById(eq(resourceID))).thenReturn(Mono.empty());
+    when(rtpRepository.findById(resourceID)).thenReturn(Mono.empty());
 
     StepVerifier.create(sendRTPService.cancelRtp(resourceID))
             .expectError(RtpNotFoundException.class)
             .verify();
 
-    verify(rtpRepository).findById(eq(resourceID));
+    verify(rtpRepository).findById(resourceID);
     verifyNoInteractions(rtpStatusUpdater, sendRtpProcessor);
   }
 
