@@ -76,13 +76,13 @@ class RtpStatusUpdaterImplTest {
   }
 
   @Test
-  void givenStateAllowsTransition_whenCanTriggerEvent_thenReturnTrue() {
+  void givenStateAllowsTransition_whenCanCancel_thenReturnTrue() {
     UUID fakeId = UUID.randomUUID();
     when(rtp.resourceID()).thenReturn(new ResourceID(fakeId));
     when(rtp.status()).thenReturn(RtpStatus.CREATED);
     when(stateMachine.canTransition(rtpEntity, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(true));
 
-    StepVerifier.create(rtpStatusUpdater.canTriggerEvent(rtp, RtpEvent.CANCEL_RTP))
+    StepVerifier.create(rtpStatusUpdater.canCancel(rtp))
             .expectNext(true)
             .verifyComplete();
 
@@ -92,12 +92,12 @@ class RtpStatusUpdaterImplTest {
 
 
   @Test
-  void givenStatePreventsTransition_whenCanTriggerEvent_thenReturnFalse() {
+  void givenStatePreventsTransition_whenCanCancel_thenReturnFalse() {
     UUID fakeId = UUID.randomUUID();
     when(rtp.resourceID()).thenReturn(new ResourceID(fakeId));
     when(stateMachine.canTransition(rtpEntity, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(false));
 
-    StepVerifier.create(rtpStatusUpdater.canTriggerEvent(rtp, RtpEvent.CANCEL_RTP))
+    StepVerifier.create(rtpStatusUpdater.canCancel(rtp))
             .expectNext(false)
             .verifyComplete();
 
@@ -106,13 +106,13 @@ class RtpStatusUpdaterImplTest {
   }
 
   @Test
-  void givenStateMachineFails_whenCanTriggerEvent_thenPropagateError() {
+  void givenStateMachineFails_whenCanCancel_thenPropagateError() {
     UUID fakeId = UUID.randomUUID();
     when(rtp.resourceID()).thenReturn(new ResourceID(fakeId));
     when(stateMachine.canTransition(rtpEntity, RtpEvent.CANCEL_RTP))
             .thenReturn(Mono.error(new RuntimeException("Unexpected failure")));
 
-    StepVerifier.create(rtpStatusUpdater.canTriggerEvent(rtp, RtpEvent.CANCEL_RTP))
+    StepVerifier.create(rtpStatusUpdater.canCancel(rtp))
             .expectErrorMatches(err -> err instanceof RuntimeException &&
                     err.getMessage().equals("Unexpected failure"))
             .verify();

@@ -210,7 +210,7 @@ class SendRTPServiceTest {
     final var cancelRtp = mockRtp(RtpStatus.CANCELLED, rtpId, LocalDateTime.now());
 
     when(rtpRepository.findById(rtpId)).thenReturn(Mono.just(createdRtp));
-    when(rtpStatusUpdater.canTriggerEvent(createdRtp, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(true));
+    when(rtpStatusUpdater.canCancel(createdRtp)).thenReturn(Mono.just(true));
     when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(createdRtp))
         .thenReturn(Mono.just(cancelRtp));
     when(rtpRepository.save(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -225,7 +225,7 @@ class SendRTPServiceTest {
         .verifyComplete();
 
     verify(rtpRepository).findById(rtpId);
-    verify(rtpStatusUpdater).canTriggerEvent(createdRtp, RtpEvent.CANCEL_RTP);
+    verify(rtpStatusUpdater).canCancel(createdRtp);
     verify(sendRtpProcessor).sendRtpCancellationToServiceProviderDebtor(createdRtp);
     verify(rtpRepository).save(any(Rtp.class));
   }
@@ -254,7 +254,7 @@ class SendRTPServiceTest {
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.CREATED, rtpId);
 
     when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
-    when(rtpStatusUpdater.canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(true));
+    when(rtpStatusUpdater.canCancel(mockRtp)).thenReturn(Mono.just(true));
     when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(mockRtp)).thenReturn(Mono.just(mockRtp));
     when(rtpRepository.save(mockRtp)).thenReturn(Mono.just(mockRtp));
 
@@ -263,7 +263,7 @@ class SendRTPServiceTest {
             .verifyComplete();
 
     verify(rtpRepository).findById(resourceID);
-    verify(rtpStatusUpdater).canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP);
+    verify(rtpStatusUpdater).canCancel(mockRtp);
     verify(sendRtpProcessor).sendRtpCancellationToServiceProviderDebtor(mockRtp);
     verify(rtpRepository).save(mockRtp);
   }
@@ -275,7 +275,7 @@ class SendRTPServiceTest {
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.PAYED, rtpId);
 
     when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
-    when(rtpStatusUpdater.canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(false));
+    when(rtpStatusUpdater.canCancel(mockRtp)).thenReturn(Mono.just(false));
 
     StepVerifier.create(sendRTPService.cancelRtp(resourceID))
             .expectErrorMatches(err ->
@@ -284,7 +284,7 @@ class SendRTPServiceTest {
             .verify();
 
     verify(rtpRepository).findById(resourceID);
-    verify(rtpStatusUpdater).canTriggerEvent(mockRtp, RtpEvent.CANCEL_RTP);
+    verify(rtpStatusUpdater).canCancel(mockRtp);
     verifyNoInteractions(sendRtpProcessor);
     verify(rtpRepository, never()).save(any());
   }
@@ -363,11 +363,9 @@ class SendRTPServiceTest {
             .thenReturn(Mono.empty());
 
     StepVerifier.create(sendRTPService.findRtp(rtpId))
-            .expectErrorSatisfies(throwable -> {
-              assertThat(throwable)
-                      .isInstanceOf(RtpNotFoundException.class)
-                      .hasMessageContaining(rtpId.toString());
-            })
+            .expectErrorSatisfies(throwable -> assertThat(throwable)
+                    .isInstanceOf(RtpNotFoundException.class)
+                    .hasMessageContaining(rtpId.toString()))
             .verify();
   }
 

@@ -160,8 +160,8 @@ public class RtpStatusUpdaterImpl implements RtpStatusUpdater {
    * Checks whether the specified {@link RtpEvent} can be triggered on the given RTP.
    */
   @Override
-  public Mono<Boolean> canTriggerEvent(@NonNull final Rtp rtp, @NonNull final RtpEvent event) {
-    return this.canTransition(rtp, event);
+  public Mono<Boolean> canCancel(@NonNull final Rtp rtp) {
+    return this.canTransition(rtp, RtpEvent.CANCEL_RTP);
   }
 
 
