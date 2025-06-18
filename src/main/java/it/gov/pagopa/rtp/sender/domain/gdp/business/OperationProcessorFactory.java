@@ -33,10 +33,13 @@ public class OperationProcessorFactory {
     Objects.requireNonNull(gdpMessage, "GdpMessage cannot be null");
 
     return Mono.just(gdpMessage)
+        .doFirst(() -> log.debug("Creating processor instance for operation {}", gdpMessage.operation()))
         .map(GdpMessage::operation)
         .mapNotNull(this::createProcessorInstance)
         .switchIfEmpty(
-            Mono.error(new UnsupportedOperationException(gdpMessage.operation().toString())));
+            Mono.error(new UnsupportedOperationException(gdpMessage.operation().toString())))
+        .doOnSuccess(processor -> log.debug("Created processor instance for operation {}", gdpMessage.operation()))
+        .doOnError(error -> log.error("Error creating processor instance for operation {}", gdpMessage.operation(), error));
   }
 
 
