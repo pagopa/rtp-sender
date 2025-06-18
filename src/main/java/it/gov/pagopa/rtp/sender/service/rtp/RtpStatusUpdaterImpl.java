@@ -155,6 +155,10 @@ public class RtpStatusUpdaterImpl implements RtpStatusUpdater {
     return this.triggerEvent(rtp, RtpEvent.CANCEL_RTP_REJECTED);
   }
 
+
+  /**
+   * Checks whether the specified {@link RtpEvent} can be triggered on the given RTP.
+   */
   @Override
   public Mono<Boolean> canTriggerEvent(@NonNull final Rtp rtp, @NonNull final RtpEvent event) {
     return this.canTransition(rtp, event);
@@ -189,6 +193,16 @@ public class RtpStatusUpdaterImpl implements RtpStatusUpdater {
         .map(this.rtpMapper::toDomain);
   }
 
+  /**
+   * Checks if the given {@link RtpEvent} can be applied to the provided {@link Rtp} instance.
+   * <p>
+   * This method converts the domain model to its entity representation and queries the state machine
+   * to determine if the transition is possible from the current state.
+   *
+   * @param sourceRtp the RTP to evaluate
+   * @param event     the event representing the possible transition
+   * @return a {@link Mono} emitting {@code true} if the transition is possible, {@code false} otherwise
+   */
   @NonNull
   private Mono<Boolean> canTransition(
           @NonNull final Rtp sourceRtp,
