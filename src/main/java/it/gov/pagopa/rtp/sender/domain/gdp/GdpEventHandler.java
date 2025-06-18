@@ -83,11 +83,43 @@ public class GdpEventHandler {
 
         .flatMap(this.gdProcessor::processMessage)
 
-        .onErrorContinue((e, rtp) ->
-            log.error("Error processing message: ResourceId: {}", rtp, e))
+        .onErrorContinue(this::handleError)
 
         .doOnError(error -> log.error("Exception found", error))
         .then();
   }
+
+
+  /**
+   * Handles errors that occur during message processing by logging the error details
+   * along with context-specific information based on the type of the payload.
+   *
+   * <p>If the payload is an instance of {@link GdpMessage}, the GDP message ID is logged.</p>
+   * <p>If the payload is an instance of {@link Rtp}, the RTP resource ID is logged.</p>
+   * <p>If the payload is of an unknown type, only the error is logged without additional context.</p>
+   *
+   * @param error   the exception that occurred during processing (must not be {@code null})
+   * @param context the message payload associated with the error (must not be {@code null})
+   * @throws NullPointerException if {@code error} or {@code payload} is {@code null}
+   */
+  @NonNull
+  private void handleError(
+      @NonNull final Throwable error,
+      @NonNull final Object context) {
+
+    Objects.requireNonNull(error, "Error cannot be null");
+    Objects.requireNonNull(context, "Payload cannot be null");
+
+    if (context instanceof GdpMessage gdpMessage) {
+      log.error("Error processing message: GDP id: {}", gdpMessage.id(), error);
+
+    } else if (context instanceof Rtp rtp) {
+      log.error("Error processing message: ResourceId: {}", rtp.resourceID().getId(), error);
+
+    } else {
+      log.error("Error processing message.", error);
+    }
+  }
+
 }
 
