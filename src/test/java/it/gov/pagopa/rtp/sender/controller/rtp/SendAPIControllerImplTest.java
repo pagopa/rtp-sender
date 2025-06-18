@@ -346,7 +346,7 @@ class SendAPIControllerImplTest {
     final var rtpId = UUID.randomUUID();
 
     when(sendRTPService.cancelRtp(any(ResourceID.class)))
-            .thenReturn(Mono.error(new InvalidRtpStatusException(rtpId, RtpStatus.SENT)));
+            .thenReturn(Mono.error(new IllegalStateException()));
 
     webTestClient.post()
             .uri("/rtps/{rtpId}/cancel", rtpId)

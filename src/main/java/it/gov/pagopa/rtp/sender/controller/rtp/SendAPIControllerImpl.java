@@ -74,7 +74,7 @@ public class SendAPIControllerImpl implements RtpsApi {
             .noContent().build())
         .onErrorReturn(RtpNotFoundException.class,
             ResponseEntity.notFound().build())
-        .onErrorReturn(InvalidRtpStatusException.class,
+        .onErrorReturn(IllegalStateException.class,
             ResponseEntity.unprocessableEntity().build())
         .doOnError(a -> log.error("Error cancelling RTP {}", a.getMessage()));
   }

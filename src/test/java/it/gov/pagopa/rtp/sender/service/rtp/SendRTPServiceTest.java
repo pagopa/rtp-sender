@@ -13,7 +13,6 @@ import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Activation;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send.Retry;
-import it.gov.pagopa.rtp.sender.domain.errors.InvalidRtpStatusException;
 import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
 import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
@@ -280,7 +279,7 @@ class SendRTPServiceTest {
 
     StepVerifier.create(sendRTPService.cancelRtp(resourceID))
             .expectErrorMatches(err ->
-                    err instanceof InvalidRtpStatusException &&
+                    err instanceof IllegalStateException &&
                             err.getMessage().contains(rtpId.toString()))
             .verify();
 

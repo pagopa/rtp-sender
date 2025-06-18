@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
 import it.gov.pagopa.rtp.sender.activateClient.model.ActivationDto;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
-import it.gov.pagopa.rtp.sender.domain.errors.InvalidRtpStatusException;
 import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
 import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
@@ -122,7 +121,8 @@ public class SendRTPServiceImpl implements SendRTPService {
                 .filter(Boolean::booleanValue)
                 .switchIfEmpty(Mono.defer(() -> {
                   log.warn("Cannot cancel RTP with id {} in status {}", rtp.resourceID().getId(), rtp.status());
-                  return Mono.error(new InvalidRtpStatusException(rtp.resourceID().getId(), rtp.status()));
+                  return Mono.error(new IllegalStateException(String.format("Cannot transition RTP with id %s from status %s",
+                          rtp.resourceID().getId(), rtp.status())));
                 }))
                 .thenReturn(rtp));
 
