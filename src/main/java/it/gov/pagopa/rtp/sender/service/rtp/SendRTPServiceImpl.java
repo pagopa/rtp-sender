@@ -119,11 +119,8 @@ public class SendRTPServiceImpl implements SendRTPService {
         .doOnError(error -> log.error("Error retrieving RTP: {}", error.getMessage(), error))
         .flatMap(rtp -> this.rtpStatusUpdater.canTriggerEvent(rtp, RtpEvent.CANCEL_RTP)
                 .filter(Boolean::booleanValue)
-                .switchIfEmpty(Mono.defer(() -> {
-                  log.warn("Cannot cancel RTP with id {} in status {}", rtp.resourceID().getId(), rtp.status());
-                  return Mono.error(new IllegalStateException(String.format("Cannot transition RTP with id %s from status %s",
-                          rtp.resourceID().getId(), rtp.status())));
-                }))
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalStateException(String.format("Cannot transition RTP with id %s in status %s",
+                        rtp.resourceID().getId(), rtp.status())))))
                 .thenReturn(rtp));
 
     return rtpToCancel
