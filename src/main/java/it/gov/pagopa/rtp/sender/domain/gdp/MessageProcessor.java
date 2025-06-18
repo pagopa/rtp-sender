@@ -7,10 +7,10 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
  * and return a result of type {@code OUT}. This can be used for both synchronous and asynchronous processing,
  * depending on the types used (e.g., wrapping {@code OUT} in a reactive type such as {@code Mono} or {@code Flux}).</p>
  *
- * @param <IN>  the type of input message to process
- * @param <OUT> the type of result produced after processing the message
+ * @param <I>  the type of input message to process
+ * @param <O> the type of result produced after processing the message
  */
-public interface MessageProcessor<IN, OUT> {
+public interface MessageProcessor<I, O> {
 
   /**
    * Processes the given input message and returns a result.
@@ -18,7 +18,7 @@ public interface MessageProcessor<IN, OUT> {
    * @param message the message to process
    * @return the result of processing the message
    */
-  OUT processMessage(IN message);
+  O processMessage(I message);
 
 }
 
