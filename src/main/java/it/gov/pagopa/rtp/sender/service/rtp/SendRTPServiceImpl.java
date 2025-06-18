@@ -7,13 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.rtp.sender.activateClient.api.ReadApi;
 import it.gov.pagopa.rtp.sender.activateClient.model.ActivationDto;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
+import it.gov.pagopa.rtp.sender.domain.errors.InvalidRtpStatusException;
 import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
 import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
-import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
-import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
+import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.epcClient.model.ActiveOrHistoricCurrencyAndAmountEPC25922V30DS02WrapperDto;
 import it.gov.pagopa.rtp.sender.epcClient.model.ExternalOrganisationIdentification1CodeEPC25922V30DS022WrapperDto;
 import it.gov.pagopa.rtp.sender.epcClient.model.ExternalPersonIdentification1CodeEPC25922V30DS02WrapperDto;
@@ -61,16 +59,19 @@ public class SendRTPServiceImpl implements SendRTPService {
   private final ServiceProviderConfig serviceProviderConfig;
   private final RtpRepository rtpRepository;
   private final SendRtpProcessor sendRtpProcessor;
+  private final RtpStatusUpdater rtpStatusUpdater;
 
   public SendRTPServiceImpl(SepaRequestToPayMapper sepaRequestToPayMapper, ReadApi activationApi,
-      ServiceProviderConfig serviceProviderConfig, RtpRepository rtpRepository,
-      ObjectMapper objectMapper, SendRtpProcessor sendRtpProcessor) {
+                            ServiceProviderConfig serviceProviderConfig, RtpRepository rtpRepository,
+                            ObjectMapper objectMapper, SendRtpProcessor sendRtpProcessor,
+                            RtpStatusUpdater rtpStatusUpdater) {
     this.sepaRequestToPayMapper = sepaRequestToPayMapper;
     this.activationApi = activationApi;
     this.serviceProviderConfig = serviceProviderConfig;
     this.rtpRepository = rtpRepository;
     this.objectMapper = objectMapper;
     this.sendRtpProcessor = sendRtpProcessor;
+    this.rtpStatusUpdater = rtpStatusUpdater;
   }
 
   @NonNull
@@ -116,7 +117,14 @@ public class SendRTPServiceImpl implements SendRTPService {
         .doOnSuccess(
             rtp -> log.info("RTP retrieved with id {} and status {}", rtp.resourceID().getId(),
                 rtp.status()))
-        .doOnError(error -> log.error("Error retrieving RTP: {}", error.getMessage(), error));
+        .doOnError(error -> log.error("Error retrieving RTP: {}", error.getMessage(), error))
+        .flatMap(rtp -> this.rtpStatusUpdater.canTriggerEvent(rtp, RtpEvent.CANCEL_RTP)
+                .filter(Boolean::booleanValue)
+                .switchIfEmpty(Mono.defer(() -> {
+                  log.warn("Cannot cancel RTP with id {} in status {}", rtp.resourceID().getId(), rtp.status());
+                  return Mono.error(new InvalidRtpStatusException(rtp.resourceID().getId(), rtp.status()));
+                }))
+                .thenReturn(rtp));
 
     return rtpToCancel
         .doOnError(error -> log.error(error.getMessage(), error))
