@@ -16,10 +16,7 @@ import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send.Retry;
 import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
 import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
-import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
-import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
+import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.epcClient.model.SepaRequestToPayRequestResourceDto;
 import it.gov.pagopa.rtp.sender.service.rtp.handler.SendRtpProcessor;
 import java.math.BigDecimal;
@@ -58,6 +55,8 @@ class SendRTPServiceTest {
   private SendRtpProcessor sendRtpProcessor;
 
   private SendRTPServiceImpl sendRTPService;
+  @Mock
+  private RtpStatusUpdater rtpStatusUpdater;
 
   final String noticeNumber = "12345";
   final BigDecimal amount = new BigDecimal("99999999999");
@@ -79,7 +78,8 @@ class SendRTPServiceTest {
   @BeforeEach
   void setUp() {
     sendRTPService = new SendRTPServiceImpl(sepaRequestToPayMapper, readApi,
-        serviceProviderConfig, rtpRepository, objectMapper,sendRtpProcessor);
+        serviceProviderConfig, rtpRepository,
+        objectMapper, sendRtpProcessor, rtpStatusUpdater);
     inputRtp = Rtp.builder().noticeNumber(noticeNumber).amount(amount).description(description)
         .expiryDate(expiryDate)
         .payerId(payerId).payeeName(payeeName).payeeId(payeeId)
@@ -210,6 +210,7 @@ class SendRTPServiceTest {
     final var cancelRtp = mockRtp(RtpStatus.CANCELLED, rtpId, LocalDateTime.now());
 
     when(rtpRepository.findById(rtpId)).thenReturn(Mono.just(createdRtp));
+    when(rtpStatusUpdater.canCancel(createdRtp)).thenReturn(Mono.just(true));
     when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(createdRtp))
         .thenReturn(Mono.just(cancelRtp));
     when(rtpRepository.save(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -224,6 +225,7 @@ class SendRTPServiceTest {
         .verifyComplete();
 
     verify(rtpRepository).findById(rtpId);
+    verify(rtpStatusUpdater).canCancel(createdRtp);
     verify(sendRtpProcessor).sendRtpCancellationToServiceProviderDebtor(createdRtp);
     verify(rtpRepository).save(any(Rtp.class));
   }
@@ -245,6 +247,62 @@ class SendRTPServiceTest {
     verifyNoMoreInteractions(rtpRepository);
   }
 
+  @Test
+  void givenRtpInCreatedStatus_whenCancelRtp_thenShouldSucceed() {
+    UUID rtpId = UUID.randomUUID();
+    ResourceID resourceID = new ResourceID(rtpId);
+    Rtp mockRtp = mockRtpWithStatus(RtpStatus.CREATED, rtpId);
+
+    when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
+    when(rtpStatusUpdater.canCancel(mockRtp)).thenReturn(Mono.just(true));
+    when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(mockRtp)).thenReturn(Mono.just(mockRtp));
+    when(rtpRepository.save(mockRtp)).thenReturn(Mono.just(mockRtp));
+
+    StepVerifier.create(sendRTPService.cancelRtp(resourceID))
+            .expectNext(mockRtp)
+            .verifyComplete();
+
+    verify(rtpRepository).findById(resourceID);
+    verify(rtpStatusUpdater).canCancel(mockRtp);
+    verify(sendRtpProcessor).sendRtpCancellationToServiceProviderDebtor(mockRtp);
+    verify(rtpRepository).save(mockRtp);
+  }
+
+  @Test
+  void givenRtpInNotAllowedStatus_whenCancelRtp_thenThrowsIllegalStateException() {
+    UUID rtpId = UUID.randomUUID();
+    ResourceID resourceID = new ResourceID(rtpId);
+    Rtp mockRtp = mockRtpWithStatus(RtpStatus.PAYED, rtpId);
+
+    when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
+    when(rtpStatusUpdater.canCancel(mockRtp)).thenReturn(Mono.just(false));
+
+    StepVerifier.create(sendRTPService.cancelRtp(resourceID))
+            .expectErrorMatches(err ->
+                    err instanceof IllegalStateException &&
+                            err.getMessage().contains(rtpId.toString()))
+            .verify();
+
+    verify(rtpRepository).findById(resourceID);
+    verify(rtpStatusUpdater).canCancel(mockRtp);
+    verifyNoInteractions(sendRtpProcessor);
+    verify(rtpRepository, never()).save(any());
+  }
+
+  @Test
+  void givenNonExistentRtp_whenCancelRtp_thenThrowsRtpNotFoundException() {
+    UUID rtpId = UUID.randomUUID();
+    ResourceID resourceID = new ResourceID(rtpId);
+
+    when(rtpRepository.findById(resourceID)).thenReturn(Mono.empty());
+
+    StepVerifier.create(sendRTPService.cancelRtp(resourceID))
+            .expectError(RtpNotFoundException.class)
+            .verify();
+
+    verify(rtpRepository).findById(resourceID);
+    verifyNoInteractions(rtpStatusUpdater, sendRtpProcessor);
+  }
 
   private Rtp mockRtp() {
     return mockRtp(RtpStatus.CREATED, ResourceID.createNew(), LocalDateTime.now());
@@ -305,12 +363,18 @@ class SendRTPServiceTest {
             .thenReturn(Mono.empty());
 
     StepVerifier.create(sendRTPService.findRtp(rtpId))
-            .expectErrorSatisfies(throwable -> {
-              assertThat(throwable)
-                      .isInstanceOf(RtpNotFoundException.class)
-                      .hasMessageContaining(rtpId.toString());
-            })
+            .expectErrorSatisfies(throwable -> assertThat(throwable)
+                    .isInstanceOf(RtpNotFoundException.class)
+                    .hasMessageContaining(rtpId.toString()))
             .verify();
   }
+
+  private Rtp mockRtpWithStatus(RtpStatus status, UUID id) {
+    return Rtp.builder()
+            .resourceID(new ResourceID(id))
+            .status(status)
+            .build();
+  }
+
 
 }
