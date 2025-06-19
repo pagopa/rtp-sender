@@ -116,7 +116,7 @@ public class CallbackFieldsExtractor {
                 .map(IdentifierUtils::uuidRebuilder)
                 .doOnNext(uuid -> log.debug("Rebuilt UUID: {}", uuid))
                 .map(ResourceID::new)
-                .doOnNext(id -> log.info("Extracted ResourceID: {}", id))
+                .doOnNext(id -> log.info("Extracted ResourceID: {}", id.getId()))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Resource id is invalid")));
     }
 }
