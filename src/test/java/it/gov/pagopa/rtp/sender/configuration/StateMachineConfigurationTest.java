@@ -21,11 +21,14 @@ class StateMachineConfigurationTest {
   @Mock
   private RtpDB rtpDB;
 
+  @Mock
+  private ServiceProviderConfig serviceProviderConfig;
+
   private StateMachineConfiguration configuration;
 
   @BeforeEach
   void setUp() {
-    configuration = new StateMachineConfiguration(rtpDB);
+    configuration = new StateMachineConfiguration(rtpDB, serviceProviderConfig);
   }
 
   @Test
