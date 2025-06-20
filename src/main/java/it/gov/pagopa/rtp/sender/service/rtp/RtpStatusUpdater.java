@@ -33,4 +33,6 @@ public interface RtpStatusUpdater {
   Mono<Rtp> triggerCancelRtpAccr(Rtp rtp);
 
   Mono<Rtp> triggerCancelRtpRejected(Rtp rtp);
+
+  Mono<Boolean> canCancel(Rtp rtp);
 }

@@ -1,6 +1,9 @@
 package it.gov.pagopa.rtp.sender.service.rtp;
 
+import java.util.UUID;
 import java.util.function.Function;
+import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -11,7 +14,6 @@ import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
 import it.gov.pagopa.rtp.sender.repository.rtp.RtpMapper;
-import it.gov.pagopa.rtp.sender.service.rtp.RtpStatusUpdaterImpl;
 import it.gov.pagopa.rtp.sender.statemachine.StateMachine;
 import it.gov.pagopa.rtp.sender.statemachine.StateMachineFactory;
 import reactor.core.publisher.Mono;
@@ -72,6 +74,53 @@ class RtpStatusUpdaterImplTest {
         .expectErrorSatisfies(error -> assertInstanceOf(IllegalStateException.class, error))
         .verify();
   }
+
+  @Test
+  void givenStateAllowsTransition_whenCanCancel_thenReturnTrue() {
+    UUID fakeId = UUID.randomUUID();
+    when(rtp.resourceID()).thenReturn(new ResourceID(fakeId));
+    when(rtp.status()).thenReturn(RtpStatus.CREATED);
+    when(stateMachine.canTransition(rtpEntity, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(true));
+
+    StepVerifier.create(rtpStatusUpdater.canCancel(rtp))
+            .expectNext(true)
+            .verifyComplete();
+
+    verify(rtpMapper).toDbEntity(rtp);
+    verify(stateMachine).canTransition(rtpEntity, RtpEvent.CANCEL_RTP);
+  }
+
+
+  @Test
+  void givenStatePreventsTransition_whenCanCancel_thenReturnFalse() {
+    UUID fakeId = UUID.randomUUID();
+    when(rtp.resourceID()).thenReturn(new ResourceID(fakeId));
+    when(stateMachine.canTransition(rtpEntity, RtpEvent.CANCEL_RTP)).thenReturn(Mono.just(false));
+
+    StepVerifier.create(rtpStatusUpdater.canCancel(rtp))
+            .expectNext(false)
+            .verifyComplete();
+
+    verify(rtpMapper).toDbEntity(rtp);
+    verify(stateMachine).canTransition(rtpEntity, RtpEvent.CANCEL_RTP);
+  }
+
+  @Test
+  void givenStateMachineFails_whenCanCancel_thenPropagateError() {
+    UUID fakeId = UUID.randomUUID();
+    when(rtp.resourceID()).thenReturn(new ResourceID(fakeId));
+    when(stateMachine.canTransition(rtpEntity, RtpEvent.CANCEL_RTP))
+            .thenReturn(Mono.error(new RuntimeException("Unexpected failure")));
+
+    StepVerifier.create(rtpStatusUpdater.canCancel(rtp))
+            .expectErrorMatches(err -> err instanceof RuntimeException &&
+                    err.getMessage().equals("Unexpected failure"))
+            .verify();
+
+    verify(rtpMapper).toDbEntity(rtp);
+    verify(stateMachine).canTransition(rtpEntity, RtpEvent.CANCEL_RTP);
+  }
+
 
   @Test
   void givenValidInput_whenTriggerSendRtp_thenReturnUpdatedRtp() {
