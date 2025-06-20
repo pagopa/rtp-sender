@@ -7,9 +7,11 @@ import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.springframework.lang.NonNull;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 
@@ -87,25 +89,20 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
     return Mono.just(new RtpTransitionKey(source.getStatus(), event))
         .flatMap(transitionKey ->
             Mono.justOrEmpty(this.transitionConfiguration.getTransition(transitionKey)))
-        .flatMap(transition -> {
+        .flatMap(transition ->
+            Flux.fromIterable(transition.getPreTransactionActions())
+              .reduce(Mono.just(source), Mono::flatMap)
+              .flatMap(Function.identity())
 
-          var result = Mono.just(source);
+              .map(rtpEntity -> {
+                this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent());
+                return rtpEntity;
+              })
 
-          for (var action : transition.getPreTransactionActions()) {
-            result = action.apply(result);
-          }
-
-          result = result.map(rtpEntity -> {
-            this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent());
-            return rtpEntity;
-          });
-
-          for (var action : transition.getPostTransactionActions()) {
-            result = action.apply(result);
-          }
-
-          return result;
-        })
+              .flatMap(rtpEntity -> Flux.fromIterable(transition.getPostTransactionActions())
+                  .reduce(Mono.just(rtpEntity), Mono::flatMap)
+                  .flatMap(Function.identity()))
+        )
         .switchIfEmpty(Mono.error(new IllegalStateException(
             String.format("Cannot transition from %s to %s", source, event))));
   }
