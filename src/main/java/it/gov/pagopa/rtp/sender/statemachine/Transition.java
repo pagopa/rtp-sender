@@ -2,7 +2,7 @@ package it.gov.pagopa.rtp.sender.statemachine;
 
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -23,9 +23,9 @@ public abstract class Transition<T, S, E> {
   private final S destination;
 
   @NotNull
-  private final List<UnaryOperator<Mono<T>>> preTransactionActions;
+  private final List<Function<T, Mono<T>>> preTransactionActions;
 
   @NotNull
-  private final List<UnaryOperator<Mono<T>>> postTransactionActions;
+  private final List<Function<T, Mono<T>>> postTransactionActions;
 
 }
