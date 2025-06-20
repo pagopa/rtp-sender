@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 
@@ -27,14 +29,14 @@ class GdpEventHandlerTest {
   private InputDestination inputDestination;
 
   @Autowired
-  private GdpMapper gdpMapper;
+  private MessageProcessor<GdpMessage, Mono<Rtp>> messageProcessor;
 
   private GdpEventHandler gdpEventHandler;
 
 
   @BeforeEach
   void setUp() {
-    gdpEventHandler = new GdpEventHandler(gdpMapper);
+    gdpEventHandler = new GdpEventHandler(messageProcessor);
   }
 
 
