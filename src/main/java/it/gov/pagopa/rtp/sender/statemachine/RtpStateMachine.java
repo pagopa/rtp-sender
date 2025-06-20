@@ -119,6 +119,15 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
   }
 
 
+  /**
+   * Applies a sequence of asynchronous actions to a given {@link RtpEntity}.
+   *
+   * <p>The actions are applied sequentially using {@code flatMap}, preserving the reactive chain.</p>
+   *
+   * @param rtpEntity the entity to which the actions will be applied; must not be {@code null}
+   * @param actions   a list of functions that transform the entity asynchronously; must not be {@code null}
+   * @return a {@link Mono} emitting the final transformed entity after all actions are applied
+   */
   @NonNull
   private Mono<RtpEntity> applyActions(
       @NonNull final RtpEntity rtpEntity,
