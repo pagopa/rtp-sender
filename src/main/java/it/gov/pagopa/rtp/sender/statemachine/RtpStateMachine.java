@@ -92,10 +92,11 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
         .flatMap(transitionKey ->
             Mono.justOrEmpty(this.transitionConfiguration.getTransition(transitionKey)))
 
-        .flatMap(transition ->
-            this.applyActions(source, transition.getPreTransactionActions())
-                .map(rtpEntity -> this.advanceStatus(rtpEntity, transition.getDestination(),
-                    transition.getEvent()))
+        .flatMap(transition -> Mono.just(source)
+                .flatMap(rtpEntity ->
+                    this.applyActions(rtpEntity, transition.getPreTransactionActions()))
+                .map(rtpEntity ->
+                    this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent()))
                 .flatMap(rtpEntity ->
                     this.applyActions(rtpEntity, transition.getPostTransactionActions())))
 
