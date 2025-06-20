@@ -2,8 +2,7 @@ package it.gov.pagopa.rtp.sender.configuration;
 
 import java.time.Duration;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -103,10 +102,11 @@ public class StateMachineConfiguration {
   /**
    * Helper method to create a persisting action for {@link RtpEntity} instances.
    *
-   * @return a {@link Consumer} that persists the entity using {@link RtpDB}
+   * @return a {@link Function} that persists the entity using {@link RtpDB}
    */
-  private UnaryOperator<Mono<RtpEntity>> persistRtp() {
-    return rtpEntity -> rtpEntity.flatMap(rtpRepository::save)
+  private Function<RtpEntity, Mono<RtpEntity>> persistRtp() {
+    return rtpEntity -> Mono.just(rtpEntity)
+        .flatMap(rtpRepository::save)
         .retryWhen(retryPolicy());
   }
 
