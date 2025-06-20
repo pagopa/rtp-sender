@@ -88,6 +88,11 @@ class RtpStateMachineTest {
             .map(e -> {
               e.setPayeeName("pre-action");
               return e;
+            }),
+        entity -> Mono.just(entity)
+            .map(e -> {
+              e.setPayeeId("pre-action");
+              return e;
             })));
 
     when(transition.getDestination()).thenReturn(destination);
@@ -97,15 +102,22 @@ class RtpStateMachineTest {
     when(transition.getPostTransactionActions()).thenReturn(List.of(
         entity -> Mono.just(entity)
             .map(e -> {
-              e.setPayeeId("post-action");
+              e.setPayerName("post-action");
+              return e;
+            }),
+        entity -> Mono.just(entity)
+            .map(e -> {
+              e.setPayerId("post-action");
               return e;
             })));
 
     StepVerifier.create(stateMachine.transition(rtp, event))
         .assertNext(result -> {
           assertEquals(destination, result.getStatus());
+          assertEquals("pre-action", result.getPayeeId());
           assertEquals("pre-action", result.getPayeeName());
-          assertEquals("post-action", result.getPayeeId());
+          assertEquals("post-action", result.getPayerId());
+          assertEquals("post-action", result.getPayerName());
           assertEquals(sourceStatus, result.getEvents().getLast().precStatus());
           assertEquals(triggerEvent, result.getEvents().getLast().triggerEvent());
         })
