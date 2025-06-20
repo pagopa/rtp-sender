@@ -12,6 +12,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
+
 /**
  * Reactive implementation of a State Machine for {@link RtpEntity} entities, using {@link Publisher}.
  * <p>
@@ -88,13 +89,25 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
             .map(Mono::just)
             .orElseGet(() -> Mono.error(new IllegalStateException(
                 String.format("Cannot transition from %s to %s", source, event)))))
-        .doOnNext(transition -> transition.getPreTransactionActions()
-            .forEach(action -> action.accept(source)))
-        .doOnNext(transition -> this.advanceStatus(
-            source, transition.getDestination(), transition.getEvent()))
-        .doOnNext(transition -> transition.getPostTransactionActions()
-            .forEach(action -> action.accept(source)))
-        .map(transition -> source);
+        .flatMap(transition -> {
+
+          var result = Mono.just(source);
+
+          for (var action : transition.getPreTransactionActions()) {
+            result = action.apply(result);
+          }
+
+          result = result.map(rtpEntity -> {
+            this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent());
+            return rtpEntity;
+          });
+
+          for (var action : transition.getPostTransactionActions()) {
+            result = action.apply(result);
+          }
+
+          return result;
+        });
   }
 
 
