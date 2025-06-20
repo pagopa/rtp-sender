@@ -67,7 +67,7 @@ public class CallbackFieldsExtractor {
                 .doOnNext(txSt -> log.debug("Extracted raw transaction status: '{}'", txSt))
                 .map(TransactionStatus::valueOf)
                 .doOnComplete(() -> log.info("Mapped transaction status to enum successfully"))
-                .doOnError(e -> log.error("Mapped transaction status to enum error: {}", e.getMessage()))
+                .doOnError(e -> log.error("Mapped transaction status to enum error: {}", e.getMessage(), e))
                 .onErrorResume( e -> Flux.just(TransactionStatus.ERROR))
                 .switchIfEmpty(Flux.defer(() -> {
                     log.warn("No valid transaction status found, defaulting to ERROR");
