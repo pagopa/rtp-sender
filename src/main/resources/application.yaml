@@ -15,54 +15,6 @@ spring:
       monitor:
         connection-string: ${APPLICATIONINSIGHTS_CONNECTION_STRING:}
 
-    stream:
-      kafka:
-        binder:
-          configuration:
-            security.protocol: SASL_SSL
-            sasl.mechanism: PLAIN
-            #                        Recommended Values for both consumer and producer for azure eventhub
-            metadata.max.age.ms: 180000
-            connections.max.idle.ms: 180000
-            #                        The service will close connections if requests larger than 1046528 bytes are sent
-            max.request.size: 1000000
-        bindings:
-          gdpMessageConsumer-in-0:
-            consumer:
-              start-offset: earliest
-
-      bindings:
-        gdpMessageConsumer-in-0:
-          destination: ${gdp.eventhub.consumer.topic}
-          group: ${gdp.eventhub.consumer.group}
-          content-type: application/json
-          binder: gdpconsumer
-          consumer:
-            max-attempts: 1
-
-      binders:
-        gdpconsumer:
-          type: kafka
-          environment.spring.cloud.stream.kafka:
-            binder:
-              auto-create-topics: false
-              brokers: ${gdp.eventhub.name}.servicebus.windows.net:9093
-              configuration:
-                sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="${gdp.eventhub.connection-string}";
-              consumerProperties:
-                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
-                value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-    function:
-      definition: gdpMessageConsumer
-
-gdp:
-  eventhub:
-    name: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
-    connection-string: ${GDP_EVENTHUB_CONNECTION_STRING:}
-    consumer:
-      topic: ${GDP_EVENTHUB_TOPIC:rtp-events}
-      group: ${GDP_EVENTHUB_CONSUMER_GROUP:rtp-events-processor}
 
 activation.base-url: ${BASE_URL:http://localhost}
 
