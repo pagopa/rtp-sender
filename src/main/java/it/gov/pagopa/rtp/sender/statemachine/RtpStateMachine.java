@@ -5,6 +5,7 @@ import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -90,19 +91,11 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
         .flatMap(transitionKey ->
             Mono.justOrEmpty(this.transitionConfiguration.getTransition(transitionKey)))
         .flatMap(transition ->
-            Flux.fromIterable(transition.getPreTransactionActions())
-              .reduce(Mono.just(source), Mono::flatMap)
-              .flatMap(Function.identity())
-
-              .map(rtpEntity -> {
-                this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent());
-                return rtpEntity;
-              })
-
-              .flatMap(rtpEntity -> Flux.fromIterable(transition.getPostTransactionActions())
-                  .reduce(Mono.just(rtpEntity), Mono::flatMap)
-                  .flatMap(Function.identity()))
-        )
+            this.applyActions(source, transition.getPreTransactionActions())
+                .map(rtpEntity -> this.advanceStatus(rtpEntity, transition.getDestination(),
+                    transition.getEvent()))
+                .flatMap(rtpEntity ->
+                    this.applyActions(rtpEntity, transition.getPostTransactionActions())))
         .switchIfEmpty(Mono.error(new IllegalStateException(
             String.format("Cannot transition from %s to %s", source, event))));
   }
@@ -126,16 +119,31 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
   }
 
 
+  @NonNull
+  private Mono<RtpEntity> applyActions(
+      @NonNull final RtpEntity rtpEntity,
+      @NonNull final Collection<Function<RtpEntity, Mono<RtpEntity>>> actions) {
+
+    Objects.requireNonNull(rtpEntity, "Entity cannot be null");
+    Objects.requireNonNull(actions, "Actions cannot be null");
+
+    return Flux.fromIterable(actions)
+        .reduce(Mono.just(rtpEntity), Mono::flatMap)
+        .flatMap(Function.identity());
+  }
+
+
   /**
    * Advances the status of the given {@link RtpEntity} to a new status and updates its events.
    *
    * @param rtpEntity   the entity whose status is to be updated
    * @param newStatus   the new status to set for the entity
    * @param triggerEvent the event that triggered the status change
+   * @return the updated entity
    * @throws NullPointerException if any of the arguments is {@code null}
    */
   @NonNull
-  private void advanceStatus(
+  private RtpEntity advanceStatus(
       @NonNull final RtpEntity rtpEntity,
       @NonNull final RtpStatus newStatus,
       @NonNull final RtpEvent triggerEvent) {
@@ -156,6 +164,8 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
 
     rtpEntity.setStatus(newStatus);
     rtpEntity.setEvents(updatedEvents);
+
+    return rtpEntity;
   }
 }
 
