@@ -1,7 +1,10 @@
 package it.gov.pagopa.rtp.sender.configuration;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
@@ -13,6 +16,9 @@ import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
 import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionConfigurer;
 import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionKey;
 import it.gov.pagopa.rtp.sender.statemachine.TransitionConfigurer;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
 
 /**
@@ -25,18 +31,24 @@ import it.gov.pagopa.rtp.sender.statemachine.TransitionConfigurer;
  * </p>
  */
 @Configuration
+@Slf4j
 public class StateMachineConfiguration {
 
   private final RtpDB rtpRepository;
+  private final ServiceProviderConfig serviceProviderConfig;
 
 
   /**
    * Constructs a new {@code StateMachineConfiguration} with the given repository.
    *
    * @param rtpRepository the repository used to persist {@link RtpEntity} instances after transitions
+   * @param serviceProviderConfig the configuration for the service provider
    */
-  public StateMachineConfiguration(@NonNull final RtpDB rtpRepository) {
+  public StateMachineConfiguration(
+      @NonNull final RtpDB rtpRepository,
+      @NonNull final ServiceProviderConfig serviceProviderConfig) {
     this.rtpRepository = Objects.requireNonNull(rtpRepository);
+    this.serviceProviderConfig = Objects.requireNonNull(serviceProviderConfig);
   }
 
 
@@ -93,8 +105,25 @@ public class StateMachineConfiguration {
    *
    * @return a {@link Consumer} that persists the entity using {@link RtpDB}
    */
-  private Consumer<RtpEntity> persistRtp() {
-    return this.rtpRepository::save;
+  private UnaryOperator<Mono<RtpEntity>> persistRtp() {
+    return rtpEntity -> rtpEntity.flatMap(rtpRepository::save)
+        .retryWhen(retryPolicy());
+  }
+
+
+  /**
+   * Builds a {@link RetryBackoffSpec} for persisting RTP entities using configuration values.
+   *
+   * @return a configured {@code RetryBackoffSpec} for retrying persistence operations
+   */
+  private RetryBackoffSpec retryPolicy() {
+    final var maxAttempts = serviceProviderConfig.send().retry().maxAttempts();
+    final var minDurationMillis = serviceProviderConfig.send().retry().backoffMinDuration();
+    final var jitter = serviceProviderConfig.send().retry().backoffJitter();
+
+    return Retry.backoff(maxAttempts, Duration.ofMillis(minDurationMillis))
+        .jitter(jitter)
+        .doAfterRetry(signal -> log.info("Retry number {}", signal.totalRetries()));
   }
 
 }
