@@ -3,7 +3,7 @@ package it.gov.pagopa.rtp.sender.statemachine;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ class RtpTransitionConfigurerTest {
   void givenTransitionKeyStateAndAction_whenRegister_thenStoreTransitionWithPostAction() {
     final var key = new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.SEND_RTP);
     final var toState = RtpStatus.SENT;
-    final UnaryOperator<Mono<RtpEntity>> action = UnaryOperator.identity();
+    final Function<RtpEntity, Mono<RtpEntity>> action = Mono::just;
 
     configurer.register(key, toState, action);
     final var result = configurer.build().getTransition(key);
@@ -52,8 +52,8 @@ class RtpTransitionConfigurerTest {
   void givenAllParameters_whenRegister_thenStoreTransitionWithAllActions() {
     final var key = new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.SEND_RTP);
     final var toState = RtpStatus.SENT;
-    final UnaryOperator<Mono<RtpEntity>> preAction = UnaryOperator.identity();
-    final UnaryOperator<Mono<RtpEntity>> postAction = UnaryOperator.identity();
+    final Function<RtpEntity, Mono<RtpEntity>> preAction = Mono::just;
+    final Function<RtpEntity, Mono<RtpEntity>> postAction = Mono::just;
 
     configurer.register(key, toState, List.of(preAction), List.of(postAction));
     final var result = configurer.build().getTransition(key);
