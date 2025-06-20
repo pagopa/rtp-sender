@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -30,7 +31,7 @@ public class RtpTransitionConfigurer implements TransitionConfigurer<RtpEntity, 
    * A no-operation identity function that does nothing.
    * Used as a default when no transition action is provided.
    */
-  private static final UnaryOperator<Mono<RtpEntity>> NOOP_ACTION = entity -> entity;
+  private static final Function<RtpEntity, Mono<RtpEntity>> NOOP_ACTION = Mono::just;
 
   private final Map<RtpTransitionKey, RtpTransition> transitionsMap = new ConcurrentHashMap<>();
 
@@ -63,7 +64,7 @@ public class RtpTransitionConfigurer implements TransitionConfigurer<RtpEntity, 
   public TransitionConfigurer<RtpEntity, RtpStatus, RtpEvent> register(
       @NonNull final TransitionKey<RtpStatus, RtpEvent> transitionKey,
       @NonNull final RtpStatus toState,
-      @Nullable final UnaryOperator<Mono<RtpEntity>> action) {
+      @Nullable final Function<RtpEntity, Mono<RtpEntity>> action) {
 
     final var validatedAction = Optional.ofNullable(action)
         .orElse(NOOP_ACTION);
@@ -87,8 +88,8 @@ public class RtpTransitionConfigurer implements TransitionConfigurer<RtpEntity, 
   public TransitionConfigurer<RtpEntity, RtpStatus, RtpEvent> register(
       @NonNull final TransitionKey<RtpStatus, RtpEvent> transitionKey,
       @NonNull final RtpStatus toState,
-      @Nullable final List<UnaryOperator<Mono<RtpEntity>>> preTransitionActions,
-      @Nullable final List<UnaryOperator<Mono<RtpEntity>>> postTransitionActions) {
+      @Nullable final List<Function<RtpEntity, Mono<RtpEntity>>> preTransitionActions,
+      @Nullable final List<Function<RtpEntity, Mono<RtpEntity>>> postTransitionActions) {
 
     Objects.requireNonNull(transitionKey, "transitionKey cannot be null.");
     Objects.requireNonNull(toState, "Destination state cannot be null.");
