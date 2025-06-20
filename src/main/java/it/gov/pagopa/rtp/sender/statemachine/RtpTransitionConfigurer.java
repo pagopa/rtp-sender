@@ -6,13 +6,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
+import reactor.core.publisher.Mono;
+
 
 /**
  * Default implementation of {@link TransitionConfigurer} for {@link RtpEntity} transitions.
@@ -25,10 +27,10 @@ import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
 public class RtpTransitionConfigurer implements TransitionConfigurer<RtpEntity, RtpStatus, RtpEvent> {
 
   /**
-   * A no-operation consumer that does nothing.
+   * A no-operation identity function that does nothing.
    * Used as a default when no transition action is provided.
    */
-  private static final Consumer<RtpEntity> NOOP_ACTION = rtpEntity -> {};
+  private static final UnaryOperator<Mono<RtpEntity>> NOOP_ACTION = entity -> entity;
 
   private final Map<RtpTransitionKey, RtpTransition> transitionsMap = new ConcurrentHashMap<>();
 
@@ -61,7 +63,7 @@ public class RtpTransitionConfigurer implements TransitionConfigurer<RtpEntity, 
   public TransitionConfigurer<RtpEntity, RtpStatus, RtpEvent> register(
       @NonNull final TransitionKey<RtpStatus, RtpEvent> transitionKey,
       @NonNull final RtpStatus toState,
-      @Nullable final Consumer<RtpEntity> action) {
+      @Nullable final UnaryOperator<Mono<RtpEntity>> action) {
 
     final var validatedAction = Optional.ofNullable(action)
         .orElse(NOOP_ACTION);
@@ -77,16 +79,16 @@ public class RtpTransitionConfigurer implements TransitionConfigurer<RtpEntity, 
    *
    * @param transitionKey         the source state and event triggering the transition
    * @param toState                the target state after the transition
-   * @param preTransitionAction    list of actions to perform before changing the state
-   * @param postTransitionAction   list of actions to perform after changing the state
+   * @param preTransitionActions    list of actions to perform before changing the state
+   * @param postTransitionActions   list of actions to perform after changing the state
    * @return the current {@link TransitionConfigurer} instance for chaining
    */
   @Override
   public TransitionConfigurer<RtpEntity, RtpStatus, RtpEvent> register(
       @NonNull final TransitionKey<RtpStatus, RtpEvent> transitionKey,
       @NonNull final RtpStatus toState,
-      @Nullable final List<Consumer<RtpEntity>> preTransitionActions,
-      @Nullable final List<Consumer<RtpEntity>> postTransitionActions) {
+      @Nullable final List<UnaryOperator<Mono<RtpEntity>>> preTransitionActions,
+      @Nullable final List<UnaryOperator<Mono<RtpEntity>>> postTransitionActions) {
 
     Objects.requireNonNull(transitionKey, "transitionKey cannot be null.");
     Objects.requireNonNull(toState, "Destination state cannot be null.");

@@ -4,13 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
-import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Activation;
-import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send;
-import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send.Retry;
 import it.gov.pagopa.rtp.sender.domain.errors.SepaRequestException;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
-import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import it.gov.pagopa.rtp.sender.service.rtp.RtpStatusUpdater;
 import java.lang.reflect.InvocationTargetException;
@@ -26,22 +21,14 @@ import reactor.test.StepVerifier;
 class SendRtpResponseHandlerTest {
 
   private RtpStatusUpdater rtpStatusUpdater;
-  private RtpRepository rtpRepository;
   private SendRtpResponseHandler sendRtpResponseHandler;
 
 
   @BeforeEach
   void setUp() {
     this.rtpStatusUpdater = mock(RtpStatusUpdater.class);
-    this.rtpRepository = mock(RtpRepository.class);
 
-    final var serviceProviderConfig = new ServiceProviderConfig(
-        "http://localhost:8080",
-        new Activation("http://localhost:8080"),
-        new Send("v1", new Retry(3, 100, 0.75), 10000L));
-
-    this.sendRtpResponseHandler = new SendRtpResponseHandler(rtpStatusUpdater, rtpRepository,
-        serviceProviderConfig);
+    this.sendRtpResponseHandler = new SendRtpResponseHandler(rtpStatusUpdater);
   }
 
 
@@ -59,9 +46,6 @@ class SendRtpResponseHandlerTest {
         rtpStatusUpdater.getClass()
             .getMethod(expectedMethod, Rtp.class)
             .invoke(rtpStatusUpdater, rtpToSend))
-        .thenReturn(Mono.just(rtpToSend));
-
-    when(rtpRepository.save(rtpToSend))
         .thenReturn(Mono.just(rtpToSend));
 
     final var result = sendRtpResponseHandler.handle(request);
@@ -97,9 +81,6 @@ class SendRtpResponseHandlerTest {
           rtpStatusUpdater.getClass()
               .getMethod(expectedMethod, Rtp.class)
               .invoke(rtpStatusUpdater, rtpToSend))
-          .thenReturn(Mono.just(rtpToSend));
-
-      when(rtpRepository.save(rtpToSend))
           .thenReturn(Mono.just(rtpToSend));
     }
 
