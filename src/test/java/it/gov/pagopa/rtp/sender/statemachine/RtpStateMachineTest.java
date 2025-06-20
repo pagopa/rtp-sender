@@ -83,14 +83,20 @@ class RtpStateMachineTest {
         .thenReturn(Optional.of(transition));
 
     when(transition.getPreTransactionActions()).thenReturn(List.of(
-        entity -> entity.setPayeeName("pre-action")));
+        entity -> entity.map(e -> {
+          e.setPayeeName("pre-action");
+          return e;
+        })));
 
     when(transition.getDestination()).thenReturn(destination);
 
     when(transition.getEvent()).thenReturn(triggerEvent);
 
     when(transition.getPostTransactionActions()).thenReturn(List.of(
-        entity -> entity.setPayeeId("post-action")));
+        entity -> entity.map(e -> {
+          e.setPayeeId("post-action");
+          return e;
+        })));
 
     StepVerifier.create(stateMachine.transition(rtp, event))
         .assertNext(result -> {
