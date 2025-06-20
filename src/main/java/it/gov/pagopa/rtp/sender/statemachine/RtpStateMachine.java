@@ -88,14 +88,17 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
     Objects.requireNonNull(event, "Event cannot be null");
 
     return Mono.just(new RtpTransitionKey(source.getStatus(), event))
+
         .flatMap(transitionKey ->
             Mono.justOrEmpty(this.transitionConfiguration.getTransition(transitionKey)))
+
         .flatMap(transition ->
             this.applyActions(source, transition.getPreTransactionActions())
                 .map(rtpEntity -> this.advanceStatus(rtpEntity, transition.getDestination(),
                     transition.getEvent()))
                 .flatMap(rtpEntity ->
                     this.applyActions(rtpEntity, transition.getPostTransactionActions())))
+
         .switchIfEmpty(Mono.error(new IllegalStateException(
             String.format("Cannot transition from %s after %s event.", source, event))));
   }
