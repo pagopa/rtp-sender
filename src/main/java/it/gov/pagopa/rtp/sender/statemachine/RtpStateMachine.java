@@ -91,6 +91,8 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
 
         .flatMap(transitionKey ->
             Mono.justOrEmpty(this.transitionConfiguration.getTransition(transitionKey)))
+        .switchIfEmpty(Mono.error(new IllegalStateException(
+            String.format("Cannot transition from %s after %s event.", source, event))))
 
         .flatMap(transition -> Mono.just(source)
                 .flatMap(rtpEntity ->
@@ -98,10 +100,7 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
                 .map(rtpEntity ->
                     this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent()))
                 .flatMap(rtpEntity ->
-                    this.applyActions(rtpEntity, transition.getPostTransactionActions())))
-
-        .switchIfEmpty(Mono.error(new IllegalStateException(
-            String.format("Cannot transition from %s after %s event.", source, event))));
+                    this.applyActions(rtpEntity, transition.getPostTransactionActions())));
   }
 
 
