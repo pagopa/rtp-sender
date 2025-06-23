@@ -1,7 +1,11 @@
 package it.gov.pagopa.rtp.sender.configuration;
 
+import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send;
+import it.gov.pagopa.rtp.sender.utils.RetryPolicyUtils;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.Optional;
+import java.util.function.Function;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
@@ -13,6 +17,7 @@ import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
 import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionConfigurer;
 import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionKey;
 import it.gov.pagopa.rtp.sender.statemachine.TransitionConfigurer;
+import reactor.core.publisher.Mono;
 
 
 /**
@@ -25,18 +30,24 @@ import it.gov.pagopa.rtp.sender.statemachine.TransitionConfigurer;
  * </p>
  */
 @Configuration
+@Slf4j
 public class StateMachineConfiguration {
 
   private final RtpDB rtpRepository;
+  private final ServiceProviderConfig serviceProviderConfig;
 
 
   /**
    * Constructs a new {@code StateMachineConfiguration} with the given repository.
    *
    * @param rtpRepository the repository used to persist {@link RtpEntity} instances after transitions
+   * @param serviceProviderConfig the configuration for the service provider
    */
-  public StateMachineConfiguration(@NonNull final RtpDB rtpRepository) {
+  public StateMachineConfiguration(
+      @NonNull final RtpDB rtpRepository,
+      @NonNull final ServiceProviderConfig serviceProviderConfig) {
     this.rtpRepository = Objects.requireNonNull(rtpRepository);
+    this.serviceProviderConfig = Objects.requireNonNull(serviceProviderConfig);
   }
 
 
@@ -91,10 +102,18 @@ public class StateMachineConfiguration {
   /**
    * Helper method to create a persisting action for {@link RtpEntity} instances.
    *
-   * @return a {@link Consumer} that persists the entity using {@link RtpDB}
+   * @return a {@link Function} that persists the entity using {@link RtpDB}
    */
-  private Consumer<RtpEntity> persistRtp() {
-    return this.rtpRepository::save;
+  private Function<RtpEntity, Mono<RtpEntity>> persistRtp() {
+    final var retryPolicy = Optional.of(this.serviceProviderConfig)
+        .map(ServiceProviderConfig::send)
+        .map(Send::retry)
+        .map(RetryPolicyUtils::sendRetryPolicy)
+        .orElseThrow(() -> new IllegalArgumentException("Couldn't create retry policy"));
+
+    return rtpEntity -> Mono.just(rtpEntity)
+        .flatMap(rtpRepository::save)
+        .retryWhen(retryPolicy);
   }
 
 }

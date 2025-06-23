@@ -24,6 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,20 +84,40 @@ class RtpStateMachineTest {
         .thenReturn(Optional.of(transition));
 
     when(transition.getPreTransactionActions()).thenReturn(List.of(
-        entity -> entity.setPayeeName("pre-action")));
+        entity -> Mono.just(entity)
+            .map(e -> {
+              e.setPayeeName("pre-action");
+              return e;
+            }),
+        entity -> Mono.just(entity)
+            .map(e -> {
+              e.setPayeeId("pre-action");
+              return e;
+            })));
 
     when(transition.getDestination()).thenReturn(destination);
 
     when(transition.getEvent()).thenReturn(triggerEvent);
 
     when(transition.getPostTransactionActions()).thenReturn(List.of(
-        entity -> entity.setPayeeId("post-action")));
+        entity -> Mono.just(entity)
+            .map(e -> {
+              e.setPayerName("post-action");
+              return e;
+            }),
+        entity -> Mono.just(entity)
+            .map(e -> {
+              e.setPayerId("post-action");
+              return e;
+            })));
 
     StepVerifier.create(stateMachine.transition(rtp, event))
         .assertNext(result -> {
           assertEquals(destination, result.getStatus());
+          assertEquals("pre-action", result.getPayeeId());
           assertEquals("pre-action", result.getPayeeName());
-          assertEquals("post-action", result.getPayeeId());
+          assertEquals("post-action", result.getPayerId());
+          assertEquals("post-action", result.getPayerName());
           assertEquals(sourceStatus, result.getEvents().getLast().precStatus());
           assertEquals(triggerEvent, result.getEvents().getLast().triggerEvent());
         })
