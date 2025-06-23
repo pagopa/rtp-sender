@@ -2,7 +2,6 @@ package it.gov.pagopa.rtp.sender.statemachine;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import reactor.core.publisher.Mono;
 
 public interface TransitionConfigurer<T, S, E> {
