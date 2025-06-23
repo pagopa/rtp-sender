@@ -2,6 +2,8 @@ package it.gov.pagopa.rtp.sender.configuration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send;
+import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send.Retry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,13 +23,16 @@ class StateMachineConfigurationTest {
   @Mock
   private RtpDB rtpDB;
 
-  @Mock
-  private ServiceProviderConfig serviceProviderConfig;
-
   private StateMachineConfiguration configuration;
 
   @BeforeEach
   void setUp() {
+    final var retryConfig = new Retry(3, 1L, 0.1D);
+
+    final var serviceProviderConfig = new ServiceProviderConfig(
+        null, null, new Send(null, retryConfig, null));
+
+
     configuration = new StateMachineConfiguration(rtpDB, serviceProviderConfig);
   }
 

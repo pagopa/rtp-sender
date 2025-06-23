@@ -1,7 +1,9 @@
 package it.gov.pagopa.rtp.sender.configuration;
 
-import java.time.Duration;
+import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send;
+import it.gov.pagopa.rtp.sender.utils.RetryPolicyUtils;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -16,8 +18,6 @@ import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionConfigurer;
 import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionKey;
 import it.gov.pagopa.rtp.sender.statemachine.TransitionConfigurer;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
-import reactor.util.retry.RetryBackoffSpec;
 
 
 /**
@@ -105,25 +105,15 @@ public class StateMachineConfiguration {
    * @return a {@link Function} that persists the entity using {@link RtpDB}
    */
   private Function<RtpEntity, Mono<RtpEntity>> persistRtp() {
+    final var retryPolicy = Optional.of(this.serviceProviderConfig)
+        .map(ServiceProviderConfig::send)
+        .map(Send::retry)
+        .map(RetryPolicyUtils::sendRetryPolicy)
+        .orElseThrow(() -> new IllegalArgumentException("Couldn't create retry policy"));
+
     return rtpEntity -> Mono.just(rtpEntity)
         .flatMap(rtpRepository::save)
-        .retryWhen(retryPolicy());
-  }
-
-
-  /**
-   * Builds a {@link RetryBackoffSpec} for persisting RTP entities using configuration values.
-   *
-   * @return a configured {@code RetryBackoffSpec} for retrying persistence operations
-   */
-  private RetryBackoffSpec retryPolicy() {
-    final var maxAttempts = serviceProviderConfig.send().retry().maxAttempts();
-    final var minDurationMillis = serviceProviderConfig.send().retry().backoffMinDuration();
-    final var jitter = serviceProviderConfig.send().retry().backoffJitter();
-
-    return Retry.backoff(maxAttempts, Duration.ofMillis(minDurationMillis))
-        .jitter(jitter)
-        .doAfterRetry(signal -> log.info("Retry number {}", signal.totalRetries()));
+        .retryWhen(retryPolicy);
   }
 
 }
