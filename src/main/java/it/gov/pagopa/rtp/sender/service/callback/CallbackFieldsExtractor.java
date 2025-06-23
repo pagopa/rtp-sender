@@ -49,9 +49,12 @@ public class CallbackFieldsExtractor {
     public Flux<TransactionStatus> extractTransactionStatusSend(@NonNull final JsonNode responseNode) {
         return Mono.justOrEmpty(responseNode)
                 .doOnNext(node -> log.debug("Received JSON for transaction status extraction: {}", node))
-                .map(node -> node.path("AsynchronousSepaRequestToPayResponse")
-                        .path("Document")
-                        .path("CdtrPmtActvtnReqStsRpt")
+                .map(node -> node.path("AsynchronousSepaRequestToPayResponse"))
+                .flatMap(node -> Mono.just(node.path("Document"))
+                        .filter(doc -> !doc.isMissingNode() && !doc.isNull())
+                        .defaultIfEmpty(node)
+                )
+                .map(node -> node.path("CdtrPmtActvtnReqStsRpt")
                         .path("OrgnlPmtInfAndSts"))
                 .doOnNext(node -> log.debug("Navigated to OrgnlPmtInfAndSts node: {}", node))
                 .filter(node -> !node.isMissingNode())
@@ -64,7 +67,7 @@ public class CallbackFieldsExtractor {
                 .doOnNext(txSt -> log.debug("Extracted raw transaction status: '{}'", txSt))
                 .map(TransactionStatus::valueOf)
                 .doOnComplete(() -> log.info("Mapped transaction status to enum successfully"))
-                .doOnError(e -> log.error("Mapped transaction status to enum error: {}", e))
+                .doOnError(e -> log.error("Mapped transaction status to enum error: {}", e.getMessage(), e))
                 .onErrorResume( e -> Flux.just(TransactionStatus.ERROR))
                 .switchIfEmpty(Flux.defer(() -> {
                     log.warn("No valid transaction status found, defaulting to ERROR");
@@ -96,9 +99,12 @@ public class CallbackFieldsExtractor {
     public Mono<ResourceID> extractResourceIDSend(@NonNull final JsonNode responseNode) {
         return Mono.justOrEmpty(responseNode)
                 .doOnNext(node -> log.debug("Received JSON for resource ID extraction: {}", node))
-                .map(node -> node.path("AsynchronousSepaRequestToPayResponse")
-                        .path("Document")
-                        .path("CdtrPmtActvtnReqStsRpt")
+                .map(node -> node.path("AsynchronousSepaRequestToPayResponse"))
+                .flatMap(node -> Mono.just(node.path("Document"))
+                        .filter(doc -> !doc.isMissingNode() && !doc.isNull())
+                        .defaultIfEmpty(node)
+                )
+                .map(node -> node.path("CdtrPmtActvtnReqStsRpt")
                         .path("OrgnlGrpInfAndSts")
                         .path("OrgnlMsgId"))
                 .doOnNext(node -> log.debug("Navigated to OrgnlMsgId node: {}", node))
@@ -110,7 +116,7 @@ public class CallbackFieldsExtractor {
                 .map(IdentifierUtils::uuidRebuilder)
                 .doOnNext(uuid -> log.debug("Rebuilt UUID: {}", uuid))
                 .map(ResourceID::new)
-                .doOnNext(id -> log.info("Extracted ResourceID: {}", id))
+                .doOnNext(id -> log.info("Extracted ResourceID: {}", id.getId()))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Resource id is invalid")));
     }
 }

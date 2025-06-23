@@ -6,6 +6,7 @@ import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import reactor.test.StepVerifier;
 
@@ -24,42 +25,20 @@ class CallbackFieldsExtractorTest {
         objectMapper = new ObjectMapper();
     }
 
-    @Test
-    void givenValidJson_whenExtractTransactionStatusSend_thenReturnTransactionStatuses() throws Exception {
-        String json = """
-                    {
-                      "AsynchronousSepaRequestToPayResponse": {
-                        "Document": {
-                          "CdtrPmtActvtnReqStsRpt": {
-                            "OrgnlPmtInfAndSts": [
-                              {
-                                "TxInfAndSts": [
-                                  {
-                                    "TxSts": ["ACCP"]
-                                  },
-                                  {
-                                    "TxSts": ["RJCT"]
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    }
-                """;
+    @ParameterizedTest
+    @MethodSource("validTransactionStatusPayloads")
+    void givenValidPayloads_whenExtractTransactionStatusSend_thenReturnStatuses(String json) throws Exception {
         JsonNode node = objectMapper.readTree(json);
 
         var result = extractor.extractTransactionStatusSend(node);
 
         StepVerifier.create(result)
                 .expectNext(TransactionStatus.ACCP)
-                .expectNext(TransactionStatus.RJCT)
                 .verifyComplete();
     }
 
     @ParameterizedTest
-    @MethodSource("invalidJsonPayloads")
+    @MethodSource("invalidTransactionStatusPayloads")
     void givenInvalidOrUnknownTxSts_whenExtractTransactionStatusSend_thenReturnErrorStatus(String json) throws Exception {
         JsonNode node = objectMapper.readTree(json);
 
@@ -70,7 +49,79 @@ class CallbackFieldsExtractorTest {
                 .verifyComplete();
     }
 
-    static Stream<String> invalidJsonPayloads() {
+    @ParameterizedTest
+    @MethodSource("validResourceIDPayloads")
+    void givenValidPayloads_whenExtractResourceIDSend_thenReturnResourceID(String json, String expectedUuid) throws Exception {
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractResourceIDSend(node);
+
+        StepVerifier.create(result)
+                .expectNextMatches(resourceID -> resourceID.getId().toString().equals(expectedUuid))
+                .verifyComplete();
+    }
+
+    @Test
+    void givenMissingMsgId_whenExtractResourceIDSend_thenThrow() throws Exception {
+        String json = """
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlGrpInfAndSts": {}
+                          }
+                        }
+                      }
+                    }
+                """;
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractResourceIDSend(node);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(e ->
+                        e instanceof IllegalArgumentException &&
+                                e.getMessage().equals("Missing field"))
+                .verify();
+    }
+
+    @Test
+    void givenInvalidUuid_whenExtractResourceIDSend_thenThrow() throws Exception {
+        String json = """
+                    {
+                      "AsynchronousSepaRequestToPayResponse": {
+                        "Document": {
+                          "CdtrPmtActvtnReqStsRpt": {
+                            "OrgnlGrpInfAndSts": {
+                              "OrgnlMsgId": "not-a-uuid"
+                            }
+                          }
+                        }
+                      }
+                    }
+                """;
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractResourceIDSend(node);
+
+        StepVerifier.create(result)
+                .expectError(IllegalArgumentException.class)
+                .verify();
+    }
+
+    @Test
+    void givenCompletelyInvalidJson_whenExtractTransactionStatusSend_thenReturnError() throws Exception {
+        String json = "{}";
+        JsonNode node = objectMapper.readTree(json);
+
+        var result = extractor.extractTransactionStatusSend(node);
+
+        StepVerifier.create(result)
+                .expectNext(TransactionStatus.ERROR)
+                .verifyComplete();
+    }
+
+    static Stream<String> invalidTransactionStatusPayloads() {
         return Stream.of(
                 // Unknown status
                 """
@@ -151,76 +202,79 @@ class CallbackFieldsExtractorTest {
         );
     }
 
-    @Test
-    void givenValidJson_whenExtractResourceIDSend_thenReturnResourceID() throws Exception {
+    static Stream<String> validTransactionStatusPayloads() {
+        return Stream.of(
+                // With "Document"
+                """
+                {
+                  "AsynchronousSepaRequestToPayResponse": {
+                    "Document": {
+                      "CdtrPmtActvtnReqStsRpt": {
+                        "OrgnlPmtInfAndSts": [
+                          {
+                            "TxInfAndSts": [
+                              { "TxSts": ["ACCP"] }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+                """,
+                // Without "Document"
+                """
+                {
+                  "AsynchronousSepaRequestToPayResponse": {
+                    "CdtrPmtActvtnReqStsRpt": {
+                      "OrgnlPmtInfAndSts": [
+                        {
+                          "TxInfAndSts": [
+                            { "TxSts": ["ACCP"] }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+                """
+        );
+    }
+
+    static Stream<Arguments> validResourceIDPayloads() {
         String uuid = UUID.randomUUID().toString();
-        String json = """
-                    {
-                      "AsynchronousSepaRequestToPayResponse": {
-                        "Document": {
-                          "CdtrPmtActvtnReqStsRpt": {
-                            "OrgnlGrpInfAndSts": {
-                              "OrgnlMsgId": "%s"
+        return Stream.of(Arguments.of(
+                        // With "Document"
+                        """
+                        {
+                          "AsynchronousSepaRequestToPayResponse": {
+                            "Document": {
+                              "CdtrPmtActvtnReqStsRpt": {
+                                "OrgnlGrpInfAndSts": {
+                                  "OrgnlMsgId": "%s"
+                                }
+                              }
                             }
                           }
                         }
-                      }
-                    }
-                """.formatted(uuid);
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractResourceIDSend(node);
-
-        StepVerifier.create(result)
-                .expectNextMatches(resourceID -> resourceID.getId().toString().equals(uuid))
-                .verifyComplete();
-    }
-
-    @Test
-    void givenMissingMsgId_whenExtractResourceIDSend_thenThrow() throws Exception {
-        String json = """
-                    {
-                      "AsynchronousSepaRequestToPayResponse": {
-                        "Document": {
-                          "CdtrPmtActvtnReqStsRpt": {
-                            "OrgnlGrpInfAndSts": {}
-                          }
-                        }
-                      }
-                    }
-                """;
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractResourceIDSend(node);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(e ->
-                        e instanceof IllegalArgumentException &&
-                                e.getMessage().equals("Missing field"))
-                .verify();
-    }
-
-    @Test
-    void givenInvalidUuid_whenExtractResourceIDSend_thenThrow() throws Exception {
-        String json = """
-                    {
-                      "AsynchronousSepaRequestToPayResponse": {
-                        "Document": {
-                          "CdtrPmtActvtnReqStsRpt": {
-                            "OrgnlGrpInfAndSts": {
-                              "OrgnlMsgId": "not-a-uuid"
+                        """.formatted(uuid),
+                        uuid
+                ),
+                Arguments.of(
+                        // Without "Document"
+                        """
+                        {
+                          "AsynchronousSepaRequestToPayResponse": {
+                            "CdtrPmtActvtnReqStsRpt": {
+                              "OrgnlGrpInfAndSts": {
+                                "OrgnlMsgId": "%s"
+                              }
                             }
                           }
                         }
-                      }
-                    }
-                """;
-        JsonNode node = objectMapper.readTree(json);
-
-        var result = extractor.extractResourceIDSend(node);
-
-        StepVerifier.create(result)
-                .expectError(IllegalArgumentException.class)
-                .verify();
+                        """.formatted(uuid),
+                        uuid
+                )
+        );
     }
 }
