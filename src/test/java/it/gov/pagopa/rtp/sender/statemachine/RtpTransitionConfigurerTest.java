@@ -1,19 +1,16 @@
 package it.gov.pagopa.rtp.sender.statemachine;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
-import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionConfigurer;
-import it.gov.pagopa.rtp.sender.statemachine.RtpTransitionKey;
+import reactor.core.publisher.Mono;
 
 class RtpTransitionConfigurerTest {
 
@@ -40,7 +37,7 @@ class RtpTransitionConfigurerTest {
   void givenTransitionKeyStateAndAction_whenRegister_thenStoreTransitionWithPostAction() {
     final var key = new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.SEND_RTP);
     final var toState = RtpStatus.SENT;
-    final var action = mock(Consumer.class);
+    final Function<RtpEntity, Mono<RtpEntity>> action = Mono::just;
 
     configurer.register(key, toState, action);
     final var result = configurer.build().getTransition(key);
@@ -55,8 +52,8 @@ class RtpTransitionConfigurerTest {
   void givenAllParameters_whenRegister_thenStoreTransitionWithAllActions() {
     final var key = new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.SEND_RTP);
     final var toState = RtpStatus.SENT;
-    final var preAction = mock(Consumer.class);
-    final var postAction = mock(Consumer.class);
+    final Function<RtpEntity, Mono<RtpEntity>> preAction = Mono::just;
+    final Function<RtpEntity, Mono<RtpEntity>> postAction = Mono::just;
 
     configurer.register(key, toState, List.of(preAction), List.of(postAction));
     final var result = configurer.build().getTransition(key);
@@ -72,29 +69,6 @@ class RtpTransitionConfigurerTest {
     final var key = new RtpTransitionKey(RtpStatus.SENT, RtpEvent.ACCEPT_RTP);
     final var transition = configurer.build().getTransition(key);
     assertTrue(transition.isEmpty());
-  }
-
-  @Test
-  void givenTransitionWithActions_whenExecuted_thenActionsAreInvoked() {
-    final var key = new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.SEND_RTP);
-    final var toState = RtpStatus.SENT;
-
-    final var preAction = mock(Consumer.class);
-    final var postAction = mock(Consumer.class);
-    final var rtpEntity = new RtpEntity();
-
-    configurer.register(key, toState, List.of(preAction), List.of(postAction));
-    final var transitionOpt = configurer.build().getTransition(key);
-
-    assertTrue(transitionOpt.isPresent());
-    final var transition = transitionOpt.get();
-
-    // Simulate transition execution
-    transition.getPreTransactionActions().forEach(action -> action.accept(rtpEntity));
-    transition.getPostTransactionActions().forEach(action -> action.accept(rtpEntity));
-
-    verify(preAction).accept(rtpEntity);
-    verify(postAction).accept(rtpEntity);
   }
 
 }

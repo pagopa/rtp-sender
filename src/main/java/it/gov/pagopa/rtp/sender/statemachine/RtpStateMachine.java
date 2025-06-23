@@ -5,12 +5,16 @@ import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.repository.rtp.RtpEntity;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.springframework.lang.NonNull;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
 
 /**
  * Reactive implementation of a State Machine for {@link RtpEntity} entities, using {@link Publisher}.
@@ -84,17 +88,19 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
     Objects.requireNonNull(event, "Event cannot be null");
 
     return Mono.just(new RtpTransitionKey(source.getStatus(), event))
-        .flatMap(transitionKey -> this.transitionConfiguration.getTransition(transitionKey)
-            .map(Mono::just)
-            .orElseGet(() -> Mono.error(new IllegalStateException(
-                String.format("Cannot transition from %s to %s", source, event)))))
-        .doOnNext(transition -> transition.getPreTransactionActions()
-            .forEach(action -> action.accept(source)))
-        .doOnNext(transition -> this.advanceStatus(
-            source, transition.getDestination(), transition.getEvent()))
-        .doOnNext(transition -> transition.getPostTransactionActions()
-            .forEach(action -> action.accept(source)))
-        .map(transition -> source);
+
+        .flatMap(transitionKey ->
+            Mono.justOrEmpty(this.transitionConfiguration.getTransition(transitionKey)))
+        .switchIfEmpty(Mono.error(new IllegalStateException(
+            String.format("Cannot transition from %s after %s event.", source, event))))
+
+        .flatMap(transition -> Mono.just(source)
+                .flatMap(rtpEntity ->
+                    this.applyActions(rtpEntity, transition.getPreTransactionActions()))
+                .map(rtpEntity ->
+                    this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent()))
+                .flatMap(rtpEntity ->
+                    this.applyActions(rtpEntity, transition.getPostTransactionActions())));
   }
 
 
@@ -117,15 +123,39 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
 
 
   /**
+   * Applies a sequence of asynchronous actions to a given {@link RtpEntity}.
+   *
+   * <p>The actions are applied sequentially using {@code flatMap}, preserving the reactive chain.</p>
+   *
+   * @param rtpEntity the entity to which the actions will be applied; must not be {@code null}
+   * @param actions   a list of functions that transform the entity asynchronously; must not be {@code null}
+   * @return a {@link Mono} emitting the final transformed entity after all actions are applied
+   */
+  @NonNull
+  private Mono<RtpEntity> applyActions(
+      @NonNull final RtpEntity rtpEntity,
+      @NonNull final Collection<Function<RtpEntity, Mono<RtpEntity>>> actions) {
+
+    Objects.requireNonNull(rtpEntity, "Entity cannot be null");
+    Objects.requireNonNull(actions, "Actions cannot be null");
+
+    return Flux.fromIterable(actions)
+        .reduce(Mono.just(rtpEntity), Mono::flatMap)
+        .flatMap(Function.identity());
+  }
+
+
+  /**
    * Advances the status of the given {@link RtpEntity} to a new status and updates its events.
    *
    * @param rtpEntity   the entity whose status is to be updated
    * @param newStatus   the new status to set for the entity
    * @param triggerEvent the event that triggered the status change
+   * @return the updated entity
    * @throws NullPointerException if any of the arguments is {@code null}
    */
   @NonNull
-  private void advanceStatus(
+  private RtpEntity advanceStatus(
       @NonNull final RtpEntity rtpEntity,
       @NonNull final RtpStatus newStatus,
       @NonNull final RtpEvent triggerEvent) {
@@ -146,6 +176,8 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
 
     rtpEntity.setStatus(newStatus);
     rtpEntity.setEvents(updatedEvents);
+
+    return rtpEntity;
   }
 }
 

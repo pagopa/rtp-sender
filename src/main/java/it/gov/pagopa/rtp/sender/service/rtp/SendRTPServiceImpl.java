@@ -128,9 +128,6 @@ public class SendRTPServiceImpl implements SendRTPService {
         .doOnNext(rtp -> LoggingUtils.logAsJson(
             () -> sepaRequestToPayMapper.toEpcRequestToCancel(rtp), objectMapper))
         .flatMap(this.sendRtpProcessor::sendRtpCancellationToServiceProviderDebtor)
-        .doOnNext(rtp -> log.debug("Setting status of RTP with id {} to {}", rtp.resourceID().getId(), RtpStatus.CANCELLED))
-        .flatMap(rtpRepository::save)
-        .doOnSuccess(rtpSaved -> log.info("RTP saved with id: {}", rtpSaved.resourceID().getId()))
         .doOnError(error -> log.error("Error cancel RTP: {}", error.getMessage(), error));
 
   }
