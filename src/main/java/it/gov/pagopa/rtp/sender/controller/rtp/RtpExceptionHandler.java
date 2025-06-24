@@ -121,7 +121,18 @@ public class RtpExceptionHandler {
     return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).build();
   }
 
-
+  /**
+   * Handles {@link PayerNotActivatedException} by returning a standardized error response.
+   * <p>
+   * This method is triggered when a request fails because the payer is not activated.
+   * It returns an HTTP status {@code 422 Unprocessable Entity} along with an {@link ErrorsDto}
+   * containing a single {@link ErrorDto} that includes a specific error code and message
+   * from {@link SendErrorCode#PAYER_NOT_ACTIVATED}.
+   * </p>
+   *
+   * @return a {@link ResponseEntity} containing an {@link ErrorsDto} with one error
+   *         indicating that the payer is not activated.
+   */
   @ExceptionHandler(PayerNotActivatedException.class)
   public ResponseEntity<ErrorsDto> handlePayerNotActivated() {
     var error = new ErrorDto()
