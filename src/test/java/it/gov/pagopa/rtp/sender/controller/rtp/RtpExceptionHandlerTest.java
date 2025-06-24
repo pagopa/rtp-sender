@@ -7,7 +7,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.netty.handler.timeout.ReadTimeoutException;
-import it.gov.pagopa.rtp.sender.controller.rtp.RtpExceptionHandler;
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorDto;
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
+import it.gov.pagopa.rtp.sender.exception.SendErrorCode;
 import it.gov.pagopa.rtp.sender.model.generated.send.MalformedRequestErrorResponseDto;
 
 import java.util.List;
@@ -127,6 +129,27 @@ class RtpExceptionHandlerTest {
         assertNotNull(response, "Response should not be null");
         assertEquals(HttpStatus.GATEWAY_TIMEOUT, response.getStatusCode(), "Status should be 504 Gateway Timeout");
         assertNull(response.getBody(), "Response body should be null");
+    }
+
+    @Test
+    void givenHandlerInvoked_whenPayerNotActivated_thenReturnsUnprocessableEntityWithProperError() {
+        // Given – no setup required
+
+        // When
+        ResponseEntity<ErrorsDto> response = rtpExceptionHandler.handlePayerNotActivated();
+
+        // Then
+        assertNotNull(response, "Response should not be null");
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode(), "Status should be 422 Unprocessable Entity");
+
+        ErrorsDto body = response.getBody();
+        assertNotNull(body, "Response body should not be null");
+        assertNotNull(body.getErrors(), "Errors list should not be null");
+        assertEquals(1, body.getErrors().size(), "There should be one error");
+
+        ErrorDto error = body.getErrors().getFirst();
+        assertEquals(SendErrorCode.PAYER_NOT_ACTIVATED.getCode(), error.getCode(), "Error code should match");
+        assertEquals(SendErrorCode.PAYER_NOT_ACTIVATED.getMessage(), error.getDescription(), "Error message should match");
     }
 
 }
