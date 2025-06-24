@@ -44,6 +44,7 @@ public enum SendErrorCode {
     INVALID_PAYMENT_NOTICE("02031003E", 422, "Invalid payment notice."),
     EXPIRED_PAYMENT_NOTICE("02031004E", 422, "Expired payment notice."),
     BUSINESS_RULE_VIOLATION("02031005E", 422, "Business rule violation."),
+    PAYER_NOT_ACTIVATED("02031006E", 422, "Payer not activated."),
     
     // 429 Too Many Requests
     RATE_LIMIT_EXCEEDED("02051000E", 429, "Rate limit exceeded."),

@@ -52,8 +52,6 @@ public class SendAPIControllerImpl implements RtpsApi {
         .<ResponseEntity<Void>>map(rtp -> ResponseEntity
             .created(URI.create(serviceProviderConfig.baseUrl() + rtp.resourceID().getId()))
             .build())
-        .onErrorReturn(PayerNotActivatedException.class,
-            ResponseEntity.unprocessableEntity().build())
         .onErrorReturn(ServiceProviderNotFoundException.class,
             ResponseEntity.unprocessableEntity().build())
         .onErrorReturn(SepaRequestException.class,
