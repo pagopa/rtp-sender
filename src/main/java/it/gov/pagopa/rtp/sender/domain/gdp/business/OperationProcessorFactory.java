@@ -86,7 +86,8 @@ public class OperationProcessorFactory {
 
     return switch (operation) {
       case CREATE -> new CreateOperationProcessor(this.gdpMapper, this.sendRTPService);
-      default -> throw new UnsupportedOperationException(operation.toString());
+      case UPDATE -> throw new UnsupportedOperationException(operation.toString());
+      case DELETE -> throw new UnsupportedOperationException(operation.toString());
     };
   }
 
