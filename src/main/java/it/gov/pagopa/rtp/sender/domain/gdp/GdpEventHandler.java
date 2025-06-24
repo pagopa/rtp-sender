@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
 
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
@@ -110,15 +111,20 @@ public class GdpEventHandler {
 
     Objects.requireNonNull(error, "Error cannot be null");
 
-    if (context instanceof final GdpMessage gdpMessage) {
-      log.error("Error processing message: GDP id: {}", gdpMessage.id(), error);
+    Optional.ofNullable(context)
+        .ifPresentOrElse(ctx -> {
+              switch (ctx) {
+                case GdpMessage gdpMessage ->
+                    log.error("Error processing message: GDP id: {}", gdpMessage.id(), error);
 
-    } else if (context instanceof final Rtp rtp) {
-      log.error("Error processing message: ResourceId: {}", rtp.resourceID().getId(), error);
+                case Rtp rtp ->
+                    log.error("Error processing message: ResourceId: {}", rtp.resourceID().getId(),
+                        error);
 
-    } else {
-      log.error("Error processing message.", error);
-    }
+                default -> log.error("Error processing message.", error);
+              }
+            },
+            () -> log.error("Error processing message.", error));
   }
 
 }
