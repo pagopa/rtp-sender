@@ -1,7 +1,11 @@
 package it.gov.pagopa.rtp.sender.controller.rtp;
 
 import io.netty.handler.timeout.ReadTimeoutException;
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorDto;
+import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
+import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
+import it.gov.pagopa.rtp.sender.exception.SendErrorCode;
 import it.gov.pagopa.rtp.sender.model.generated.send.MalformedRequestErrorResponseDto;
 
 import java.util.Collection;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
+import java.util.Collections;
 import java.util.Optional;
 
 @RestControllerAdvice(basePackages = "it.gov.pagopa.rtp.sender.controller.rtp")
@@ -114,5 +119,28 @@ public class RtpExceptionHandler {
   @ResponseStatus(HttpStatus.GATEWAY_TIMEOUT)
   public ResponseEntity<Void> handleReadTimeoutException(ReadTimeoutException ex) {
     return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).build();
+  }
+
+  /**
+   * Handles {@link PayerNotActivatedException} by returning a standardized error response.
+   * <p>
+   * This method is triggered when a request fails because the payer is not activated.
+   * It returns an HTTP status {@code 422 Unprocessable Entity} along
+   * with {@link SendErrorCode#PAYER_NOT_ACTIVATED} as error code.
+   * </p>
+   *
+   * @return a {@link ResponseEntity} containing an {@link ErrorsDto} with one error
+   *         indicating that the payer is not activated.
+   */
+  @ExceptionHandler(PayerNotActivatedException.class)
+  public ResponseEntity<ErrorsDto> handlePayerNotActivated() {
+    var error = new ErrorDto()
+            .code(SendErrorCode.PAYER_NOT_ACTIVATED.getCode())
+            .description(SendErrorCode.PAYER_NOT_ACTIVATED.getMessage());
+
+    var errors = new ErrorsDto();
+    errors.setErrors(Collections.singletonList(error));
+
+    return ResponseEntity.unprocessableEntity().body(errors);
   }
 }
