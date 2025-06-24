@@ -1,6 +1,8 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
@@ -8,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,53 +18,55 @@ import reactor.core.publisher.Mono;
 
 /**
  * Configuration class that defines the reactive Kafka consumer for GDP messages.
- * <p>
- * This class registers a Spring Cloud Function bean named {@code gdpMessageConsumer} that consumes
- * Kafka messages containing {@link GdpMessage} payloads. It uses a {@link GdpMapper} to transform
- * incoming GDP messages into RTP payloads and logs relevant processing details.
- * </p>
  *
- * <p>
- * The consumer leverages Project Reactor's {@link Flux} and {@link Mono} for non-blocking, asynchronous processing.
- * </p>
+ * <p>This class registers a Spring Cloud Function bean named {@code gdpMessageConsumer} that consumes
+ * Kafka messages with {@link GdpMessage} payloads. The payloads are processed via a generic
+ * {@link MessageProcessor}, which produces {@link Rtp} results in a reactive, non-blocking manner.</p>
  */
 @Configuration("gdpEventHandler")
 @RegisterReflectionForBinding(GdpMessage.class)
 @Slf4j
 public class GdpEventHandler {
 
-  private final GdpMapper gdpMapper;
+  private final MessageProcessor<GdpMessage, Mono<Rtp>> gdProcessor;
+
 
   /**
-   * Constructs the GDP event handler with the provided mapper.
+   * Constructs a new {@link GdpEventHandler} with the provided {@link MessageProcessor}.
    *
-   * @param gdpMapper The mapper responsible for transforming GDP messages to RTP format.
-   * @throws NullPointerException if {@code gdpMapper} is null
+   * @param gdProcessor the processor responsible for handling {@link GdpMessage} payloads
+   * @throws NullPointerException if {@code gdProcessor} is {@code null}
    */
-  public GdpEventHandler(@NonNull final GdpMapper gdpMapper) {
-    this.gdpMapper = Objects.requireNonNull(gdpMapper);
+  public GdpEventHandler(
+      @NonNull final MessageProcessor<GdpMessage, Mono<Rtp>> gdProcessor) {
+    this.gdProcessor = Objects.requireNonNull(gdProcessor);
   }
 
+
   /**
-   * Defines a Spring Cloud Stream consumer function that processes GDP messages from Kafka.
+   * Defines a Spring Cloud Stream consumer function named {@code gdpMessageConsumer} that processes
+   * incoming Kafka messages with {@link GdpMessage} payloads.
    *
-   * <p>Each message is handled as follows:</p>
+   * <p>Each message is processed by:</p>
    * <ul>
-   *   <li>Logs Kafka metadata headers such as partition, offset, and timestamp.</li>
-   *   <li>Logs the full GDP message payload.</li>
-   *   <li>Maps the GDP payload to an RTP representation using {@link GdpMapper}.</li>
-   *   <li>Logs the resulting RTP object’s resource ID.</li>
-   *   <li>Handles and logs any exceptions that occur during processing.</li>
+   *   <li>Logging Kafka metadata such as partition, offset, and timestamp.</li>
+   *   <li>Logging the GDP message payload.</li>
+   *   <li>Delegating message handling to the injected {@link MessageProcessor}.</li>
+   *   <li>Handling errors gracefully and logging the failed {@link Rtp} context if possible.</li>
    * </ul>
    *
-   * <p>If the mapping returns {@code null}, an {@link IllegalStateException} is thrown.</p>
+   * <p>Any errors encountered during processing are logged, but do not interrupt the stream.</p>
    *
-   * @return A {@link Function} that consumes a {@link Flux} of Kafka {@link Message} objects
-   *         with {@link GdpMessage} payloads and returns a {@link Mono<Void>} upon completion.
+   * @return a {@link Function} that takes a {@link Flux} of Kafka {@link Message} objects containing
+   *         {@link GdpMessage} payloads and returns a {@link Mono<Void>} when the stream is consumed.
    *
-   * @implNote This function is bound to the Spring Cloud Function binding named {@code gdpMessageConsumer}.
-   * @see org.springframework.kafka.support.KafkaHeaders
+   * @implNote This bean must be named {@code gdpMessageConsumer} to match the Spring Cloud Stream
+   * binding configuration.
+   *
+   * @see MessageProcessor
    * @see GdpMessage
+   * @see Rtp
+   * @see KafkaHeaders
    */
   @Bean("gdpMessageConsumer")
   @NonNull
@@ -78,11 +83,47 @@ public class GdpEventHandler {
         .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null")))
         .doOnNext(payload -> log.info("Payload: {}", payload))
 
-        .doOnNext(payload -> log.info("Mapping GDP payload to RTP"))
-        .mapNotNull(this.gdpMapper::toRtp)
+        .flatMap(this.gdProcessor::processMessage)
 
-        .doOnNext(rtp -> log.info("RTP created. Resource Id {}", rtp.resourceID().getId()))
-        .doOnError(error -> log.error("Exception found", error))
+        .onErrorContinue(this::handleError)
         .then();
   }
+
+
+  /**
+   * Handles errors that occur during message processing by logging the error details
+   * along with context-specific information based on the type of the payload.
+   *
+   * <p>If the payload is an instance of {@link GdpMessage}, the GDP message ID is logged.</p>
+   * <p>If the payload is an instance of {@link Rtp}, the RTP resource ID is logged.</p>
+   * <p>If the payload is of an unknown type, only the error is logged without additional context.</p>
+   *
+   * @param error   the exception that occurred during processing (must not be {@code null})
+   * @param context the message context associated with the error
+   * @throws NullPointerException if {@code error} or {@code payload} is {@code null}
+   */
+  @NonNull
+  private void handleError(
+      @NonNull final Throwable error,
+      @Nullable final Object context) {
+
+    Objects.requireNonNull(error, "Error cannot be null");
+
+    Optional.ofNullable(context)
+        .ifPresentOrElse(ctx -> {
+              switch (ctx) {
+                case GdpMessage gdpMessage ->
+                    log.error("Error processing message: GDP id: {}", gdpMessage.id(), error);
+
+                case Rtp rtp ->
+                    log.error("Error processing message: ResourceId: {}", rtp.resourceID().getId(),
+                        error);
+
+                default -> log.error("Error processing message.", error);
+              }
+            },
+            () -> log.error("Error processing message.", error));
+  }
+
 }
+
