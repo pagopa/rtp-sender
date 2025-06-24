@@ -72,7 +72,7 @@ dependencies {
 	implementation 'com.microsoft.azure:msal4j:1.19.0'
 
 	// Azure Event Hub
-	//implementation "org.springframework.cloud:spring-cloud-starter-stream-kafka:${springCloudStreamVersion}"
+	implementation "org.springframework.cloud:spring-cloud-starter-stream-kafka:${springCloudStreamVersion}"
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
