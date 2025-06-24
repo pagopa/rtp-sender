@@ -15,20 +15,20 @@ resource "azurerm_container_app" "rtp-sender" {
       memory = var.rtp_sender_memory
 
       liveness_probe {
-        port = 8080
-        path = "/actuator/health"
+        port      = 8080
+        path      = "/actuator/health"
         transport = "HTTP"
       }
 
       readiness_probe {
-        port = 8080
-        path = "/actuator/health"
+        port      = 8080
+        path      = "/actuator/health"
         transport = "HTTP"
       }
 
       startup_probe {
-        port = 8080
-        path = "/actuator/health"
+        port      = 8080
+        path      = "/actuator/health"
         transport = "HTTP"
       }
 
@@ -60,7 +60,7 @@ resource "azurerm_container_app" "rtp-sender" {
       dynamic "env" {
         for_each = var.rtp_environment_configs
         content {
-          name = env.key
+          name  = env.key
           value = env.value
         }
       }
@@ -68,14 +68,14 @@ resource "azurerm_container_app" "rtp-sender" {
       dynamic "env" {
         for_each = var.rtp_environment_secrets
         content {
-          name = env.key
+          name        = env.key
           secret_name = replace(lower(env.key), "_", "-")
         }
       }
-      
-       volume_mounts {
-        name    = "jks-volume"
-        path    = "/mnt/jks"
+
+      volume_mounts {
+        name = "jks-volume"
+        path = "/mnt/jks"
       }
 
     }
@@ -83,7 +83,7 @@ resource "azurerm_container_app" "rtp-sender" {
     volume {
       name         = "jks-volume"
       storage_type = "AzureFile"
-      storage_name = azurerm_container_app_environment_storage.rtp_sender_file_share_storage.name    
+      storage_name = var.rtp_sender_file_share_storage_name
     }
 
     max_replicas = var.rtp_sender_max_replicas
@@ -92,30 +92,30 @@ resource "azurerm_container_app" "rtp-sender" {
 
   secret {
     name  = "identity-client-id"
-    value = "${data.azurerm_user_assigned_identity.rtp-sender.client_id}"
+    value = data.azurerm_user_assigned_identity.rtp-sender.client_id
   }
 
   secret {
-    name = "azure-file-account-name"
+    name  = "azure-file-account-name"
     value = data.azurerm_storage_account.rtp_files_storage_account.name
   }
 
   secret {
-    name = "azure-file-account-key" 
+    name  = "azure-file-account-key"
     value = data.azurerm_storage_account.rtp_files_storage_account.primary_access_key
   }
 
   dynamic "secret" {
     for_each = var.rtp_environment_secrets
     content {
-      name = replace(lower(secret.key), "_", "-")
+      name                = replace(lower(secret.key), "_", "-")
       key_vault_secret_id = "${data.azurerm_key_vault.rtp-kv.vault_uri}secrets/${secret.value}"
       identity            = data.azurerm_user_assigned_identity.rtp-sender.id
     }
   }
 
   identity {
-    type = "UserAssigned"
+    type         = "UserAssigned"
     identity_ids = [data.azurerm_user_assigned_identity.rtp-sender.id]
   }
 
@@ -132,13 +132,4 @@ resource "azurerm_container_app" "rtp-sender" {
   }
 
   tags = var.tags
-}
-
-resource "azurerm_container_app_environment_storage" "rtp_sender_file_share_storage" {
-  name                         = "${local.project}-sender-fss"
-  container_app_environment_id = data.azurerm_container_app_environment.rtp-cae.id
-  account_name                 = data.azurerm_storage_account.rtp_files_storage_account.name
-  share_name                   = data.azurerm_storage_share.rtp_jks_file_share.name
-  access_key                   = data.azurerm_storage_account.rtp_files_storage_account.primary_access_key
-  access_mode                  = "ReadWrite"
 }

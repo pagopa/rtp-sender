@@ -24,6 +24,7 @@ cae_name                       = "cstar-p-mcshared-cae"
 cae_resource_group_name        = "cstar-p-mcshared-app-rg"
 id_name                        = "cstar-p-weu-rtp-sender-id"
 id_resource_group_name         = "cstar-p-weu-rtp-identity-rg"
+rtp_sender_file_share_storage_name = "cstar-p-weu-rtp-sender-fss"
 
 # ------------------------------------------------------------------------------
 # Names of key vault secrets.

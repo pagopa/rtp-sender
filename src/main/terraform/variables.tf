@@ -61,6 +61,11 @@ variable "cae_resource_group_name" {
   type = string
 }
 
+variable "rtp_sender_file_share_storage_name" {
+  description = "Name of the shared Azure File Storage for rtp-sender"
+  type        = string
+}
+
 # ------------------------------------------------------------------------------
 # Identity for this Container App.
 # ------------------------------------------------------------------------------
@@ -109,11 +114,11 @@ variable "rtp_sender_image" {
 }
 
 variable "rtp_environment_configs" {
-  type = map(any)
+  type    = map(any)
   default = {}
 }
 
 variable "rtp_environment_secrets" {
-  type = map(any)
+  type    = map(any)
   default = {}
 }
