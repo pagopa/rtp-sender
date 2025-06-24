@@ -58,7 +58,7 @@ spring:
 
 gdp:
   eventhub:
-    name: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-evh}
+    name: ${GDP_EVENTHUB_NAME:pagopa-d-itn-gps-rtp-integration-evh}
     connection-string: ${GDP_EVENTHUB_CONNECTION_STRING:}
     consumer:
       topic: ${GDP_EVENTHUB_TOPIC:rtp-events}
