@@ -86,8 +86,6 @@ public class GdpEventHandler {
         .flatMap(this.gdProcessor::processMessage)
 
         .onErrorContinue(this::handleError)
-
-        .doOnError(error -> log.error("Exception found", error))
         .then();
   }
 
