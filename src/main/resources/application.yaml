@@ -112,7 +112,7 @@ cache:
   params:
     - name: registry-data
       maximum-size: 1
-      expire-after-write: 1d
+      expire-after-write: ${REGISTRY_DATA_CACHE_TTL:PT5M}
 
 blob-storage:
   storage-account-name: ${AZURE_STORAGE_ACCOUNT_NAME:cstardweurtpblobstorage}

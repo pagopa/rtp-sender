@@ -71,4 +71,5 @@ rtp_environment_configs = {
   GDP_EVENTHUB_NAME                       : "pagopa-u-itn-gps-rtp-integration-evh"
   GDP_EVENTHUB_TOPIC                      : "rtp-events"
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
+  REGISTRY_DATA_CACHE_TTL                 : "PT5M"
 }
