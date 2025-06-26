@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.Event;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
 public class GdpMapper {
 
   private final GdpEventHubProperties gdpEventHubProperties;
+  private final PagoPaConfigProperties pagoPaConfigProperties;
 
 
   /**
@@ -38,9 +40,11 @@ public class GdpMapper {
    * @throws NullPointerException if {@code gdpEventHubProperties} is null
    */
   public GdpMapper(
-      @NonNull final GdpEventHubProperties gdpEventHubProperties) {
+          @NonNull final GdpEventHubProperties gdpEventHubProperties,
+          @NonNull final PagoPaConfigProperties pagoPaConfigProperties) {
 
     this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
+    this.pagoPaConfigProperties = Objects.requireNonNull(pagoPaConfigProperties);
   }
 
 
@@ -71,16 +75,14 @@ public class GdpMapper {
         .amount(BigDecimal.valueOf(gdpMessage.amount()))
         .description(gdpMessage.description())
         .expiryDate(gdpMessage.dueDate())
-        .payerName("")
         .payerId(gdpMessage.debtorTaxCode())
-        .payeeName("")
         .payeeId(gdpMessage.ecTaxCode())
         .subject(gdpMessage.subject())
         .savingDateTime(savingDateTime)
-        .iban("")
-        .payTrxRef("")
-        .flgConf("")
-        .serviceProviderCreditor("")
+        .iban(pagoPaConfigProperties.details().iban())
+        .payTrxRef("ABC/124")
+        .flgConf("flgConf")
+        .serviceProviderCreditor(pagoPaConfigProperties.details().fiscalCode())
         .status(RtpStatus.CREATED)
         .events(List.of(
             Event.builder()

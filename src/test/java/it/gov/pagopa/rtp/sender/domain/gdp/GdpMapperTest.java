@@ -3,6 +3,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import java.time.Instant;
@@ -27,8 +28,10 @@ class GdpMapperTest {
         "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test",
         new GdpEventHubProperties.Consumer("test-topic", "test-consumer")
     );
+    final var details = new PagoPaConfigProperties.Details("IT00A1234567890123456789012", "CF1234567890");
+    final var pagoPaConfigProperties = new PagoPaConfigProperties(details);
 
-    gdpMapper = new GdpMapper(gdpEventHubProperties);
+    gdpMapper = new GdpMapper(gdpEventHubProperties, pagoPaConfigProperties);
   }
 
   @Test
@@ -72,6 +75,10 @@ class GdpMapperTest {
     assertThat(result.subject()).isEqualTo("Mario Rossi");
     assertThat(result.savingDateTime()).isEqualTo(LocalDateTime.ofInstant(
         Instant.ofEpochMilli(1717458660000L), ZoneOffset.UTC));
+    assertThat(result.iban()).isEqualTo("IT00A1234567890123456789012");
+    assertThat(result.payTrxRef()).isEqualTo("ABC/124");
+    assertThat(result.flgConf()).isEqualTo("flgConf");
+    assertThat(result.serviceProviderCreditor()).isEqualTo("CF1234567890");
     assertThat(result.status()).isEqualTo(RtpStatus.CREATED);
     assertThat(result.events())
         .hasSize(1)
