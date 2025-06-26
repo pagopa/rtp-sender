@@ -40,7 +40,10 @@ class CreateOperationProcessorTest {
 
   @Test
   void givenValidMessage_whenMappingReturnsNull_thenReturnsEmptyMono() {
-    final var message = GdpMessage.builder().build();
+    final var message = GdpMessage
+            .builder()
+            .status(GdpMessage.Status.VALID)
+            .build();
     when(gdpMapper.toRtp(message)).thenReturn(null);
 
     final var result = createOperationProcessor.processOperation(message);
@@ -54,7 +57,10 @@ class CreateOperationProcessorTest {
 
   @Test
   void givenValidMessage_whenMappingReturnsRtp_thenSendsRtpSuccessfully() {
-    final var message = GdpMessage.builder().build();
+    final var message = GdpMessage
+            .builder()
+            .status(GdpMessage.Status.VALID)
+            .build();
     final var rtp = mock(Rtp.class);
     final var sentRtp = mock(Rtp.class);
 
@@ -75,7 +81,10 @@ class CreateOperationProcessorTest {
 
   @Test
   void givenValidMessage_whenSendFails_thenErrorIsPropagated() {
-    final var message = GdpMessage.builder().build();
+    final var message = GdpMessage
+            .builder()
+            .status(GdpMessage.Status.VALID)
+            .build();
     final var rtp = mock(Rtp.class);
 
     when(gdpMapper.toRtp(message))
@@ -92,4 +101,20 @@ class CreateOperationProcessorTest {
     verify(gdpMapper).toRtp(message);
     verify(sendRTPService).send(rtp);
   }
+
+  @Test
+  void givenInvalidStatusMessage_whenProcessOperation_thenReturnsEmptyMonoAndSkipsProcessing() {
+    final var message = GdpMessage.builder()
+            .status(GdpMessage.Status.INVALID)
+            .build();
+
+    final var result = createOperationProcessor.processOperation(message);
+
+    StepVerifier.create(result)
+            .verifyComplete();
+
+    verifyNoInteractions(gdpMapper);
+    verifyNoInteractions(sendRTPService);
+  }
+  
 }

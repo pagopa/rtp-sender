@@ -66,6 +66,10 @@ public class CreateOperationProcessor implements OperationProcessor {
     Objects.requireNonNull(gdpMessage, "gdpMessage must not be null");
 
     return Mono.just(gdpMessage)
+        .filter(message -> message.status() == GdpMessage.Status.VALID)
+        .switchIfEmpty(Mono.fromRunnable(() ->
+                log.info("Skipping GDP message with id {} due to non-VALID status: {}", gdpMessage.id(), gdpMessage.status())
+        ))
         .doOnNext(message -> log.info("Mapping GDP message to RTP"))
         .mapNotNull(this.gdpMapper::toRtp)
         .doOnNext(rtp -> log.info("Sending RTP. ResourceId: {}", rtp.resourceID()))

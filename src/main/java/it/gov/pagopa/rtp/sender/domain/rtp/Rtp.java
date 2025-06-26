@@ -45,6 +45,8 @@ public record Rtp(String noticeNumber, BigDecimal amount, String description, Lo
                 .triggerEvent(RtpEvent.CREATE_RTP)
                 .build()
         ))
+        .eventDispatcher(this.eventDispatcher())
+        .operationId(this.operationId())
         .build();
   }
 }
