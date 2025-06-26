@@ -101,4 +101,20 @@ class CreateOperationProcessorTest {
     verify(gdpMapper).toRtp(message);
     verify(sendRTPService).send(rtp);
   }
+
+  @Test
+  void givenInvalidStatusMessage_whenProcessOperation_thenReturnsEmptyMonoAndSkipsProcessing() {
+    final var message = GdpMessage.builder()
+            .status(GdpMessage.Status.INVALID)
+            .build();
+
+    final var result = createOperationProcessor.processOperation(message);
+
+    StepVerifier.create(result)
+            .verifyComplete();
+
+    verifyNoInteractions(gdpMapper);
+    verifyNoInteractions(sendRTPService);
+  }
+  
 }
