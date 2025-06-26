@@ -396,7 +396,7 @@ public class SepaRequestToPayMapper {
 
     final var originalPaymentInstruction = new OriginalPaymentInstruction34EPC25922V30DS11Dto() //OrgnlPmtInfAndCxl
         .pmtCxlId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
-        .orgnlPmtInfId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
+        .orgnlPmtInfId(rtp.noticeNumber())
         .orgnlGrpInf(new OriginalGroupInformation29EPC25922V30DS15RTPDto()
             .orgnlMsgId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
             .orgnlMsgNmId("pain.013.001.10")
