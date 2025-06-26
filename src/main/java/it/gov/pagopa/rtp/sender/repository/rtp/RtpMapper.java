@@ -31,6 +31,8 @@ public class RtpMapper {
         .status(rtpEntity.getStatus())
         .serviceProviderCreditor(rtpEntity.getServiceProviderCreditor())
         .events(rtpEntity.getEvents())
+        .eventDispatcher(rtpEntity.getEventDispatcher())
+        .operationId(rtpEntity.getOperationId())
         .build();
   }
 
@@ -54,6 +56,8 @@ public class RtpMapper {
         .status(rtp.status())
         .serviceProviderCreditor(rtp.serviceProviderCreditor())
         .events(rtp.events())
+        .eventDispatcher(rtp.eventDispatcher())
+        .operationId(rtp.operationId())
         .build();
   }
 }
