@@ -256,7 +256,7 @@ class SepaRequestToPayMapperTest {
     final var originalPaymentInstruction = result.getDocument().getCstmrPmtCxlReq().getUndrlyg().getOrgnlPmtInfAndCxl().getFirst();
     assertEquals(resourceId.getId().toString().replace("-",""),
         originalPaymentInstruction.getPmtCxlId());
-    assertEquals(resourceId.getId().toString().replace("-",""),
+    assertEquals(noticeNumber,
         originalPaymentInstruction.getOrgnlPmtInfId());
     assertEquals(resourceId.getId().toString().replace("-",""),
         originalPaymentInstruction.getOrgnlGrpInf().getOrgnlMsgId());
