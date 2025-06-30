@@ -87,13 +87,13 @@ public class SendAPIControllerImpl implements RtpsApi {
             .flatMap(sendRTPService::findRtp)
             .doOnNext(rtp -> log.debug("RTP retrieved from sendRTPService" ))
             .map(rtpDtoMapper::toRtpDto)
-            .doOnNext(dto -> log.debug("Mapped RTP to DTO: {}", dto))
+            .doOnNext(dto -> log.debug("Mapped RTP with id {} to DTO", rtpId))
             .map(ResponseEntity::ok)
             .onErrorResume(RtpNotFoundException.class, ex -> {
               log.warn("Error retrieving: {}", ex.getMessage());
               return Mono.just(ResponseEntity.notFound().build());
             })
-            .doOnError(a -> log.error("Error retriving RTP {}", a.getMessage()));
+            .doOnError(a -> log.error("Error retrieving RTP {}", a.getMessage()));
   }
 
 }

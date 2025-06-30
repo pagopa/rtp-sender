@@ -91,7 +91,7 @@ public class SendRTPServiceImpl implements SendRTPService {
     final var rtpToSend = activationData.map(act -> act.getPayer().getRtpSpId())
         .map(rtp::toRtpWithActivationInfo)
         .doOnSuccess(
-            rtpWithActivationInfo -> log.info("Saving Rtp to be sent: {}", rtpWithActivationInfo))
+            rtpWithActivationInfo -> log.info("Saving Rtp to be sent, with resourceId: {} and serviceProviderDebtor: {}", rtpWithActivationInfo.resourceID(), rtpWithActivationInfo.serviceProviderDebtor()))
         .flatMap(rtpRepository::save)
         .doOnNext(savedRtp -> LoggingUtils.logAsJson(
             () -> sepaRequestToPayMapper.toEpcRequestToPay(savedRtp), objectMapper))
