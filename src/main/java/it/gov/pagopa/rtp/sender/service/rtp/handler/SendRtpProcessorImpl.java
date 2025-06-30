@@ -166,7 +166,7 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
     Objects.requireNonNull(epcRequest);
 
     return Mono.just(epcRequest)
-        .doOnNext(request -> log.debug("EPC request with Rtp's resourceId {} was created", request.rtpToSend().resourceID()))
+        .doOnNext(request -> log.debug("EPC request with Rtp's resourceId {} was created", request.rtpToSend().resourceID().getId()))
         .doOnNext(request -> log.debug("Calling registry data handler."))
         .flatMap(this.registryDataHandler::handle)
         .doOnNext(data -> log.debug("Successfully called registry data handler."))
