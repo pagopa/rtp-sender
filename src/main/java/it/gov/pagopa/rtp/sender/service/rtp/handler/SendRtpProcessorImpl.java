@@ -82,6 +82,7 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
         .doFirst(() -> {
           MDC.put("debtor_service_provider", rtpToSend.serviceProviderDebtor());
           MDC.put("creditor_service_provider", rtpToSend.serviceProviderCreditor());
+          MDC.put("payee_name", rtpToSend.payeeName());
           log.info("Sending RTP to service provider debtor: {}", rtpToSend.serviceProviderDebtor());
         })
         .doOnNext(rtp -> log.debug("Creating EPC request."))
@@ -125,6 +126,7 @@ public class SendRtpProcessorImpl implements SendRtpProcessor {
         .doFirst(() -> {
           MDC.put("debtor_service_provider", rtpToSend.serviceProviderDebtor());
           MDC.put("creditor_service_provider", rtpToSend.serviceProviderCreditor());
+          MDC.put("payee_name", rtpToSend.payeeName());
           log.info("Cancelling RTP to service provider debtor: {}", rtpToSend.serviceProviderDebtor());
         })
         .doOnNext(rtp -> log.debug("Creating EPC request for cancellation."))
