@@ -4,9 +4,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig.Send.Retry;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,40 +39,50 @@ class StateMachineConfigurationTest {
     configuration = new StateMachineConfiguration(rtpDB, serviceProviderConfig);
   }
 
-  @Test
-  void givenStateMachineConfig_whenCreatingConfigurer_thenAllTransitionsAreRegistered() {
+
+  @ParameterizedTest
+  @MethodSource("transitionArguments")
+  void givenStateMachineConfig_whenCreatingConfigurer_thenTransitionsAreRegistered(
+      RtpStatus from, RtpEvent event, RtpStatus to
+  ) {
     final var configurer = configuration.transitionConfigurer();
     final var config = configurer.build();
 
-    assertAll(
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.SEND_RTP, RtpStatus.SENT),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.ERROR_SEND_RTP, RtpStatus.ERROR_SEND),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.ACCEPT_RTP, RtpStatus.ACCEPTED),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.REJECT_RTP, RtpStatus.REJECTED),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.USER_ACCEPT_RTP, RtpStatus.USER_ACCEPTED),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.USER_REJECT_RTP, RtpStatus.USER_REJECTED),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.PAY_RTP, RtpStatus.PAID),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
-        () -> assertTransitionExists(config, RtpStatus.CREATED, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
-        () -> assertTransitionExists(config, RtpStatus.SENT, RtpEvent.ACCEPT_RTP, RtpStatus.ACCEPTED),
-        () -> assertTransitionExists(config, RtpStatus.SENT, RtpEvent.REJECT_RTP, RtpStatus.REJECTED),
-        () -> assertTransitionExists(config, RtpStatus.SENT, RtpEvent.USER_ACCEPT_RTP, RtpStatus.USER_ACCEPTED),
-        () -> assertTransitionExists(config, RtpStatus.SENT, RtpEvent.USER_REJECT_RTP, RtpStatus.USER_REJECTED),
-        () -> assertTransitionExists(config, RtpStatus.SENT, RtpEvent.PAY_RTP, RtpStatus.PAID),
-        () -> assertTransitionExists(config, RtpStatus.SENT, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
-        () -> assertTransitionExists(config, RtpStatus.SENT, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
-        () -> assertTransitionExists(config, RtpStatus.ACCEPTED, RtpEvent.USER_ACCEPT_RTP, RtpStatus.USER_ACCEPTED),
-        () -> assertTransitionExists(config, RtpStatus.ACCEPTED, RtpEvent.USER_REJECT_RTP, RtpStatus.USER_REJECTED),
-        () -> assertTransitionExists(config, RtpStatus.ACCEPTED, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
-        () -> assertTransitionExists(config, RtpStatus.ACCEPTED, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
-        () -> assertTransitionExists(config, RtpStatus.USER_ACCEPTED, RtpEvent.PAY_RTP, RtpStatus.PAID),
-        () -> assertTransitionExists(config, RtpStatus.USER_ACCEPTED, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
-        () -> assertTransitionExists(config, RtpStatus.USER_ACCEPTED, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
-        () -> assertTransitionExists(config, RtpStatus.CANCELLED, RtpEvent.CANCEL_RTP_ACCR, RtpStatus.CANCELLED_ACCR),
-        () -> assertTransitionExists(config, RtpStatus.CANCELLED, RtpEvent.CANCEL_RTP_REJECTED, RtpStatus.CANCELLED_REJECTED),
-        () -> assertTransitionExists(config, RtpStatus.CANCELLED, RtpEvent.ERROR_CANCEL_RTP, RtpStatus.ERROR_CANCEL)
+    assertTransitionExists(config, from, event, to);
+  }
+
+
+  private static Stream<Arguments> transitionArguments() {
+    return Stream.of(
+        Arguments.of(RtpStatus.CREATED, RtpEvent.SEND_RTP, RtpStatus.SENT),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.ERROR_SEND_RTP, RtpStatus.ERROR_SEND),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.ACCEPT_RTP, RtpStatus.ACCEPTED),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.REJECT_RTP, RtpStatus.REJECTED),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.USER_ACCEPT_RTP, RtpStatus.USER_ACCEPTED),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.USER_REJECT_RTP, RtpStatus.USER_REJECTED),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.PAY_RTP, RtpStatus.PAID),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
+        Arguments.of(RtpStatus.CREATED, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
+        Arguments.of(RtpStatus.SENT, RtpEvent.ACCEPT_RTP, RtpStatus.ACCEPTED),
+        Arguments.of(RtpStatus.SENT, RtpEvent.REJECT_RTP, RtpStatus.REJECTED),
+        Arguments.of(RtpStatus.SENT, RtpEvent.USER_ACCEPT_RTP, RtpStatus.USER_ACCEPTED),
+        Arguments.of(RtpStatus.SENT, RtpEvent.USER_REJECT_RTP, RtpStatus.USER_REJECTED),
+        Arguments.of(RtpStatus.SENT, RtpEvent.PAY_RTP, RtpStatus.PAID),
+        Arguments.of(RtpStatus.SENT, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
+        Arguments.of(RtpStatus.SENT, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
+        Arguments.of(RtpStatus.ACCEPTED, RtpEvent.USER_ACCEPT_RTP, RtpStatus.USER_ACCEPTED),
+        Arguments.of(RtpStatus.ACCEPTED, RtpEvent.USER_REJECT_RTP, RtpStatus.USER_REJECTED),
+        Arguments.of(RtpStatus.ACCEPTED, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
+        Arguments.of(RtpStatus.ACCEPTED, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
+        Arguments.of(RtpStatus.USER_ACCEPTED, RtpEvent.PAY_RTP, RtpStatus.PAID),
+        Arguments.of(RtpStatus.USER_ACCEPTED, RtpEvent.CANCEL_RTP, RtpStatus.CANCELLED),
+        Arguments.of(RtpStatus.USER_ACCEPTED, RtpEvent.CANCEL_RTP_PAID, RtpStatus.CANCELLED_PAID),
+        Arguments.of(RtpStatus.CANCELLED, RtpEvent.CANCEL_RTP_ACCR, RtpStatus.CANCELLED_ACCR),
+        Arguments.of(RtpStatus.CANCELLED, RtpEvent.CANCEL_RTP_REJECTED, RtpStatus.CANCELLED_REJECTED),
+        Arguments.of(RtpStatus.CANCELLED, RtpEvent.ERROR_CANCEL_RTP, RtpStatus.ERROR_CANCEL)
     );
   }
+
 
   private void assertTransitionExists(
       TransitionConfiguration<RtpEntity, RtpStatus, RtpEvent> config,
