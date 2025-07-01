@@ -48,7 +48,6 @@ public class CallbackFieldsExtractor {
     @NonNull
     public Flux<TransactionStatus> extractTransactionStatusSend(@NonNull final JsonNode responseNode) {
         return Mono.justOrEmpty(responseNode)
-                // TODO log to be verified
                 .doOnNext(node -> log.debug("Received JSON for transaction status extraction: {}", node))
                 .map(node -> node.path("AsynchronousSepaRequestToPayResponse"))
                 .flatMap(node -> Mono.just(node.path("Document"))
@@ -99,7 +98,6 @@ public class CallbackFieldsExtractor {
     @NonNull
     public Mono<ResourceID> extractResourceIDSend(@NonNull final JsonNode responseNode) {
         return Mono.justOrEmpty(responseNode)
-                // TODO log to be verified
                 .doOnNext(node -> log.debug("Received JSON for resource ID extraction: {}", node))
                 .map(node -> node.path("AsynchronousSepaRequestToPayResponse"))
                 .flatMap(node -> Mono.just(node.path("Document"))
