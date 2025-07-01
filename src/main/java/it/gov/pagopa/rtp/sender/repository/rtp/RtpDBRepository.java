@@ -39,12 +39,12 @@ public class RtpDBRepository implements RtpRepository {
   @NonNull
   @Override
   public Mono<Rtp> findByOperationIdAndEventDispatcher(
-          @NonNull Long operationId,
-          @NonNull String eventDispatcher) {
+          @NonNull final Long operationId,
+          @NonNull final String eventDispatcher) {
 
-    log.debug("Retrieving RTP with operationId {} and eventDispatcher {}", operationId, eventDispatcher);
+    log.info("Retrieving RTP with operationId {} and eventDispatcher {}", operationId, eventDispatcher);
     return rtpDB.findByOperationIdAndEventDispatcher(operationId,eventDispatcher)
-            .doOnNext(entity -> log.debug("Found RTP with operationId {} and eventDispatcher {}",
+            .doOnNext(entity -> log.info("Found RTP with operationId {} and eventDispatcher {}",
                     operationId, eventDispatcher))
             .map(rtpMapper::toDomain)
             .doOnNext(rtp -> log.debug("Mapped RTP entity to domain object: {}", rtp))

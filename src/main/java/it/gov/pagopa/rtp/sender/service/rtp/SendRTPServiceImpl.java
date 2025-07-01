@@ -146,7 +146,8 @@ public class SendRTPServiceImpl implements SendRTPService {
 
   @NonNull
   @Override
-  public Mono<Rtp> findRtpByCompositeKey(Long operationId, String eventDispatcher) {
+  public Mono<Rtp> findRtpByCompositeKey(@NonNull final Long operationId,
+                                         @NonNull final String eventDispatcher) {
     log.debug("Attempting to find RTP by composite key: operationId={}, eventDispatcher={}", operationId, eventDispatcher);
     return rtpRepository.findByOperationIdAndEventDispatcher(operationId, eventDispatcher)
             .doOnNext(rtp -> log.info("Successfully found RTP with id: {}", rtp.resourceID().getId()))

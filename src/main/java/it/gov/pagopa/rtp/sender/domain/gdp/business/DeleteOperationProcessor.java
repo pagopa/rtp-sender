@@ -17,15 +17,17 @@ public class DeleteOperationProcessor implements OperationProcessor {
     private final GdpEventHubProperties gdpEventHubProperties;
 
     public DeleteOperationProcessor(
-            @NonNull SendRTPService sendRTPService,
-            @NonNull GdpEventHubProperties gdpEventHubProperties) {
+            @NonNull final SendRTPService sendRTPService,
+            @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
         this.sendRTPService = Objects.requireNonNull(sendRTPService);
         this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
     }
 
+    @NonNull
     @Override
-    public Mono<Rtp> processOperation(GdpMessage gdpMessage) {
+    public Mono<Rtp> processOperation(@NonNull final GdpMessage gdpMessage) {
+        Objects.requireNonNull(gdpMessage, "gdpMessage must not be null");
 
         log.info("Processing GDP message with id {}", gdpMessage.id());
         return Mono.just(gdpMessage)

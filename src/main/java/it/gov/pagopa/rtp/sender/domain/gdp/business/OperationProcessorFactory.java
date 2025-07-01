@@ -44,7 +44,7 @@ public class OperationProcessorFactory {
   public OperationProcessorFactory(
           @NonNull final GdpMapper gdpMapper,
           @NonNull final SendRTPService sendRTPService,
-          @NonNull GdpEventHubProperties gdpEventHubProperties) {
+          @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     this.gdpMapper = Objects.requireNonNull(gdpMapper);
     this.sendRTPService = Objects.requireNonNull(sendRTPService);
