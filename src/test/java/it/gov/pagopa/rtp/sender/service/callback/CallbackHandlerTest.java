@@ -98,7 +98,7 @@ class CallbackHandlerTest {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
-                .thenReturn(Flux.just(TransactionStatus.ACTC));
+                .thenReturn(Flux.just(TransactionStatus.CNCL));
         when(callbackFieldsExtractor.extractResourceIDSend(request))
                 .thenReturn(Mono.just(resourceID));
         when(rtpRepository.findById(resourceID))

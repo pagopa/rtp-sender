@@ -86,7 +86,7 @@ public class CallbackHandler {
         log.debug("Handling TransactionStatus: {}", transactionStatus);
 
         return switch (transactionStatus) {
-            case ACCP, ACWC -> {
+            case ACCP, ACWC, ACTC -> {
                 log.debug("Triggering ACCEPT transition for RTP {}", rtpToUpdate.resourceID().getId());
                 yield this.rtpStatusUpdater.triggerAcceptRtp(rtpToUpdate);
             }
