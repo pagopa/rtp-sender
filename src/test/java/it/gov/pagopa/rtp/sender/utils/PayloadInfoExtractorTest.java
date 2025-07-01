@@ -106,7 +106,7 @@ class PayloadInfoExtractorTest {
         PayloadInfoExtractor.populateMdc(node);
 
         assertEquals(bic, MDC.get("service_provider"));
-        assertEquals(debtorValue, MDC.get("debtor"));
+        assertNull(MDC.get("debtor"));
     }
 
     @Test

@@ -24,18 +24,5 @@ public final class PayloadInfoExtractor {
         if (serviceProvider != null) {
             MDC.put("service_provider", serviceProvider);
         }
-
-        String debtor = payload.path("fiscalCode").asText(null);
-        if (debtor == null) {
-            debtor = node
-                    .path("OrgnlPmtInfAndSts")
-                    .path(0)
-                    .path("TxInfAndSts")
-                    .path("OrgnlEndToEndId")
-                    .asText(null);
-        }
-        if (debtor != null) {
-            MDC.put("debtor", debtor);
-        }
     }
 }
