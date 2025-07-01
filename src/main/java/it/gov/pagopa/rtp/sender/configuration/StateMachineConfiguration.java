@@ -75,6 +75,7 @@ public class StateMachineConfiguration {
         .register(new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.USER_REJECT_RTP), RtpStatus.USER_REJECTED, persistRtpAction)
         .register(new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.PAY_RTP), RtpStatus.PAID, persistRtpAction)
         .register(new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.CANCEL_RTP), RtpStatus.CANCELLED, persistRtpAction)
+        .register(new RtpTransitionKey(RtpStatus.CREATED, RtpEvent.CANCEL_RTP_PAID), RtpStatus.CANCELLED_PAID, persistRtpAction)
 
         // Transitions from SENT
         .register(new RtpTransitionKey(RtpStatus.SENT, RtpEvent.ACCEPT_RTP), RtpStatus.ACCEPTED, persistRtpAction)
@@ -84,15 +85,18 @@ public class StateMachineConfiguration {
         .register(new RtpTransitionKey(RtpStatus.SENT, RtpEvent.PAY_RTP), RtpStatus.PAID, persistRtpAction)
         .register(new RtpTransitionKey(RtpStatus.SENT, RtpEvent.CANCEL_RTP), RtpStatus.CANCELLED, persistRtpAction)
         .register(new RtpTransitionKey(RtpStatus.SENT, RtpEvent.ERROR_SEND_RTP), RtpStatus.ERROR_SEND, persistRtpAction)
+        .register(new RtpTransitionKey(RtpStatus.SENT, RtpEvent.CANCEL_RTP_PAID), RtpStatus.CANCELLED_PAID, persistRtpAction)
 
         // Transitions from ACCEPTED
         .register(new RtpTransitionKey(RtpStatus.ACCEPTED, RtpEvent.USER_ACCEPT_RTP), RtpStatus.USER_ACCEPTED, persistRtpAction)
         .register(new RtpTransitionKey(RtpStatus.ACCEPTED, RtpEvent.USER_REJECT_RTP), RtpStatus.USER_REJECTED, persistRtpAction)
         .register(new RtpTransitionKey(RtpStatus.ACCEPTED, RtpEvent.CANCEL_RTP), RtpStatus.CANCELLED, persistRtpAction)
+        .register(new RtpTransitionKey(RtpStatus.ACCEPTED, RtpEvent.CANCEL_RTP_PAID), RtpStatus.CANCELLED_PAID, persistRtpAction)
 
         // Transitions from USER_ACCEPTED
         .register(new RtpTransitionKey(RtpStatus.USER_ACCEPTED, RtpEvent.PAY_RTP), RtpStatus.PAID, persistRtpAction)
         .register(new RtpTransitionKey(RtpStatus.USER_ACCEPTED, RtpEvent.CANCEL_RTP), RtpStatus.CANCELLED, persistRtpAction)
+        .register(new RtpTransitionKey(RtpStatus.USER_ACCEPTED, RtpEvent.CANCEL_RTP_PAID), RtpStatus.CANCELLED_PAID, persistRtpAction)
 
         // Transitions from CANCELLED
         .register(new RtpTransitionKey(RtpStatus.CANCELLED, RtpEvent.CANCEL_RTP_ACCR), RtpStatus.CANCELLED_ACCR, persistRtpAction)
