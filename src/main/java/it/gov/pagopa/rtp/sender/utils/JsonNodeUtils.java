@@ -32,7 +32,6 @@ public class JsonNodeUtils {
      */
     public static Flux<JsonNode> nodeToFlux(@NonNull final JsonNode node) {
         return Optional.of(node)
-                .filter(JsonNode::isContainerNode)
                 .map(n -> n.isArray()
                         ? StreamSupport.stream(n.spliterator(), false)
                         : Stream.of(n))
