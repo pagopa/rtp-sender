@@ -87,7 +87,10 @@ class SendRtpProcessorImplTest {
     final var rtpToSend = mock(Rtp.class);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var exception = new RuntimeException("Registry error");
+    final var resourceId = ResourceID.createNew();
 
+    when(rtpToSend.resourceID())
+            .thenReturn(resourceId);
     when(registryDataHandler.handle(inputEpcRequest)).thenReturn(Mono.error(exception));
 
     final var resultMono = sendRtpProcessor.sendRtpToServiceProviderDebtor(rtpToSend);
@@ -111,7 +114,10 @@ class SendRtpProcessorImplTest {
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var exception = new RuntimeException("OAuth2 error");
+    final var resourceId = ResourceID.createNew();
 
+    when(rtpToSend.resourceID())
+            .thenReturn(resourceId);
     when(registryDataHandler.handle(inputEpcRequest))
         .thenReturn(Mono.just(epcRequestWithRegistryData));
     when(oauth2Handler.handle(epcRequestWithRegistryData))
@@ -141,7 +147,10 @@ class SendRtpProcessorImplTest {
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);
     final var exception = new RuntimeException("Send RTP error");
+    final var resourceId = ResourceID.createNew();
 
+    when(rtpToSend.resourceID())
+            .thenReturn(resourceId);
     when(registryDataHandler.handle(inputEpcRequest))
         .thenReturn(Mono.just(epcRequestWithRegistryData));
     when(oauth2Handler.handle(epcRequestWithRegistryData))
@@ -241,7 +250,10 @@ class SendRtpProcessorImplTest {
     final var rtpToSend = mock(Rtp.class);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var exception = new RuntimeException("Registry error");
+    final var resourceId = ResourceID.createNew();
 
+    when(rtpToSend.resourceID())
+            .thenReturn(resourceId);
     when(registryDataHandler.handle(inputEpcRequest)).thenReturn(Mono.error(exception));
 
     final var resultMono = sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(rtpToSend);
@@ -267,7 +279,10 @@ class SendRtpProcessorImplTest {
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var exception = new RuntimeException("OAuth2 error");
+    final var resourceId = ResourceID.createNew();
 
+    when(rtpToSend.resourceID())
+            .thenReturn(resourceId);
     when(registryDataHandler.handle(inputEpcRequest))
         .thenReturn(Mono.just(epcRequestWithRegistryData));
     when(oauth2Handler.handle(epcRequestWithRegistryData))
@@ -299,7 +314,10 @@ class SendRtpProcessorImplTest {
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);
     final var exception = new RuntimeException("Send RTP error");
+    final var resourceId = ResourceID.createNew();
 
+    when(rtpToSend.resourceID())
+            .thenReturn(resourceId);
     when(registryDataHandler.handle(inputEpcRequest))
         .thenReturn(Mono.just(epcRequestWithRegistryData));
     when(oauth2Handler.handle(epcRequestWithRegistryData))
