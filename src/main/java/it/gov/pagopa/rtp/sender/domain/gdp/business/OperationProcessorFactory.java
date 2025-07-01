@@ -1,8 +1,10 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
+import it.gov.pagopa.rtp.sender.repository.rtp.RtpDBRepository;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,8 @@ public class OperationProcessorFactory {
 
   private final GdpMapper gdpMapper;
   private final SendRTPService sendRTPService;
+  private final RtpDBRepository rtpDBRepository;
+  private final GdpEventHubProperties gdpEventHubProperties;
 
 
   /**
@@ -40,11 +44,15 @@ public class OperationProcessorFactory {
    * @throws NullPointerException if any argument is {@code null}
    */
   public OperationProcessorFactory(
-      @NonNull final GdpMapper gdpMapper,
-      @NonNull final SendRTPService sendRTPService) {
+          @NonNull final GdpMapper gdpMapper,
+          @NonNull final SendRTPService sendRTPService,
+          @NonNull RtpDBRepository rtpDBRepository,
+          @NonNull GdpEventHubProperties gdpEventHubProperties) {
 
     this.gdpMapper = Objects.requireNonNull(gdpMapper);
     this.sendRTPService = Objects.requireNonNull(sendRTPService);
+    this.rtpDBRepository = Objects.requireNonNull(rtpDBRepository);
+    this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
   }
 
 
@@ -87,7 +95,7 @@ public class OperationProcessorFactory {
     return switch (operation) {
       case CREATE -> new CreateOperationProcessor(this.gdpMapper, this.sendRTPService);
       case UPDATE -> throw new UnsupportedOperationException(operation.toString());
-      case DELETE -> throw new UnsupportedOperationException(operation.toString());
+      case DELETE -> new DeleteOperationProcessor(this.sendRTPService, this.rtpDBRepository, this.gdpEventHubProperties);
     };
   }
 
