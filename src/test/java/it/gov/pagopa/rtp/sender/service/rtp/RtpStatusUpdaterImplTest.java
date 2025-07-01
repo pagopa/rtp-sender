@@ -231,4 +231,14 @@ class RtpStatusUpdaterImplTest {
   void givenStateMachineFails_whenTriggerCancelRtpRejected_thenPropagateError() {
     verifyErrorPropagation(RtpEvent.CANCEL_RTP_REJECTED, updater -> updater.triggerCancelRtpRejected(rtp));
   }
+
+  @Test
+  void givenValidInput_whenTriggerCancelRtpPaid() {
+    verifyTransition(RtpEvent.CANCEL_RTP_PAID, updater -> updater.triggerCancelRtpPaid(rtp));
+  }
+
+  @Test
+  void givenStateMachineFails_whenTriggerCancelRtpPaid_thenPropagateError() {
+    verifyErrorPropagation(RtpEvent.CANCEL_RTP_PAID, updater -> updater.triggerCancelRtpPaid(rtp));
+  }
 }
