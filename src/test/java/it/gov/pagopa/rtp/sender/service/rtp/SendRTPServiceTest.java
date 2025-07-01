@@ -268,7 +268,7 @@ class SendRTPServiceTest {
   void givenRtpInNotAllowedStatus_whenCancelRtp_thenThrowsIllegalStateException() {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
-    Rtp mockRtp = mockRtpWithStatus(RtpStatus.PAYED, rtpId);
+    Rtp mockRtp = mockRtpWithStatus(RtpStatus.PAID, rtpId);
 
     when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
     when(rtpStatusUpdater.canCancel(mockRtp)).thenReturn(Mono.just(false));
