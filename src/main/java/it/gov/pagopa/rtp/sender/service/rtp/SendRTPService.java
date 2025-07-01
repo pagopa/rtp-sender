@@ -13,4 +13,6 @@ public interface SendRTPService {
     Mono<Rtp> cancelRtp(ResourceID rtpId);
 
     Mono<Rtp> findRtp(UUID rtpId);
+
+    Mono<Rtp> findRtpByCompositeKey(Long operationId, String eventDispatcher);
 }
