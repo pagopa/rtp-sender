@@ -38,13 +38,14 @@ class JsonNodeUtilsTest {
     }
 
     @Test
-    void givenValueNode_whenNodeToFlux_thenReturnEmptyFlux() throws IOException {
+    void givenValueNode_whenNodeToFlux_thenReturnSingleElementFlux() throws IOException {
         String jsonValue = "\"just a string\"";
         JsonNode valueNode = objectMapper.readTree(jsonValue);
 
         Flux<JsonNode> result = JsonNodeUtils.nodeToFlux(valueNode);
 
         StepVerifier.create(result)
+                .expectNext(valueNode)
                 .verifyComplete();
     }
 
