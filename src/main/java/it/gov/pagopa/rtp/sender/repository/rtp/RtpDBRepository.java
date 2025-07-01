@@ -35,4 +35,17 @@ public class RtpDBRepository implements RtpRepository {
         .flatMap(rtpDB::findById)
         .map(rtpMapper::toDomain);
   }
+
+  @NonNull
+  @Override
+  public Mono<Rtp> findByOperationIdAndEventDispatcher(
+          @NonNull Long operationId,
+          @NonNull String eventDispatcher) {
+
+    log.debug("Retrieving RTP with operationId {} and eventDispatcher {}", operationId, eventDispatcher);
+    return rtpDB.findByOperationIdAndEventDispatcher(operationId,eventDispatcher)
+            .doOnNext(entity -> log.info("Found RTP with operationId {} and eventDispatcher {}",
+                    operationId, eventDispatcher))
+            .map(rtpMapper::toDomain);
+  }
 }
