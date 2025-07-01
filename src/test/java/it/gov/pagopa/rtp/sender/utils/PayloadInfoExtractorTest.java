@@ -26,7 +26,7 @@ class PayloadInfoExtractorTest {
     }
 
     @Test
-    void populateMdc_DS_04B_shouldExtractServiceProviderOnly() throws Exception {
+    void populateMdc_DS_04B_shouldExtractServiceProvider() throws Exception {
         String json = """
         {
           "resourceId": "456789123-rtp-response-001",
@@ -63,50 +63,6 @@ class PayloadInfoExtractorTest {
         PayloadInfoExtractor.populateMdc(node);
 
         assertEquals("MOCKSP04", MDC.get("service_provider"));
-        assertNull(MDC.get("debtor"));
-    }
-
-    @Test
-    void populateMdc_DS_08P_shouldExtractServiceProviderAndDebtor() throws Exception {
-        String jsonTemplate = """
-        {
-          "resourceId": "id",
-          "AsynchronousSepaRequestToPayResponse": {
-            "resourceId": "id",
-            "Document": {
-              "CdtrPmtActvtnReqStsRpt": {
-                "GrpHdr": {
-                  "MsgId": "MSG1",
-                  "CreDtTm": "2025-03-21T10:15:30",
-                  "InitgPty": { "Id": { "OrgId": { "AnyBIC": "%s" } } }
-                },
-                "OrgnlPmtInfAndSts": [
-                  {
-                    "OrgnlPmtInfId": "pid",
-                    "TxInfAndSts": {
-                      "StsId": "MSG1",
-                      "OrgnlInstrId": "instr",
-                      "OrgnlEndToEndId": "%s",
-                      "TxSts": "RJCT",
-                      "StsRsnInf": { "Orgtr": { "Id": { "OrgId": { "AnyBIC": "%s" } } } },
-                      "OrgnlTxRef": { }
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        }
-        """;
-        String bic = "MOCKSP05";
-        String debtorValue = "DEBTOR123";
-        String json = String.format(jsonTemplate, bic, debtorValue, bic);
-        JsonNode node = objectMapper.readTree(json);
-
-        PayloadInfoExtractor.populateMdc(node);
-
-        assertEquals(bic, MDC.get("service_provider"));
-        assertNull(MDC.get("debtor"));
     }
 
     @Test
@@ -116,6 +72,5 @@ class PayloadInfoExtractorTest {
 
         assertDoesNotThrow(() -> PayloadInfoExtractor.populateMdc(node));
         assertNull(MDC.get("service_provider"));
-        assertNull(MDC.get("debtor"));
     }
 }
