@@ -10,12 +10,30 @@ import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
+/**
+ * Processor responsible for handling GDP {@code DELETE} operations.
+ * <p>
+ * This processor filters GDP messages with a {@code VALID} status, retrieves the corresponding RTP using a composite key
+ * (operationId and eventDispatcher), and requests cancellation of the RTP.
+ * If the message is not valid, the operation is skipped.
+ *
+ * @see OperationProcessor
+ * @see SendRTPService
+ * @see GdpEventHubProperties
+ */
 @Slf4j
 public class DeleteOperationProcessor implements OperationProcessor {
 
     private final SendRTPService sendRTPService;
     private final GdpEventHubProperties gdpEventHubProperties;
 
+    /**
+     * Constructs a new {@code DeleteOperationProcessor} with the given dependencies.
+     *
+     * @param sendRTPService        the service used to retrieve and cancel RTPs; must not be {@code null}
+     * @param gdpEventHubProperties the configuration containing the event dispatcher name; must not be {@code null}
+     * @throws NullPointerException if any argument is {@code null}
+     */
     public DeleteOperationProcessor(
             @NonNull final SendRTPService sendRTPService,
             @NonNull final GdpEventHubProperties gdpEventHubProperties) {
@@ -24,6 +42,20 @@ public class DeleteOperationProcessor implements OperationProcessor {
         this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
     }
 
+    /**
+     * Processes a {@link GdpMessage} of type {@code DELETE}.
+     * <p>
+     * If the message status is {@code VALID}, it attempts to:
+     * <ul>
+     *   <li>Retrieve the corresponding {@link Rtp} using the operationId and eventDispatcher</li>
+     *   <li>Cancel the RTP by calling {@link SendRTPService#cancelRtp}</li>
+     * </ul>
+     * If the message is not valid, it logs a warning and skips processing.
+     *
+     * @param gdpMessage the GDP message to process; must not be {@code null}
+     * @return a {@link Mono} emitting the canceled {@link Rtp}, or an error if processing fails
+     * @throws NullPointerException if {@code gdpMessage} is {@code null}
+     */
     @NonNull
     @Override
     public Mono<Rtp> processOperation(@NonNull final GdpMessage gdpMessage) {

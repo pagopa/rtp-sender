@@ -39,6 +39,7 @@ public class OperationProcessorFactory {
    *
    * @param gdpMapper       the GDP-to-RTP mapper; must not be {@code null}
    * @param sendRTPService  the RTP sending service; must not be {@code null}
+   * @param gdpEventHubProperties the configuration properties for GDP Event Hub; must not be {@code null}
    * @throws NullPointerException if any argument is {@code null}
    */
   public OperationProcessorFactory(
