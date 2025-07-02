@@ -49,6 +49,7 @@ public class RegistryDataServiceImpl implements RegistryDataService {
 
   @Override
   @NonNull
+  @Cacheable("service-providers-by-psp-tax-code")
   public Mono<Map<String, ServiceProvider>> getServiceProvidersByPspTaxCode() {
     return this.getRawSRegistryData()
         .map(ServiceProviderDataResponse::sps)
