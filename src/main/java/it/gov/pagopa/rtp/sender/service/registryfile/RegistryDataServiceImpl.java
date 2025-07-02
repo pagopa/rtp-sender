@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.service.registryfile;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aot.hint.annotation.RegisterReflection;
 import org.springframework.cache.annotation.Cacheable;
@@ -43,6 +44,16 @@ public class RegistryDataServiceImpl implements RegistryDataService {
         .onErrorMap(ExceptionUtils::gracefullyHandleError)
         .doOnSuccess(data -> log.info("Successfully transformed registry data"))
         .doOnError(error -> log.error("Error retrieving registry data: {}", error.getMessage(), error));
+  }
+
+
+  @Override
+  @NonNull
+  public Mono<Map<String, ServiceProvider>> getServiceProvidersByPspTaxCode() {
+    return this.getRawSRegistryData()
+        .map(ServiceProviderDataResponse::sps)
+        .flatMapMany(Flux::fromIterable)
+        .collectMap(ServiceProvider::pspTaxCode, Function.identity());
   }
 
 
