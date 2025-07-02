@@ -1,9 +1,11 @@
 package it.gov.pagopa.rtp.sender.service.registryfile;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +102,63 @@ class RegistryDataServiceImplTest {
         .verifyComplete();
 
     verify(blobStorageClient, times(1)).getServiceProviderData();
+  }
+
+
+  @Test
+  void givenNonEmptyServiceProviderList_whenGetServiceProvidersByPspTaxCode_thenReturnMappedResult() {
+    final var sp1 = new ServiceProvider("sp1", "Provider One", "tsp1", "pspTaxCode1");
+    final var sp2 = new ServiceProvider("sp2", "Provider Two", "tsp2", "pspTaxCode2");
+    final var providers = List.of(sp1, sp2);
+
+    final var mockResponse = new ServiceProviderDataResponse(
+        Collections.emptyList(),
+        providers
+    );
+
+    when(blobStorageClient.getServiceProviderData())
+        .thenReturn(Mono.just(mockResponse));
+
+    final var result = registryDataService.getServiceProvidersByPspTaxCode();
+
+    StepVerifier.create(result)
+        .assertNext(map -> {
+          assertEquals(2, map.size());
+          assertEquals(sp1, map.get("pspTaxCode1"));
+          assertEquals(sp2, map.get("pspTaxCode2"));
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  void givenEmptyServiceProviderList_whenGetServiceProvidersByPspTaxCode_thenReturnEmptyMap() {
+    final var mockResponse = new ServiceProviderDataResponse(
+        Collections.emptyList(), Collections.emptyList()
+    );
+
+    when(blobStorageClient.getServiceProviderData())
+        .thenReturn(Mono.just(mockResponse));
+
+    final var result = registryDataService.getServiceProvidersByPspTaxCode();
+
+    StepVerifier.create(result)
+        .expectNextMatches(Map::isEmpty)
+        .verifyComplete();
+  }
+
+  @Test
+  void givenErrorFromRegistry_whenGetServiceProvidersByPspTaxCode_thenPropagateError() {
+    final var error = new RuntimeException("Upstream failure");
+
+    when(blobStorageClient.getServiceProviderData())
+        .thenReturn(Mono.error(error));
+
+    final var result = registryDataService.getServiceProvidersByPspTaxCode();
+
+    StepVerifier.create(result)
+        .expectErrorMatches(t -> t instanceof RuntimeException &&
+            t.getMessage().equals("Upstream failure"))
+        .verify();
   }
 
 }
