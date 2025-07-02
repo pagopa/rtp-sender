@@ -2,10 +2,10 @@ package it.gov.pagopa.rtp.sender.service.registryfile;
 
 import java.util.Map;
 import java.util.Objects;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aot.hint.annotation.RegisterReflection;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
@@ -34,19 +34,25 @@ public class RegistryDataServiceImpl implements RegistryDataService {
   }
 
 
+  @Override
   @NonNull
   @Cacheable("registry-data")
   public Mono<Map<String, ServiceProviderFullData>> getRegistryData() {
-    final var registryRawData = blobStorageClient.getServiceProviderData()
+    return this.getRawSRegistryData()
+        .flatMap(this::transformRegistryFileData)
+        .onErrorMap(ExceptionUtils::gracefullyHandleError)
+        .doOnSuccess(data -> log.info("Successfully transformed registry data"))
+        .doOnError(error -> log.error("Error retrieving registry data: {}", error.getMessage(), error));
+  }
+
+
+  @NonNull
+  private Mono<ServiceProviderDataResponse> getRawSRegistryData() {
+    return this.blobStorageClient.getServiceProviderData()
         .doFirst(() -> log.info("Starting getServiceProviderData"))
         .onErrorMap(ExceptionUtils::gracefullyHandleError)
         .doOnNext(rawData -> log.debug("Successfully retrieved registry raw data"))
         .doOnError(error -> log.error("Error retrieving registry data: {}", error.getMessage()));
-
-    return registryRawData.flatMap(this::transformRegistryFileData)
-        .onErrorMap(ExceptionUtils::gracefullyHandleError)
-        .doOnSuccess(data -> log.info("Successfully transformed registry data"))
-        .doOnError(error -> log.error("Error retrieving registry data: {}", error.getMessage(), error));
   }
 
 
