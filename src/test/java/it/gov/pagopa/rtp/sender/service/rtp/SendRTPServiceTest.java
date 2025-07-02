@@ -365,6 +365,53 @@ class SendRTPServiceTest {
             .verify();
   }
 
+  @Test
+  void givenExistingRtp_whenFindByCompositeKey_thenReturnRtp() {
+    final var operationId = 100L;
+    final var dispatcher = "dispatcherA";
+    final var rtpId = UUID.randomUUID();
+    final var rtp = Rtp.builder()
+            .resourceID(new ResourceID(rtpId))
+            .build();
+
+    when(rtpRepository.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+            .thenReturn(Mono.just(rtp));
+
+    StepVerifier.create(sendRTPService.findRtpByCompositeKey(operationId, dispatcher))
+            .assertNext(found -> assertEquals(rtpId, found.resourceID().getId()))
+            .verifyComplete();
+  }
+
+  @Test
+  void givenMissingRtp_whenFindByCompositeKey_thenThrowIllegalArgumentException() {
+    final var operationId = 999L;
+    final var dispatcher = "nonexistent-dispatcher";
+
+    when(rtpRepository.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+            .thenReturn(Mono.empty());
+
+    StepVerifier.create(sendRTPService.findRtpByCompositeKey(operationId, dispatcher))
+            .expectErrorMatches(error ->
+                    error instanceof IllegalArgumentException &&
+                            error.getMessage().contains("RTP not found with composite key"))
+            .verify();
+  }
+
+  @Test
+  void whenRepositoryFails_thenPropagateError() {
+    final var operationId = 321L;
+    final var dispatcher = "failing-dispatcher";
+
+    final var exception = new RuntimeException("Database failure");
+
+    when(rtpRepository.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+            .thenReturn(Mono.error(exception));
+
+    StepVerifier.create(sendRTPService.findRtpByCompositeKey(operationId, dispatcher))
+            .expectError(RuntimeException.class)
+            .verify();
+  }
+
   private Rtp mockRtpWithStatus(RtpStatus status, UUID id) {
     return Rtp.builder()
             .resourceID(new ResourceID(id))
