@@ -372,7 +372,7 @@ public class SepaRequestToPayMapper {
 
     final var originalTransactionReference28EPC25922V30DS11Dto = new OriginalTransactionReference28EPC25922V30DS11Dto() //OrgnlTxRef
         .amt(new AmountType4ChoiceEPC25922V30DS02Dto()
-            .instdAmt(rtp.amount()))
+            .instdAmt(rtp.amount().movePointLeft(2)))
         .reqdExctnDt(new DateAndDateTime2ChoiceEPC25922V30DS02Dto()
             .dt(String.valueOf(rtp.expiryDate())))
         .pmtTpInf(paymentTypeInformation27EPC25922V30DS15RTPDto)

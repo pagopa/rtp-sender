@@ -267,7 +267,7 @@ class SepaRequestToPayMapperTest {
     assertEquals(resourceId.getId().toString().replace("-",""),
         paymentTransaction.getCxlId());
     assertEquals(noticeNumber, paymentTransaction.getOrgnlEndToEndId());
-    assertEquals(amount,
+    assertEquals(amount.movePointLeft(2),
         paymentTransaction.getOrgnlTxRef().getAmt().getInstdAmt());
     assertEquals(String.valueOf(expiryDate),
         paymentTransaction.getOrgnlTxRef().getReqdExctnDt().getDt());
