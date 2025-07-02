@@ -52,9 +52,17 @@ public class RegistryDataServiceImpl implements RegistryDataService {
   @Cacheable("service-providers-by-psp-tax-code")
   public Mono<Map<String, ServiceProvider>> getServiceProvidersByPspTaxCode() {
     return this.getRawSRegistryData()
+        .doFirst(() -> log.debug("Retrieving service provider data map by PSP tax code"))
+        
         .map(ServiceProviderDataResponse::sps)
         .flatMapMany(Flux::fromIterable)
-        .collectMap(ServiceProvider::pspTaxCode, Function.identity());
+        .collectMap(ServiceProvider::pspTaxCode, Function.identity())
+
+        .onErrorMap(ExceptionUtils::gracefullyHandleError)
+        .doOnSuccess(serviceProvidersMap ->
+            log.info("Successfully retrieved service provider data map by PSP tax code"))
+        .doOnError(error ->
+            log.error("Error retrieving service provider data: {}", error.getMessage(), error));
   }
 
 
