@@ -38,7 +38,7 @@ class RegistryDataServiceImplTest {
 
     var tsp = new TechnicalServiceProvider("TSP1", "Tech Provider 1", "https://endpoint.com",
         "cert123", null, true);
-    var sp = new ServiceProvider("SP1", "Service Provider 1", "TSP1");
+    var sp = new ServiceProvider("SP1", "Service Provider 1", "TSP1", "pspTaxCode");
     var serviceProviderDataResponse = new ServiceProviderDataResponse(List.of(tsp), List.of(sp));
 
     when(blobStorageClient.getServiceProviderData()).thenReturn(
@@ -83,7 +83,7 @@ class RegistryDataServiceImplTest {
     ServiceProviderDataResponse mockResponse = new ServiceProviderDataResponse(
         List.of(new TechnicalServiceProvider("TSP1", "Technical Service Provider 1",
             "https://example.com", "123456", null, false)),
-        List.of(new ServiceProvider("SP1", "Service Provider 1", "TSP1"))
+        List.of(new ServiceProvider("SP1", "Service Provider 1", "TSP1", "pspTaxCode"))
     );
 
     when(blobStorageClient.getServiceProviderData()).thenReturn(Mono.just(mockResponse));
