@@ -30,6 +30,7 @@ spring:
           gdpMessageConsumer-in-0:
             consumer:
               start-offset: earliest
+              auto-startup: false
 
       bindings:
         gdpMessageConsumer-in-0:
