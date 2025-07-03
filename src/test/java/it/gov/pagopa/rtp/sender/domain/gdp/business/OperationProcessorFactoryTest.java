@@ -3,6 +3,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp.business;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
@@ -25,12 +26,15 @@ class OperationProcessorFactoryTest {
   @Mock
   private SendRTPService sendRTPService;
 
+  @Mock
+  private GdpEventHubProperties gdpEventHubProperties;
+
   private OperationProcessorFactory factory;
 
 
   @BeforeEach
   void setUp() {
-    factory = new OperationProcessorFactory(gdpMapper, sendRTPService);
+    factory = new OperationProcessorFactory(gdpMapper, sendRTPService, gdpEventHubProperties);
   }
 
 
@@ -42,7 +46,7 @@ class OperationProcessorFactoryTest {
   }
 
   @ParameterizedTest
-  @EnumSource(value = Operation.class, names = "CREATE")
+  @EnumSource(value = Operation.class, names = {"CREATE", "DELETE"})
   void givenMessageWithSupportedOperation_whenGetProcessor_thenReturnsProcessorInstance(final Operation operation) {
     final var message = GdpMessage.builder()
         .operation(operation)
@@ -51,13 +55,18 @@ class OperationProcessorFactoryTest {
     final var result = factory.getProcessor(message);
 
     StepVerifier.create(result)
-        .assertNext(processor ->
-            assertThat(processor).isInstanceOf(CreateOperationProcessor.class))
-        .verifyComplete();
+            .assertNext(processor -> {
+              if (operation == Operation.CREATE) {
+                assertThat(processor).isInstanceOf(CreateOperationProcessor.class);
+              } else if (operation == Operation.DELETE) {
+                assertThat(processor).isInstanceOf(DeleteOperationProcessor.class);
+              }
+            })
+            .verifyComplete();
   }
 
   @ParameterizedTest
-  @EnumSource(value = Operation.class, names = "CREATE", mode = EnumSource.Mode.EXCLUDE)
+  @EnumSource(value = Operation.class, names = "UPDATE")
   void givenMessageWithUnsupportedOperation_whenGetProcessor_thenThrowsUnsupportedOperationException(final Operation unsupportedOperation) {
     final var message = GdpMessage.builder()
         .operation(unsupportedOperation)

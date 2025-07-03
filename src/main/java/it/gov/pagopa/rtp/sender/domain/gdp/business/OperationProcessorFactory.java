@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
@@ -30,6 +31,7 @@ public class OperationProcessorFactory {
 
   private final GdpMapper gdpMapper;
   private final SendRTPService sendRTPService;
+  private final GdpEventHubProperties gdpEventHubProperties;
 
 
   /**
@@ -37,14 +39,17 @@ public class OperationProcessorFactory {
    *
    * @param gdpMapper       the GDP-to-RTP mapper; must not be {@code null}
    * @param sendRTPService  the RTP sending service; must not be {@code null}
+   * @param gdpEventHubProperties the configuration properties for GDP Event Hub; must not be {@code null}
    * @throws NullPointerException if any argument is {@code null}
    */
   public OperationProcessorFactory(
-      @NonNull final GdpMapper gdpMapper,
-      @NonNull final SendRTPService sendRTPService) {
+          @NonNull final GdpMapper gdpMapper,
+          @NonNull final SendRTPService sendRTPService,
+          @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     this.gdpMapper = Objects.requireNonNull(gdpMapper);
     this.sendRTPService = Objects.requireNonNull(sendRTPService);
+    this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
   }
 
 
@@ -87,7 +92,7 @@ public class OperationProcessorFactory {
     return switch (operation) {
       case CREATE -> new CreateOperationProcessor(this.gdpMapper, this.sendRTPService);
       case UPDATE -> throw new UnsupportedOperationException(operation.toString());
-      case DELETE -> throw new UnsupportedOperationException(operation.toString());
+      case DELETE -> new DeleteOperationProcessor(this.sendRTPService, this.gdpEventHubProperties);
     };
   }
 
