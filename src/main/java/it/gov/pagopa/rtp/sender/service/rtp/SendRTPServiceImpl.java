@@ -148,13 +148,12 @@ public class SendRTPServiceImpl implements SendRTPService {
   @Override
   public Mono<Rtp> findRtpByCompositeKey(@NonNull final Long operationId,
                                          @NonNull final String eventDispatcher) {
-    log.debug("Attempting to find RTP by composite key: operationId={}, eventDispatcher={}", operationId, eventDispatcher);
+
     return rtpRepository.findByOperationIdAndEventDispatcher(operationId, eventDispatcher)
+            .doFirst(()->log.info("Attempting to find RTP by composite key: operationId={}, eventDispatcher={}",
+                    operationId, eventDispatcher))
             .doOnNext(rtp -> log.info("Successfully found RTP with id: {}", rtp.resourceID().getId()))
-            .switchIfEmpty(Mono.error(new IllegalArgumentException(
-                    String.format("RTP not found with composite key: OperationId %s and EventDispatcher %s"
-                            ,operationId, eventDispatcher)
-            )));
+            .switchIfEmpty(Mono.error(new RtpNotFoundException(operationId, eventDispatcher)));
   }
 
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {

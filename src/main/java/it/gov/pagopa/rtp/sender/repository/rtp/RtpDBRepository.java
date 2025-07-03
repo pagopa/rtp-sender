@@ -42,9 +42,9 @@ public class RtpDBRepository implements RtpRepository {
           @NonNull final Long operationId,
           @NonNull final String eventDispatcher) {
 
-    log.info("Retrieving RTP with operationId {} and eventDispatcher {}", operationId, eventDispatcher);
     return rtpDB.findByOperationIdAndEventDispatcher(operationId,eventDispatcher)
-            .doOnNext(entity -> log.info("Found RTP with operationId {} and eventDispatcher {}",
+            .doFirst(()->log.info("Retrieving RTP with operationId {} and eventDispatcher {}", operationId, eventDispatcher))
+            .doOnNext(entity -> log.debug("Found RTP with operationId {} and eventDispatcher {}",
                     operationId, eventDispatcher))
             .map(rtpMapper::toDomain)
             .doOnNext(rtp -> log.debug("Mapped RTP entity to domain object: {}", rtp))

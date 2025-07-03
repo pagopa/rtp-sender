@@ -61,8 +61,8 @@ public class DeleteOperationProcessor implements OperationProcessor {
     public Mono<Rtp> processOperation(@NonNull final GdpMessage gdpMessage) {
         Objects.requireNonNull(gdpMessage, "gdpMessage must not be null");
 
-        log.info("Processing GDP message with id {}", gdpMessage.id());
         return Mono.just(gdpMessage)
+                .doFirst(() -> log.info("Processing GDP message with id {}", gdpMessage.id()))
                 .filter(message -> message.status() == GdpMessage.Status.VALID)
                 .switchIfEmpty(Mono.fromRunnable(() ->
                         log.warn("Skipping GDP message with id {} due to non-VALID status: {}", gdpMessage.id(), gdpMessage.status())

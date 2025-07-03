@@ -36,8 +36,10 @@ class DeleteOperationProcessorTest {
 
     @Test
     void givenValidGdpMessage_whenProcessOperation_thenRtpIsCancelled() {
+        final var operationId = 123L;
+        final var eventDispatcher = "test-dispatcher";
         final var gdpMessage = GdpMessage.builder()
-                .id(123L)
+                .id(operationId)
                 .status(GdpMessage.Status.VALID)
                 .build();
 
@@ -46,15 +48,15 @@ class DeleteOperationProcessorTest {
                 .status(RtpStatus.CREATED)
                 .build();
 
-        when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
-        when(sendRTPService.findRtpByCompositeKey(123L, "test-dispatcher")).thenReturn(Mono.just(rtp));
+        when(gdpEventHubProperties.eventDispatcher()).thenReturn(eventDispatcher);
+        when(sendRTPService.findRtpByCompositeKey(operationId, eventDispatcher)).thenReturn(Mono.just(rtp));
         when(sendRTPService.cancelRtp(rtp.resourceID())).thenReturn(Mono.just(rtp));
 
         StepVerifier.create(processor.processOperation(gdpMessage))
                 .expectNext(rtp)
                 .verifyComplete();
 
-        verify(sendRTPService).findRtpByCompositeKey(123L, "test-dispatcher");
+        verify(sendRTPService).findRtpByCompositeKey(operationId, eventDispatcher);
         verify(sendRTPService).cancelRtp(rtp.resourceID());
     }
 
@@ -73,20 +75,22 @@ class DeleteOperationProcessorTest {
 
     @Test
     void givenErrorDuringRtpLookup_whenProcessOperation_thenPropagateError() {
+        final var operationId = 123L;
+        final var eventDispatcher = "test-dispatcher";
         final var gdpMessage = GdpMessage.builder()
-                .id(123L)
+                .id(operationId)
                 .status(GdpMessage.Status.VALID)
                 .build();
 
-        when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
-        when(sendRTPService.findRtpByCompositeKey(123L, "test-dispatcher"))
+        when(gdpEventHubProperties.eventDispatcher()).thenReturn(eventDispatcher);
+        when(sendRTPService.findRtpByCompositeKey(operationId, eventDispatcher))
                 .thenReturn(Mono.error(new RuntimeException("lookup failed")));
 
         StepVerifier.create(processor.processOperation(gdpMessage))
                 .expectErrorMatches(e -> e instanceof RuntimeException && e.getMessage().equals("lookup failed"))
                 .verify();
 
-        verify(sendRTPService).findRtpByCompositeKey(123L, "test-dispatcher");
+        verify(sendRTPService).findRtpByCompositeKey(operationId, eventDispatcher);
         verify(sendRTPService, never()).cancelRtp(any());
     }
 }
