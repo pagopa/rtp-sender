@@ -49,8 +49,7 @@ class CertificateCheckerTest {
     TechnicalServiceProvider tsp = new TechnicalServiceProvider("fakeTSPId", "fakeTSPName",
         "serviceProviderDebtorId", validCertificateSerialNumber, null, true);
     ServiceProviderFullData serviceProviderFullData = new ServiceProviderFullData("fakeServiceProviderId",
-        "fakeServiceProvider", tsp);
-
+        "fakeServiceProvider", "pspTaxCode", tsp);
     registryDataMap.put(serviceProviderDebtorId, serviceProviderFullData);
 
     when(registryDataService.getRegistryData()).thenReturn(Mono.just(registryDataMap));
@@ -94,7 +93,7 @@ class CertificateCheckerTest {
     TechnicalServiceProvider tsp = new TechnicalServiceProvider("otherTSPId", "otherTSPName",
         "otherServiceProviderDebtorId", "otherCertSerialNumber", null, true);
     ServiceProviderFullData serviceProviderFullData = new ServiceProviderFullData("otherServiceProviderId",
-        "otherServiceProvider", tsp);
+        "otherServiceProvider", "pspTaxCode", tsp);
 
     // Add with a different key than what will be searched for
     String differentBIC = "DIFFERENTBIC";
