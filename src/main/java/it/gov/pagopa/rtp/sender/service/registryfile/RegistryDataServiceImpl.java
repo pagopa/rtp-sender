@@ -146,6 +146,7 @@ public class RegistryDataServiceImpl implements RegistryDataService {
                           sp -> new ServiceProviderFullData(
                               sp.id(),
                               sp.name(),
+                              sp.pspTaxCode(),
                               tspMap.get(sp.tspId())
                           )
                       ));
