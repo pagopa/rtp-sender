@@ -50,9 +50,10 @@ class RegistryDataServiceImplTest {
 
     StepVerifier.create(result)
         .expectNextMatches(map ->
-            map.containsKey("SP1") &&
-                map.get("SP1").spName().equals("Service Provider 1") &&
-                map.get("SP1").tsp().id().equals("TSP1")
+            map.containsKey("SP1")
+                && map.get("SP1").spName().equals("Service Provider 1")
+                && map.get("SP1").tsp().id().equals("TSP1")
+                && map.get("SP1").pspTaxCode().equals("pspTaxCode")
         )
         .verifyComplete();
 
@@ -94,10 +95,11 @@ class RegistryDataServiceImplTest {
 
     StepVerifier.create(result)
         .expectNextMatches(map ->
-            map.containsKey("SP1") &&
-                map.get("SP1").spName().equals("Service Provider 1") &&
-                map.get("SP1").tsp() != null &&
-                map.get("SP1").tsp().id().equals("TSP1")
+            map.containsKey("SP1")
+                && map.get("SP1").spName().equals("Service Provider 1")
+                && map.get("SP1").pspTaxCode().equals("pspTaxCode")
+                && map.get("SP1").tsp() != null
+                && map.get("SP1").tsp().id().equals("TSP1")
         )
         .verifyComplete();
 
