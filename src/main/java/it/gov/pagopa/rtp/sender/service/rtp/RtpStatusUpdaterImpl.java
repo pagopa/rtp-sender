@@ -157,6 +157,15 @@ public class RtpStatusUpdaterImpl implements RtpStatusUpdater {
 
 
   /**
+   * Triggers the {@code CANCEL_RTP_PAID} event on the given RTP.
+   */
+  @Override
+  public Mono<Rtp> triggerCancelRtpPaid(Rtp rtp) {
+    return this.triggerEvent(rtp, RtpEvent.CANCEL_RTP_PAID);
+  }
+
+
+  /**
    * Checks whether the specified {@link RtpEvent} can be triggered on the given RTP.
    */
   @Override
