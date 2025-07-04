@@ -50,6 +50,7 @@ public class RequestToPayUpdateController implements RequestToPayUpdateApi {
             .onErrorReturn(IncorrectCertificate.class, ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             .onErrorReturn(ServiceProviderNotFoundException.class, ResponseEntity.badRequest().build())
             .onErrorReturn(IllegalArgumentException.class, ResponseEntity.badRequest().build())
+            .onErrorReturn(IllegalStateException.class, ResponseEntity.badRequest().build())
             .doFinally(sig -> MDC.clear());
   }
 }
