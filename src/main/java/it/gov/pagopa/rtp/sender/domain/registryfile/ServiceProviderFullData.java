@@ -15,6 +15,9 @@ public record ServiceProviderFullData(
     @NotBlank
     String spName,
 
+    @NotBlank
+    String pspTaxCode,
+
     @NotNull
     TechnicalServiceProvider tsp
 ) {}

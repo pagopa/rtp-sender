@@ -60,8 +60,8 @@ class BlobStorageClientAzureTest {
                 new TechnicalServiceProvider("BPPIITRRXXX", "Poste Italiane", "https://api.poste.it", "...", null, true)
             ),
             List.of(
-                new ServiceProvider("UNCRITMM", "UniCredit S.p.A.", "08992631005"),
-                new ServiceProvider("BPPIITRRXXX", "Poste Italiane S.p.A.", "BPPIITRRXXX")
+                new ServiceProvider("UNCRITMM", "UniCredit S.p.A.", "08992631005", "Unicredit tax code"),
+                new ServiceProvider("BPPIITRRXXX", "Poste Italiane S.p.A.", "BPPIITRRXXX", "Poste Italiane tax code")
             )
         );
         

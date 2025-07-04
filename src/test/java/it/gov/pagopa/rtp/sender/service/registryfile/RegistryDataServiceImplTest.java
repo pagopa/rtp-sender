@@ -1,9 +1,11 @@
 package it.gov.pagopa.rtp.sender.service.registryfile;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +40,7 @@ class RegistryDataServiceImplTest {
 
     var tsp = new TechnicalServiceProvider("TSP1", "Tech Provider 1", "https://endpoint.com",
         "cert123", null, true);
-    var sp = new ServiceProvider("SP1", "Service Provider 1", "TSP1");
+    var sp = new ServiceProvider("SP1", "Service Provider 1", "TSP1", "pspTaxCode");
     var serviceProviderDataResponse = new ServiceProviderDataResponse(List.of(tsp), List.of(sp));
 
     when(blobStorageClient.getServiceProviderData()).thenReturn(
@@ -48,9 +50,10 @@ class RegistryDataServiceImplTest {
 
     StepVerifier.create(result)
         .expectNextMatches(map ->
-            map.containsKey("SP1") &&
-                map.get("SP1").spName().equals("Service Provider 1") &&
-                map.get("SP1").tsp().id().equals("TSP1")
+            map.containsKey("SP1")
+                && map.get("SP1").spName().equals("Service Provider 1")
+                && map.get("SP1").tsp().id().equals("TSP1")
+                && map.get("SP1").pspTaxCode().equals("pspTaxCode")
         )
         .verifyComplete();
 
@@ -83,7 +86,7 @@ class RegistryDataServiceImplTest {
     ServiceProviderDataResponse mockResponse = new ServiceProviderDataResponse(
         List.of(new TechnicalServiceProvider("TSP1", "Technical Service Provider 1",
             "https://example.com", "123456", null, false)),
-        List.of(new ServiceProvider("SP1", "Service Provider 1", "TSP1"))
+        List.of(new ServiceProvider("SP1", "Service Provider 1", "TSP1", "pspTaxCode"))
     );
 
     when(blobStorageClient.getServiceProviderData()).thenReturn(Mono.just(mockResponse));
@@ -92,14 +95,72 @@ class RegistryDataServiceImplTest {
 
     StepVerifier.create(result)
         .expectNextMatches(map ->
-            map.containsKey("SP1") &&
-                map.get("SP1").spName().equals("Service Provider 1") &&
-                map.get("SP1").tsp() != null &&
-                map.get("SP1").tsp().id().equals("TSP1")
+            map.containsKey("SP1")
+                && map.get("SP1").spName().equals("Service Provider 1")
+                && map.get("SP1").pspTaxCode().equals("pspTaxCode")
+                && map.get("SP1").tsp() != null
+                && map.get("SP1").tsp().id().equals("TSP1")
         )
         .verifyComplete();
 
     verify(blobStorageClient, times(1)).getServiceProviderData();
+  }
+
+
+  @Test
+  void givenNonEmptyServiceProviderList_whenGetServiceProvidersByPspTaxCode_thenReturnMappedResult() {
+    final var sp1 = new ServiceProvider("sp1", "Provider One", "tsp1", "pspTaxCode1");
+    final var sp2 = new ServiceProvider("sp2", "Provider Two", "tsp2", "pspTaxCode2");
+    final var providers = List.of(sp1, sp2);
+
+    final var mockResponse = new ServiceProviderDataResponse(
+        Collections.emptyList(),
+        providers
+    );
+
+    when(blobStorageClient.getServiceProviderData())
+        .thenReturn(Mono.just(mockResponse));
+
+    final var result = registryDataService.getServiceProvidersByPspTaxCode();
+
+    StepVerifier.create(result)
+        .assertNext(map -> {
+          assertEquals(2, map.size());
+          assertEquals(sp1, map.get("pspTaxCode1"));
+          assertEquals(sp2, map.get("pspTaxCode2"));
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  void givenEmptyServiceProviderList_whenGetServiceProvidersByPspTaxCode_thenReturnEmptyMap() {
+    final var mockResponse = new ServiceProviderDataResponse(
+        Collections.emptyList(), Collections.emptyList()
+    );
+
+    when(blobStorageClient.getServiceProviderData())
+        .thenReturn(Mono.just(mockResponse));
+
+    final var result = registryDataService.getServiceProvidersByPspTaxCode();
+
+    StepVerifier.create(result)
+        .expectNextMatches(Map::isEmpty)
+        .verifyComplete();
+  }
+
+  @Test
+  void givenErrorFromRegistry_whenGetServiceProvidersByPspTaxCode_thenPropagateError() {
+    final var error = new RuntimeException("Upstream failure");
+
+    when(blobStorageClient.getServiceProviderData())
+        .thenReturn(Mono.error(error));
+
+    final var result = registryDataService.getServiceProvidersByPspTaxCode();
+
+    StepVerifier.create(result)
+        .expectErrorMatches(t -> t instanceof RuntimeException &&
+            t.getMessage().equals("Upstream failure"))
+        .verify();
   }
 
 }
