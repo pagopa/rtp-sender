@@ -54,7 +54,7 @@ public class CertificateChecker {
                 "No service provider found for creditor: " + serviceProviderDebtorId))))
         .flatMap(provider -> {
           String certificateServiceNumberRegistry = provider.tsp().certificateSerialNumber();
-          if (certificateServiceNumberRegistry.equals(certificateSerialNumber)) {
+          if (certificateServiceNumberRegistry.equalsIgnoreCase(certificateSerialNumber)) {
             log.info("Certificate verified successfully. Serial Number: {}",
                 certificateServiceNumberRegistry);
             return Mono.just(requestBody);

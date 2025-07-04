@@ -38,6 +38,7 @@ class CertificateCheckerTest {
   private JsonNode requestBody;
   private final String serviceProviderDebtorId = "ABCDITMMXXX";
   private final String validCertificateSerialNumber = "123456789ABCDEF";
+  private final String validCertificateSerialNumber2 = "123456789abcdef";
 
 
   @BeforeEach
@@ -49,6 +50,7 @@ class CertificateCheckerTest {
         "serviceProviderDebtorId", validCertificateSerialNumber, null, true);
     ServiceProviderFullData serviceProviderFullData = new ServiceProviderFullData("fakeServiceProviderId",
         "fakeServiceProvider", tsp);
+
     registryDataMap.put(serviceProviderDebtorId, serviceProviderFullData);
 
     when(registryDataService.getRegistryData()).thenReturn(Mono.just(registryDataMap));
@@ -58,6 +60,17 @@ class CertificateCheckerTest {
   void verifyRequestCertificateWithValidCertificateShouldReturnRequest() {
     Mono<JsonNode> result = certificateChecker
         .verifyRequestCertificate(requestBody, validCertificateSerialNumber);
+
+    StepVerifier.create(result)
+        .expectNext(requestBody)
+        .verifyComplete();
+  }
+
+
+  @Test
+  void verifyRequestCertificateWithValidCertificateWhitDifferentCaseShouldReturnRequest() {
+    Mono<JsonNode> result = certificateChecker
+        .verifyRequestCertificate(requestBody, validCertificateSerialNumber2);
 
     StepVerifier.create(result)
         .expectNext(requestBody)
