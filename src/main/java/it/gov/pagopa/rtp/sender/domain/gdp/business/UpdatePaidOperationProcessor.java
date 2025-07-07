@@ -13,6 +13,18 @@ import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * {@link OperationProcessor} implementation for handling {@link Status#PAID} update operations.
+ * <p>
+ * This processor validates the RTP status and performs different actions depending on whether
+ * the debtor service provider matches the one retrieved from the PSP tax code in the message.
+ * </p>
+ *
+ * @see UpdateOperationProcessor
+ * @see Status#PAID
+ * @see Rtp
+ * @see GdpMessage
+ */
 @Slf4j
 public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
 
@@ -20,6 +32,14 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
       RtpStatus.CREATED, RtpStatus.SENT, RtpStatus.ACCEPTED, RtpStatus.USER_ACCEPTED
   );
 
+
+  /**
+   * Constructs a new {@code UpdatePaidOperationProcessor}.
+   *
+   * @param registryDataService   the registry data service used to resolve service provider IDs; must not be {@code null}
+   * @param sendRTPService        the service for retrieving and updating RTPs; must not be {@code null}
+   * @param gdpEventHubProperties the GDP Event Hub configuration; must not be {@code null}
+   */
   public UpdatePaidOperationProcessor(
       @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPService sendRTPService,
@@ -30,6 +50,17 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
   }
 
 
+  /**
+   * Updates given RTP based on the service provider matching logic.
+   * <p>
+   * If the debtor service provider in the RTP matches the PSP tax code in the message,
+   * {@link #handleSamePsp(Rtp)} is called. Otherwise, {@link #handleDifferentPsp(Rtp)} is invoked.
+   * </p>
+   *
+   * @param rtp        the RTP to update; must not be {@code null}
+   * @param gdpMessage the GDP message providing update context; must not be {@code null}
+   * @return a {@link Mono} emitting the updated RTP or an error if unsupported
+   */
   @Override
   @NonNull
   protected Mono<Rtp> updateRtp(
@@ -42,12 +73,26 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
   }
 
 
+  /**
+   * Handles updates for RTPs where the PSP tax code matches the debtor service provider.
+   *
+   * @param rtp the RTP with matching PSP and debtor service provider; must not be {@code null}
+   * @return a {@link Mono} signaling the result of the handling
+   * @throws UnsupportedOperationException always, as this method is not yet implemented
+   */
   @NonNull
   private Mono<Rtp> handleSamePsp(@NonNull final Rtp rtp) {
     return Mono.error(new UnsupportedOperationException("Not supported yet"));
   }
 
 
+  /**
+   * Handles updates for RTPs where the PSP tax code does not match the debtor service provider.
+   *
+   * @param rtp the RTP with differing PSP and debtor service provider; must not be {@code null}
+   * @return a {@link Mono} signaling the result of the handling
+   * @throws UnsupportedOperationException always, as this method is not yet implemented
+   */
   @NonNull
   private Mono<Rtp> handleDifferentPsp(@NonNull final Rtp rtp) {
     return Mono.error(new UnsupportedOperationException("Not supported yet"));
