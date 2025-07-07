@@ -79,19 +79,18 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
   public Mono<Rtp> processOperation(@NonNull final GdpMessage gdpMessage) {
     return Mono.just(gdpMessage)
         .doFirst(() -> log.info("Processing {} message with id {} and status {}", Operation.UPDATE, gdpMessage.id(), gdpMessage.status()))
-        .flatMap(message -> Mono.just(message)
-            .filter(m -> this.statusToHandle.equals(m.status()))
-            .switchIfEmpty(
-                Mono.error(new IllegalArgumentException("Cannot process message with status " + gdpMessage.status() + " in " + this.statusToHandle + " flow."))))
+
+        .filter(m -> this.statusToHandle.equals(m.status()))
+        .switchIfEmpty(
+            Mono.error(new IllegalArgumentException("Cannot process message with status " + gdpMessage.status() + " in " + this.statusToHandle + " flow.")))
 
         .doOnNext(message ->
             log.info("Retrieving RTP with operationId {} and eventDispatcher {}", message.id(), this.gdpEventHubProperties.eventDispatcher()))
         .flatMap(message -> sendRTPService.findRtpByCompositeKey(message.id(), this.gdpEventHubProperties.eventDispatcher()))
 
-        .flatMap(message -> Mono.just(message)
-            .filter(rtp -> this.acceptedStatuses.contains(rtp.status()))
-            .switchIfEmpty(
-                Mono.error(new IllegalArgumentException("Cannot update RTP with status " + gdpMessage.status()))))
+        .filter(rtp -> this.acceptedStatuses.contains(rtp.status()))
+        .switchIfEmpty(
+            Mono.error(new IllegalArgumentException("Cannot update RTP with status " + gdpMessage.status())))
 
         .flatMap(rtpToUpdate -> this.updateRtp(rtpToUpdate, gdpMessage));
   }
