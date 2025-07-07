@@ -27,7 +27,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
   protected final Status statusToHandle;
 
 
-  public UpdateOperationProcessor(
+  protected UpdateOperationProcessor(
       @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPService sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties,
