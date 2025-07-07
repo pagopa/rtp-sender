@@ -77,7 +77,7 @@ class CallbackHandlerTest {
     }
 
     @Test
-    void givenValidERRORStatus_whenHandle_thenErrorTriggeredAndSaved() {
+    void givenValidERRORStatus_whenHandle_thenThrowsIllegalStateException() {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
@@ -90,14 +90,17 @@ class CallbackHandlerTest {
                 .thenReturn(Mono.just(rtp));
 
         StepVerifier.create(callbackHandler.handle(request))
-                .expectNext(request)
-                .verifyComplete();
+                .expectErrorSatisfies(throwable -> {
+                    assert throwable instanceof IllegalStateException;
+                    assert throwable.getMessage().contains("TransactionStatus 'ERROR'");
+                })
+                .verify();
 
         verify(rtpStatusUpdater).triggerErrorSendRtp(rtp);
     }
 
     @Test
-    void givenInvalidTransactionStatus_whenHandle_thenErrorTriggeredAndSaved() {
+    void givenInvalidTransactionStatus_whenHandle_thenThrowsIllegalStateException() {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
@@ -109,13 +112,16 @@ class CallbackHandlerTest {
         when(rtpStatusUpdater.triggerErrorSendRtp(rtp))
                 .thenReturn(Mono.just(rtp));
 
-
         StepVerifier.create(callbackHandler.handle(request))
-                .expectNext(request)
-                .verifyComplete();
+                .expectErrorSatisfies(throwable -> {
+                    assert throwable instanceof IllegalStateException;
+                    assert throwable.getMessage().contains("Unsupported TransactionStatus 'CNCL'");
+                })
+                .verify();
 
         verify(rtpStatusUpdater).triggerErrorSendRtp(rtp);
     }
+
 
     @Test
     void givenMissingResourceId_whenHandle_thenIllegalArgumentExceptionThrown() {

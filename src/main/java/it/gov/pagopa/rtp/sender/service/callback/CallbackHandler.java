@@ -96,11 +96,19 @@ public class CallbackHandler {
             }
             case ERROR -> {
                 log.debug("Triggering ERROR transition for RTP {}", rtpToUpdate.resourceID().getId());
-                yield this.rtpStatusUpdater.triggerErrorSendRtp(rtpToUpdate);
+                yield this.rtpStatusUpdater.triggerErrorSendRtp(rtpToUpdate)
+                        .flatMap(rtp -> Mono.error(new IllegalStateException(
+                                String.format("Received TransactionStatus 'ERROR' during callback processing for RTP ID: %s",
+                                        rtp.resourceID().getId())
+                        )));
             }
             default -> {
                 log.warn("Received unsupported TransactionStatus: {}", transactionStatus);
-                yield this.rtpStatusUpdater.triggerErrorSendRtp(rtpToUpdate);
+                yield this.rtpStatusUpdater.triggerErrorSendRtp(rtpToUpdate)
+                        .flatMap(rtp -> Mono.error(new IllegalStateException(
+                                String.format("Unsupported TransactionStatus '%s' received for RTP ID: %s",
+                                        transactionStatus, rtp.resourceID().getId())
+                        )));
             }
         };
     }
