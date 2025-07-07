@@ -98,6 +98,15 @@ public class OperationProcessorFactory {
   }
 
 
+  /**
+   * Creates a processor instance for {@link Operation#UPDATE} based on the {@link Status}.
+   * <p>Currently, only {@link Status#PAID} is supported.</p>
+   *
+   * @param gdpMessage the GDP message to evaluate; must not be {@code null}
+   * @return the appropriate {@link OperationProcessor} for the UPDATE operation
+   * @throws UnsupportedOperationException if the UPDATE operation has an unsupported status
+   * @throws NullPointerException if the status is {@code null}
+   */
   @NonNull
   private OperationProcessor createUpdateProcessorInstance(@NonNull final GdpMessage gdpMessage) {
     Objects.requireNonNull(gdpMessage, "Gdp Message cannot be null");
