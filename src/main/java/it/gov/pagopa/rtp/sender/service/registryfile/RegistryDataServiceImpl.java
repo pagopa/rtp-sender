@@ -71,7 +71,7 @@ public class RegistryDataServiceImpl implements RegistryDataService {
   @NonNull
   @Cacheable("registry-data")
   public Mono<Map<String, ServiceProviderFullData>> getRegistryData() {
-    return this.getRawSRegistryData()
+    return this.getRawRegistryData()
         .flatMap(this::transformRegistryFileData)
         .onErrorMap(ExceptionUtils::gracefullyHandleError)
         .doOnSuccess(data -> log.info("Successfully transformed registry data"))
@@ -91,7 +91,7 @@ public class RegistryDataServiceImpl implements RegistryDataService {
   @NonNull
   @Cacheable("service-providers-by-psp-tax-code")
   public Mono<Map<String, ServiceProvider>> getServiceProvidersByPspTaxCode() {
-    return this.getRawSRegistryData()
+    return this.getRawRegistryData()
         .doFirst(() -> log.debug("Retrieving service provider data map by PSP tax code"))
 
         .map(ServiceProviderDataResponse::sps)
@@ -112,7 +112,7 @@ public class RegistryDataServiceImpl implements RegistryDataService {
    * @return a {@link Mono} emitting the raw {@link ServiceProviderDataResponse}.
    */
   @NonNull
-  private Mono<ServiceProviderDataResponse> getRawSRegistryData() {
+  private Mono<ServiceProviderDataResponse> getRawRegistryData() {
     return this.blobStorageClient.getServiceProviderData()
         .doFirst(() -> log.info("Starting getServiceProviderData"))
         .onErrorMap(ExceptionUtils::gracefullyHandleError)
