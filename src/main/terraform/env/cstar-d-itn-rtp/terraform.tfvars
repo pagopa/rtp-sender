@@ -22,9 +22,9 @@ tags = {
 # ------------------------------------------------------------------------------
 cae_name                       = "cstar-d-itn-mcshared-cae"
 cae_resource_group_name        = "cstar-d-itn-mcshared-compute-rg"
-id_name                        = "cstar-d-itn-rtp-sender-id"
-id_resource_group_name         = "cstar-d-itn-rtp-identity-rg"
-rtp_sender_file_share_storage_name = "cstar-d-itn-rtp-sender-fss"
+id_name                        = "cstar-d-itn-srtp-sender-id"
+id_resource_group_name         = "cstar-d-itn-srtp-identity-rg"
+rtp_sender_file_share_storage_name = "cstar-d-itn-srtp-sender-fss"
 
 # ------------------------------------------------------------------------------
 # Names of key vault secrets.
