@@ -169,6 +169,22 @@ class RequestToPayUpdateControllerTest {
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
   }
 
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsIllegalStateExceptionShouldReturnBadRequest() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new IllegalStateException("status not allowed")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectNextMatches(response -> response.getStatusCode() == HttpStatus.BAD_REQUEST)
+            .verifyComplete();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
+
   private JsonNode createMockRequestBody(String serviceProviderDebtorId) {
     final String template =
             "{\"AsynchronousSepaRequestToPayResponse\":{\"Document\":{"
