@@ -52,7 +52,7 @@ class SepaRequestToPayMapperTest {
     String iban = "IT60X0542811101000000123456";
     BigDecimal amount = new BigDecimal("99999999999");
     LocalDateTime savingDateTime = LocalDateTime.of(2025, 1, 1, 12, 31, 20, 11).atZone(ZoneId.systemDefault()).toLocalDateTime();
-    final var expectedDate = "2025-01-01T12:31:20+01:00";
+    final var expectedDate = "2025-01-01T12:31:20.000+01:00";
     LocalDate expiryDate = LocalDate.now().plusDays(5);
     String description = "Pagamento TARI";
     String noticeNumber = "123456";
@@ -133,7 +133,7 @@ class SepaRequestToPayMapperTest {
     String iban = "IT60X0542811101000000123456";
     BigDecimal amount = new BigDecimal("99999999999");
     LocalDateTime savingDateTime = LocalDateTime.of(2025, 1,1,12,31,20,11).atZone(ZoneId.systemDefault()).toLocalDateTime();
-    final var expectedDate = "2025-01-01T12:31:20+01:00";
+    final var expectedDate = "2025-01-01T12:31:20.000+01:00";
     LocalDate expiryDate = LocalDate.now().plusDays(5);
     String description = "Pagamento TARI";
     String noticeNumber = "123456";
@@ -226,7 +226,7 @@ class SepaRequestToPayMapperTest {
     String subject = "subject";
     String serviceProviderCreditor = "serviceProviderCreditor";
     String serviceProviderDebtor = "serviceProviderDebtor";
-    String expectedDate = "2025-01-01T12:31:20+01:00";
+    String expectedDate = "2025-01-01T12:31:20.000+01:00";
     DateTimeFormatter creationDateTimeFormat = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     final var nRtp = Rtp.builder()

@@ -133,7 +133,7 @@ public class SepaRequestToPayMapper {
 
     var groupHeader105EPC25922V30DS02Dto = new GroupHeader105EPC25922V30DS02Dto()
         .msgId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
-        .creDtTm(DateUtils.localDateTimeToOffsetFormat(rtp.savingDateTime()))
+        .creDtTm(DateUtils.localDateTimeToCustomOffsetFormat(rtp.savingDateTime()))
         .nbOfTxs("1")// FIXED
         .initgPty(partyIdentification135EPC25922V30DS02Dto);
 
@@ -321,7 +321,7 @@ public class SepaRequestToPayMapper {
         .id(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
         .assgnr(party40ChoiceAssigner)
         .assgne(party40ChoiceAssignee)
-        .creDtTm(DateUtils.localDateTimeToOffsetFormat(LocalDateTime.now()));
+        .creDtTm(DateUtils.localDateTimeToCustomOffsetFormat(LocalDateTime.now()));
 
     final var organisationIdentification29EPC25922V30DS112Dto = new OrganisationIdentification29EPC25922V30DS112Dto() //OrgId
         .othr(new GenericOrganisationIdentification1EPC25922V30DS112Dto()
@@ -400,7 +400,7 @@ public class SepaRequestToPayMapper {
         .orgnlGrpInf(new OriginalGroupInformation29EPC25922V30DS15RTPDto()
             .orgnlMsgId(IdentifierUtils.formatUuidWithoutHyphens(rtp.resourceID().getId()))
             .orgnlMsgNmId("pain.013.001.10")
-            .orgnlCreDtTm(DateUtils.localDateTimeToOffsetFormat(rtp.savingDateTime())))
+            .orgnlCreDtTm(DateUtils.localDateTimeToCustomOffsetFormat(rtp.savingDateTime())))
         .txInf(paymentTransaction);
 
     final var underlyingTransaction = new UnderlyingTransaction24EPC25922V30DS11Dto()  //Undrlyg
