@@ -18,7 +18,7 @@ public class DateUtils {
                   .appendPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
                   .toFormatter();
 
-  public static String localDateTimeToOffsetFormat(LocalDateTime localDateTime) {
+  public static String localDateTimeToCustomOffsetFormat(LocalDateTime localDateTime) {
     return Optional.ofNullable(localDateTime)
             .map(ldt -> ldt.atZone(ZoneId.of("Europe/Rome")))
             .map(ldt -> ldt.truncatedTo(ChronoUnit.MILLIS))
@@ -26,5 +26,4 @@ public class DateUtils {
             .orElseThrow(() ->
                     new IllegalArgumentException("Couldn't convert local datetime to offset format"));
   }
-
 }
