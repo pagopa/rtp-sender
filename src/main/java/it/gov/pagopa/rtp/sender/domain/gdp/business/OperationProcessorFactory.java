@@ -19,8 +19,7 @@ import reactor.core.publisher.Mono;
  * specified in a given {@link GdpMessage}.
  *
  * <p>This factory supports a mapping between GDP operations and corresponding processor
- * implementations. Currently, only {@link Operation#CREATE} is supported via the
- * {@link CreateOperationProcessor}.</p>
+ * implementations.</p>
  *
  * @see Operation
  * @see GdpMessage
