@@ -17,6 +17,20 @@ import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * Abstract base class for handling {@link Operation#UPDATE} messages with a specific {@link Status}.
+ * <p>
+ * This class provides the shared logic for retrieving and validating {@link Rtp} instances,
+ * ensuring they are in an accepted {@link RtpStatus} and associated with the correct service provider.
+ * Subclasses are responsible for implementing the actual update logic via {@link #updateRtp(Rtp, GdpMessage)}.
+ * </p>
+ *
+ * @see OperationProcessor
+ * @see GdpMessage
+ * @see Rtp
+ * @see Status
+ * @see RtpStatus
+ */
 @Slf4j
 public abstract class UpdateOperationProcessor implements OperationProcessor {
 
@@ -27,6 +41,16 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
   protected final Status statusToHandle;
 
 
+  /**
+   * Constructs a new {@code UpdateOperationProcessor} with required dependencies.
+   *
+   * @param registryDataService   the service for accessing registry data; must not be {@code null}
+   * @param sendRTPService        the service for sending or retrieving RTPs; must not be {@code null}
+   * @param gdpEventHubProperties the configuration properties for the Event Hub; must not be {@code null}
+   * @param acceptedStatuses      the list of acceptable RTP statuses for processing; must not be {@code null}
+   * @param statusToHandle        the specific GDP message status this processor is designed to handle; must not be {@code null}
+   * @throws NullPointerException if any argument is {@code null}
+   */
   protected UpdateOperationProcessor(
       @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPService sendRTPService,
@@ -42,6 +66,14 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
   }
 
 
+  /**
+   * Processes given {@link GdpMessage} by validating the message status, retrieving the RTP,
+   * checking its eligibility, and then delegating to {@link #updateRtp(Rtp, GdpMessage)}.
+   *
+   * @param gdpMessage the message to process; must not be {@code null}
+   * @return a {@link Mono} emitting the updated {@link Rtp}, or an error if processing fails
+   * @throws IllegalArgumentException if the message has an unsupported status or if the RTP is not in an accepted status
+   */
   @Override
   @NonNull
   public Mono<Rtp> processOperation(@NonNull final GdpMessage gdpMessage) {
@@ -65,9 +97,23 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
   }
 
 
+  /**
+   * Template method to be implemented by subclasses to define how the RTP should be updated.
+   *
+   * @param rtp        the RTP to update
+   * @param gdpMessage the original GDP message
+   * @return a {@link Mono} emitting the updated {@link Rtp}
+   */
   protected abstract Mono<Rtp> updateRtp(Rtp rtp, GdpMessage gdpMessage);
 
 
+  /**
+   * Retrieves the service provider ID (PSP BIC) corresponding to the given tax code from the registry.
+   *
+   * @param pspTaxCode the PSP tax code; must not be {@code null}
+   * @return a {@link Mono} emitting the service provider ID
+   * @throws ServiceProviderNotFoundException if no service provider is found for the given tax code
+   */
   @NonNull
   protected Mono<String> retrieveServiceProviderIdByPspTaxCode(@NonNull final String pspTaxCode) {
     return Mono.just(this.registryDataService)
