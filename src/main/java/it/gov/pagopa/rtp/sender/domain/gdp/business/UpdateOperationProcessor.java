@@ -3,6 +3,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp.business;
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
@@ -45,7 +46,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
   @NonNull
   public Mono<Rtp> processOperation(@NonNull final GdpMessage gdpMessage) {
     return Mono.just(gdpMessage)
-        .doFirst(() -> log.info("Processing UPDATE message with id {} and {} status", gdpMessage.id(), gdpMessage.status()))
+        .doFirst(() -> log.info("Processing {} message with id {} and status {}", Operation.UPDATE, gdpMessage.id(), gdpMessage.status()))
         .flatMap(message -> Mono.just(message)
             .filter(m -> this.statusToHandle.equals(m.status()))
             .switchIfEmpty(
