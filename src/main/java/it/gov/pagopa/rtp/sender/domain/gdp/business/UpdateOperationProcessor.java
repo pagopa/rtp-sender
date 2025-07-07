@@ -80,7 +80,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
     return Mono.just(gdpMessage)
         .doFirst(() -> log.info("Processing {} message with id {} and status {}", Operation.UPDATE, gdpMessage.id(), gdpMessage.status()))
 
-        .filter(m -> this.statusToHandle.equals(m.status()))
+        .filter(message -> this.statusToHandle.equals(message.status()))
         .switchIfEmpty(
             Mono.error(new IllegalArgumentException("Cannot process message with status " + gdpMessage.status() + " in " + this.statusToHandle + " flow.")))
 
