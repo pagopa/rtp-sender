@@ -38,6 +38,7 @@ class CertificateCheckerTest {
   private JsonNode requestBody;
   private final String serviceProviderDebtorId = "ABCDITMMXXX";
   private final String validCertificateSerialNumber = "123456789ABCDEF";
+  private final String validCertificateSerialNumber2 = "123456789abcdef";
 
 
   @BeforeEach
@@ -48,7 +49,7 @@ class CertificateCheckerTest {
     TechnicalServiceProvider tsp = new TechnicalServiceProvider("fakeTSPId", "fakeTSPName",
         "serviceProviderDebtorId", validCertificateSerialNumber, null, true);
     ServiceProviderFullData serviceProviderFullData = new ServiceProviderFullData("fakeServiceProviderId",
-        "fakeServiceProvider", tsp);
+        "fakeServiceProvider", "pspTaxCode", tsp);
     registryDataMap.put(serviceProviderDebtorId, serviceProviderFullData);
 
     when(registryDataService.getRegistryData()).thenReturn(Mono.just(registryDataMap));
@@ -58,6 +59,17 @@ class CertificateCheckerTest {
   void verifyRequestCertificateWithValidCertificateShouldReturnRequest() {
     Mono<JsonNode> result = certificateChecker
         .verifyRequestCertificate(requestBody, validCertificateSerialNumber);
+
+    StepVerifier.create(result)
+        .expectNext(requestBody)
+        .verifyComplete();
+  }
+
+
+  @Test
+  void verifyRequestCertificateWithValidCertificateWhitDifferentCaseShouldReturnRequest() {
+    Mono<JsonNode> result = certificateChecker
+        .verifyRequestCertificate(requestBody, validCertificateSerialNumber2);
 
     StepVerifier.create(result)
         .expectNext(requestBody)
@@ -81,7 +93,7 @@ class CertificateCheckerTest {
     TechnicalServiceProvider tsp = new TechnicalServiceProvider("otherTSPId", "otherTSPName",
         "otherServiceProviderDebtorId", "otherCertSerialNumber", null, true);
     ServiceProviderFullData serviceProviderFullData = new ServiceProviderFullData("otherServiceProviderId",
-        "otherServiceProvider", tsp);
+        "otherServiceProvider", "pspTaxCode", tsp);
 
     // Add with a different key than what will be searched for
     String differentBIC = "DIFFERENTBIC";

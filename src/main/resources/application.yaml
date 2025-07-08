@@ -115,6 +115,10 @@ cache:
       maximum-size: 1
       expire-after-write: ${REGISTRY_DATA_CACHE_TTL:PT5M}
 
+    - name: service-providers-by-psp-tax-code
+      maximum-size: 1
+      expire-after-write: ${REGISTRY_DATA_CACHE_TTL:PT5M}
+
 blob-storage:
   storage-account-name: ${AZURE_STORAGE_ACCOUNT_NAME:cstardweurtpblobstorage}
   container-name: ${AZURE_STORAGE_CONTAINER_NAME:rtp-debtor-service-provider}

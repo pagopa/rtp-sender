@@ -144,6 +144,18 @@ public class SendRTPServiceImpl implements SendRTPService {
             .switchIfEmpty(Mono.error(new RtpNotFoundException(rtpId)));
   }
 
+  @NonNull
+  @Override
+  public Mono<Rtp> findRtpByCompositeKey(@NonNull final Long operationId,
+                                         @NonNull final String eventDispatcher) {
+
+    return rtpRepository.findByOperationIdAndEventDispatcher(operationId, eventDispatcher)
+            .doFirst(()->log.info("Attempting to find RTP by composite key: operationId={}, eventDispatcher={}",
+                    operationId, eventDispatcher))
+            .doOnNext(rtp -> log.info("Successfully found RTP with id: {}", rtp.resourceID().getId()))
+            .switchIfEmpty(Mono.error(new RtpNotFoundException(operationId, eventDispatcher)));
+  }
+
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {
     return switch (exception.getStatusCode()) {
       case NOT_FOUND -> new PayerNotActivatedException();

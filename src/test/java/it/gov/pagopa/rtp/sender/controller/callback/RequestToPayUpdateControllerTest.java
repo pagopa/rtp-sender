@@ -97,12 +97,12 @@ class RequestToPayUpdateControllerTest {
   @Test
   void handleRequestToPayUpdateWithOtherErrorShouldPropagateErrorWithoutPopulateMdc() {
     when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
-            .thenReturn(Mono.error(new IllegalStateException("Generic error")));
+            .thenReturn(Mono.error(new RuntimeException("Generic error")));
 
     StepVerifier.create(
                     controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
             )
-            .expectError(IllegalStateException.class)
+            .expectError(RuntimeException.class)
             .verify();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
@@ -158,13 +158,29 @@ class RequestToPayUpdateControllerTest {
     when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
             .thenReturn(Mono.just(requestBody));
     when(callbackHandler.handle(any()))
-            .thenReturn(Mono.error(new IllegalStateException("Unexpected failure")));
+            .thenReturn(Mono.error(new RuntimeException("Unexpected failure")));
 
     StepVerifier.create(
                     controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
             )
-            .expectError(IllegalStateException.class)
+            .expectError(RuntimeException.class)
             .verify();
+
+    extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
+  }
+
+  @Test
+  void handleRequestToPayUpdateWhenCallbackHandlerThrowsIllegalStateExceptionShouldReturnBadRequest() {
+    when(certificateChecker.verifyRequestCertificate(any(), eq(validCertificateSerialNumber)))
+            .thenReturn(Mono.just(requestBody));
+    when(callbackHandler.handle(any()))
+            .thenReturn(Mono.error(new IllegalStateException("status not allowed")));
+
+    StepVerifier.create(
+                    controller.handleRequestToPayUpdate(validCertificateSerialNumber, Mono.just(requestBody))
+            )
+            .expectNextMatches(response -> response.getStatusCode() == HttpStatus.BAD_REQUEST)
+            .verifyComplete();
 
     extractorMock.verify(() -> PayloadInfoExtractor.populateMdc(any(JsonNode.class)), times(0));
   }

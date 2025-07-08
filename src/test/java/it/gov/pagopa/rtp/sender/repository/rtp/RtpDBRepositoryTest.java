@@ -197,4 +197,67 @@ class RtpDBRepositoryTest {
         .verify();
   }
 
+    @Test
+    void givenValidOperationIdAndDispatcher_whenFind_thenReturnRtp() {
+      final var operationId = 123L;
+      final var dispatcher = "test-dispatcher";
+      final var rtpEntity = RtpEntity.builder()
+              .resourceID(UUID.randomUUID())
+              .operationId(operationId)
+              .eventDispatcher(dispatcher)
+              .noticeNumber("12345")
+              .amount(BigDecimal.valueOf(200.00))
+              .description("Test")
+              .expiryDate(Instant.now())
+              .payerId("payer")
+              .payerName("payerName")
+              .payeeId("payee")
+              .payeeName("payeeName")
+              .subject("subject")
+              .savingDateTime(Instant.now())
+              .serviceProviderDebtor("debtor")
+              .iban("iban")
+              .payTrxRef("ref")
+              .flgConf("Y")
+              .status(RtpStatus.SENT)
+              .serviceProviderCreditor("PagoPA")
+              .build();
+
+      when(rtpDB.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+              .thenReturn(Mono.just(rtpEntity));
+
+      StepVerifier.create(rtpDbRepository.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+              .assertNext(rtp -> {
+                  assertNotNull(rtp);
+                  assertEquals(operationId, rtpEntity.getOperationId());
+                  assertEquals(dispatcher, rtpEntity.getEventDispatcher());
+              })
+              .verifyComplete();
+    }
+
+    @Test
+    void givenValidOperationIdAndDispatcher_whenNotFound_thenReturnEmpty() {
+      final var operationId = 456L;
+      final var dispatcher = "non-existent-dispatcher";
+
+      when(rtpDB.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+              .thenReturn(Mono.empty());
+
+      StepVerifier.create(rtpDbRepository.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+              .verifyComplete();
+    }
+
+    @Test
+    void givenDbError_whenFindByOperationIdAndDispatcher_thenThrowException() {
+      final var operationId = 789L;
+      final var dispatcher = "error-dispatcher";
+
+      when(rtpDB.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+              .thenReturn(Mono.error(new RuntimeException("DB failure")));
+
+      StepVerifier.create(rtpDbRepository.findByOperationIdAndEventDispatcher(operationId, dispatcher))
+              .expectErrorMatches(error -> error instanceof RuntimeException && error.getMessage().equals("DB failure"))
+              .verify();
+    }
+
 }

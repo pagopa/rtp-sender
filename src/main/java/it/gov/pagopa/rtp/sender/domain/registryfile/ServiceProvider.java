@@ -14,5 +14,9 @@ public record ServiceProvider(
 
     @NotBlank
     @JsonProperty("tsp_id")
-    String tspId
+    String tspId,
+
+    @NotBlank
+    @JsonProperty("psp_tax_code")
+    String pspTaxCode
 ) {}

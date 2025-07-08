@@ -46,7 +46,7 @@ class Oauth2HandlerTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, true);
-    final var serviceProviderData = new ServiceProviderFullData("spId", "spName", tspData);
+    final var serviceProviderData = new ServiceProviderFullData("spId", "spName", "pspTaxCode",  tspData);
     final var request = new EpcRequest(rtpToSend, serviceProviderData, null, null);
 
     when(oauth2Data.tokenEndpoint()).thenReturn("tokenEndpoint");
@@ -77,7 +77,7 @@ class Oauth2HandlerTest {
     final var rtpToSend = mock(Rtp.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         null, true);
-    final var serviceProviderData = new ServiceProviderFullData("spId", "spName", tspData);
+    final var serviceProviderData = new ServiceProviderFullData("spId", "spName", "pspTaxCode", tspData);
     final var request = new EpcRequest(rtpToSend, serviceProviderData, null, null);
 
     var resultMono = oauth2Handler.handle(request);
@@ -96,7 +96,7 @@ class Oauth2HandlerTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, true);
-    final var serviceProviderData = new ServiceProviderFullData("spId", "spName", tspData);
+    final var serviceProviderData = new ServiceProviderFullData("spId", "spName", "pspTaxCode", tspData);
     final var request = new EpcRequest(rtpToSend, serviceProviderData, null, null);
 
     when(oauth2Data.tokenEndpoint()).thenReturn("tokenEndpoint");
