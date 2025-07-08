@@ -50,7 +50,7 @@ import reactor.core.publisher.Mono;
     SepaRequestToPayCancellationRequestResourceDto.class,
     SynchronousRequestToPayCancellationResponseDto.class
 })
-public class SendRTPServiceImpl implements SendRTPService {
+public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
 
   private final SepaRequestToPayMapper sepaRequestToPayMapper;
   private final ReadApi activationApi;
@@ -155,6 +155,14 @@ public class SendRTPServiceImpl implements SendRTPService {
             .doOnNext(rtp -> log.info("Successfully found RTP with id: {}", rtp.resourceID().getId()))
             .switchIfEmpty(Mono.error(new RtpNotFoundException(operationId, eventDispatcher)));
   }
+
+
+  @Override
+  @NonNull
+  public Mono<Rtp> updateRtpPaid(@NonNull final Rtp rtp) {
+    return Mono.empty();
+  }
+
 
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {
     return switch (exception.getStatusCode()) {
