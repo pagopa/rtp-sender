@@ -74,11 +74,14 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
 
 
   /**
-   * Handles updates for RTPs where the PSP tax code matches the debtor service provider.
+   * Handles the update of an RTP (Request to Pay) when the payer's PSP (Payment Service Provider) tax code
+   * matches the debtor service provider, indicating the same PSP is involved on both sides.
+   * <p>
+   * This method delegates the update to the {@link SendRTPServiceImpl}.
+   * </p>
    *
-   * @param rtp the RTP with matching PSP and debtor service provider; must not be {@code null}
-   * @return a {@link Mono} signaling the result of the handling
-   * @throws UnsupportedOperationException always, as this method is not yet implemented
+   * @param rtp the RTP to be updated; must not be {@code null}
+   * @return a {@link Mono} emitting the updated {@link Rtp} on success, or an error if the update fails
    */
   @NonNull
   private Mono<Rtp> handleSamePsp(@NonNull final Rtp rtp) {
