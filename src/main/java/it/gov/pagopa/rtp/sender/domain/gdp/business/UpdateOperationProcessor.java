@@ -9,7 +9,7 @@ import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
-import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
+import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
 public abstract class UpdateOperationProcessor implements OperationProcessor {
 
   protected final RegistryDataService registryDataService;
-  protected final SendRTPService sendRTPService;
+  protected final SendRTPServiceImpl sendRTPService;
   protected final GdpEventHubProperties gdpEventHubProperties;
   protected final List<RtpStatus> acceptedStatuses;
   protected final Status statusToHandle;
@@ -53,7 +53,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
    */
   protected UpdateOperationProcessor(
       @NonNull final RegistryDataService registryDataService,
-      @NonNull final SendRTPService sendRTPService,
+      @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties,
       @NonNull final List<RtpStatus> acceptedStatuses,
       @NonNull final Status statusToHandle) {

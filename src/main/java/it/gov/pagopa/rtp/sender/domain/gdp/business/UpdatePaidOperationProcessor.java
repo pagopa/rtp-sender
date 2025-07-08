@@ -6,7 +6,7 @@ import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
-import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
+import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -42,7 +42,7 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
    */
   public UpdatePaidOperationProcessor(
       @NonNull final RegistryDataService registryDataService,
-      @NonNull final SendRTPService sendRTPService,
+      @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     super(

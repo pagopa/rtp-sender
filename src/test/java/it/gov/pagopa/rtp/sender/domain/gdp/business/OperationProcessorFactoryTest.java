@@ -9,7 +9,7 @@ import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
-import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
+import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +28,7 @@ class OperationProcessorFactoryTest {
   private GdpMapper gdpMapper;
 
   @Mock
-  private SendRTPService sendRTPService;
+  private SendRTPServiceImpl sendRTPService;
 
   @Mock
   private GdpEventHubProperties gdpEventHubProperties;

@@ -12,7 +12,7 @@ import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
-import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
+import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +34,7 @@ class UpdatePaidOperationProcessorTest {
   private RegistryDataService registryDataService;
 
   @Mock
-  private SendRTPService sendRTPService;
+  private SendRTPServiceImpl sendRTPService;
 
   @Mock
   private GdpEventHubProperties gdpEventHubProperties;
