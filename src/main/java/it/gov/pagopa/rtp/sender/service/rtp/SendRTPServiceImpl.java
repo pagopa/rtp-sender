@@ -160,7 +160,12 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
   @Override
   @NonNull
   public Mono<Rtp> updateRtpPaid(@NonNull final Rtp rtp) {
-    return Mono.empty();
+    return Mono.just(rtp)
+        .doFirst(() -> log.info("Updating paid RTP with id: {}", rtp.resourceID().getId()))
+        .flatMap(this.rtpStatusUpdater::triggerPayRtp)
+
+        .doOnSuccess(rtpUpdated -> log.info("Successfully updated paid RTP with id: {}", rtp.resourceID().getId()))
+        .doOnError(error -> log.error("Error updating paid RTP: {}", error.getMessage()));
   }
 
 
