@@ -82,7 +82,15 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
    */
   @NonNull
   private Mono<Rtp> handleSamePsp(@NonNull final Rtp rtp) {
-    return Mono.error(new UnsupportedOperationException("Not supported yet"));
+    return Mono.just(rtp)
+        .doFirst(() ->
+            log.info("Handling paid RTP with same psp scenario. Id: {}, PSP BIC: {}", rtp.resourceID().getId(), rtp.serviceProviderDebtor()))
+
+        .flatMap(this.sendRTPService::updateRtpPaid)
+
+        .doOnSuccess(rtpUpdated ->
+            log.info("Successfully updated paid RTP with same psp scenario. Id: {}, PSP BIC: {}", rtp.resourceID().getId(), rtp.serviceProviderDebtor()))
+        .doOnError(throwable -> log.error("Error updating paid RTP. Id: {}, PSP BIC: {}", rtp.resourceID().getId(), rtp.serviceProviderDebtor(), throwable));
   }
 
 
