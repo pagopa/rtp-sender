@@ -412,12 +412,51 @@ class SendRTPServiceTest {
             .verify();
   }
 
+  @Test
+  void givenValidRtp_whenUpdateRtpPaid_thenUpdateSuccessfully() {
+    final var rtp = mock(Rtp.class);
+    final var resourceID = new ResourceID(UUID.randomUUID());
+    final var updatedRtp = mock(Rtp.class);
+
+    when(rtp.resourceID())
+        .thenReturn(resourceID);
+
+    when(rtpStatusUpdater.triggerPayRtp(rtp))
+        .thenReturn(Mono.just(updatedRtp));
+
+    StepVerifier.create(sendRTPService.updateRtpPaid(rtp))
+        .expectNext(updatedRtp)
+        .verifyComplete();
+
+    verify(rtpStatusUpdater).triggerPayRtp(rtp);
+  }
+
+  @Test
+  void givenTriggerPayFails_whenUpdateRtpPaid_thenThrowsIllegalStateException() {
+    final var rtp = mock(Rtp.class);
+    final var resourceID = new ResourceID(UUID.randomUUID());
+    final var exception = new IllegalStateException("Update failed");
+
+    when(rtp.resourceID())
+        .thenReturn(resourceID);
+
+    when(rtpStatusUpdater.triggerPayRtp(rtp))
+        .thenReturn(Mono.error(exception));
+
+    StepVerifier.create(sendRTPService.updateRtpPaid(rtp))
+        .expectErrorMatches(throwable -> throwable instanceof IllegalStateException &&
+            throwable.getMessage().equals("Update failed"))
+        .verify();
+
+    verify(rtpStatusUpdater).triggerPayRtp(rtp);
+  }
+
+
   private Rtp mockRtpWithStatus(RtpStatus status, UUID id) {
     return Rtp.builder()
             .resourceID(new ResourceID(id))
             .status(status)
             .build();
   }
-
 
 }
