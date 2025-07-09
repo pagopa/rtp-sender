@@ -6,7 +6,7 @@ env_short      = "d"
 env            = "dev"
 location       = "italynorth"
 location_short = "itn" 
-domain         = "rtp"
+domain         = "srtp"
 
 tags = {
   CreatedBy   = "Terraform"
@@ -20,8 +20,8 @@ tags = {
 # ------------------------------------------------------------------------------
 # External resources.
 # ------------------------------------------------------------------------------
-cae_name                       = "cstar-d-itn-mcshared-cae"
-cae_resource_group_name        = "cstar-d-itn-mcshared-compute-rg"
+cae_name                       = "cstar-d-itn-srtp-cae"
+cae_resource_group_name        = "cstar-d-itn-srtp-compute-rg"
 id_name                        = "cstar-d-itn-srtp-sender-id"
 id_resource_group_name         = "cstar-d-itn-srtp-identity-rg"
 rtp_sender_file_share_storage_name = "cstar-d-itn-srtp-sender-fss"
@@ -44,7 +44,7 @@ rtp_sender_base_url                          = "https://mil-d-apim.azure-api.net
 
 
 rtp_environment_secrets = {
-  COSMOS_ACCOUNT_RTP_CONNECTION_STRING  : "cosmosdb-account-rtp-connection-string"
+  COSMOS_ACCOUNT_RTP_CONNECTION_STRING  : "cosmosdb-account-rtp-primary-connection-string"
   APPLICATIONINSIGHTS_CONNECTION_STRING : "appinsights-connection-string"
   CLIENT_CERTIFICATE                    : "client-certificate"
   CLIENT_SECRET_CBI                     : "client-secret-cbi"
