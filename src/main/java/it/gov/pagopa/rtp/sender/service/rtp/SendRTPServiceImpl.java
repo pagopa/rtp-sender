@@ -176,6 +176,22 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
   }
 
 
+  @Override
+  @NonNull
+  public Mono<Rtp> updateRtpCancelPaid(@NonNull final Rtp rtp) {
+    return Mono.just(rtp)
+        .doFirst(() -> log.info("Cancelling RTP with id: {}", rtp.resourceID().getId()))
+        .flatMap(this::doCancelRtp)
+        .doOnNext(cancelledRtp -> log.info("Successfully cancelled RTP with id: {}", rtp.resourceID().getId()))
+
+        .doOnNext(cancelledRtp -> log.info("Updating cancelled paid RTP with id: {}", rtp.resourceID().getId()))
+        .flatMap(this.rtpStatusUpdater::triggerCancelRtpPaid)
+
+        .doOnSuccess(rtpUpdated -> log.info("Successfully updated cancelled paid RTP with id: {}", rtp.resourceID().getId()))
+        .doOnError(error -> log.error("Error updating cancelled paid RTP: {}", error.getMessage()));
+  }
+
+
   private Throwable mapActivationResponseToException(WebClientResponseException exception) {
     return switch (exception.getStatusCode()) {
       case NOT_FOUND -> new PayerNotActivatedException();
