@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -83,8 +84,13 @@ public class IdentifierUtils {
      */
     @NonNull
     public static UUID generateDeterministicIdempotencyKey(@NonNull final String operationSlug, @NonNull final UUID rtpId) {
-        final var keySource = operationSlug + rtpId;
-        return UUID.nameUUIDFromBytes(keySource.getBytes());
+        Objects.requireNonNull(operationSlug, "operationSlug cannot be null");
+        Objects.requireNonNull(rtpId, "rtpId cannot be null");
+
+        return Optional.of(operationSlug + rtpId)
+                .map(String::getBytes)
+                .map(UUID::nameUUIDFromBytes)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot generate Deterministic Idempotency Key"));
     }
 
 }
