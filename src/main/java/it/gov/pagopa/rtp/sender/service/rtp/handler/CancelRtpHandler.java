@@ -1,8 +1,11 @@
 package it.gov.pagopa.rtp.sender.service.rtp.handler;
 
+import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import it.gov.pagopa.rtp.sender.utils.IdentifierUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
@@ -28,6 +31,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHandler<EpcRequest> {
 
+    private final PagoPaConfigProperties pagoPaConfigProperties;
   /**
    * Constructs a {@code CancelRtpHandler} with required dependencies.
    *
@@ -41,9 +45,11 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
       @NonNull final WebClientFactory webClientFactory,
       @NonNull final OpenAPIClientFactory<DefaultApi> epcClientFactory,
       @NonNull final SepaRequestToPayMapper sepaRequestToPayMapper,
-      @NonNull final ServiceProviderConfig serviceProviderConfig) {
+      @NonNull final ServiceProviderConfig serviceProviderConfig,
+      @NonNull final PagoPaConfigProperties pagoPaConfigProperties) {
 
     super(webClientFactory, epcClientFactory, sepaRequestToPayMapper, serviceProviderConfig);
+    this.pagoPaConfigProperties = Objects.requireNonNull(pagoPaConfigProperties);
   }
 
   /**
@@ -63,12 +69,16 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
           final var rtpToSend = request.rtpToSend();
           final var sepaRequest = this.sepaRequestToPayMapper.toEpcRequestToCancel(rtpToSend);
           final var basePath = request.serviceProviderFullData().tsp().serviceEndpoint();
+          final var idempotencyKey = IdentifierUtils.generateDeterministicIdempotencyKey(
+                  this.pagoPaConfigProperties.operationSlug().cancel(),
+                  request.rtpToSend().resourceID().getId()
+          );
 
           epcClient.getApiClient().setBasePath(basePath);
           this.injectTokenIntoEpcRequest(epcClient, request);
 
           return Mono.defer(() -> epcClient.postRequestToPayCancellationRequest(
-                  request.rtpToSend().resourceID().getId(),
+                  idempotencyKey,
                   UUID.randomUUID().toString(),
                   request.rtpToSend().resourceID().getId().toString(),
                   sepaRequest))

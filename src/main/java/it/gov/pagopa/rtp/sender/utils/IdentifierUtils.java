@@ -70,4 +70,21 @@ public class IdentifierUtils {
                 .map(UUID::fromString)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid UUID format"));
     }
+
+    /**
+     * Generates a deterministic UUID using the provided operation slug and RTP ID.
+     *
+     * <p>This is typically used for generating idempotency keys where the combination of operation type
+     * and resource ID needs to produce the same UUID across retries.
+     *
+     * @param operationSlug a string representing the operation (e.g. "/sepa-request-to-pay-requests")
+     * @param rtpId the UUID of the RTP resource
+     * @return a UUID generated deterministically from the operation and RTP ID
+     */
+    @NonNull
+    public static UUID generateDeterministicIdempotencyKey(@NonNull final String operationSlug, @NonNull final UUID rtpId) {
+        final var keySource = operationSlug + rtpId;
+        return UUID.nameUUIDFromBytes(keySource.getBytes());
+    }
+
 }
