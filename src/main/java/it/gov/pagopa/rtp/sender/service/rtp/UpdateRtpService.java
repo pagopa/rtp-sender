@@ -6,5 +6,6 @@ import reactor.core.publisher.Mono;
 public interface UpdateRtpService {
 
   Mono<Rtp> updateRtpPaid(Rtp rtp);
+  Mono<Rtp> updateRtpCancelPaid(Rtp rtp);
 
 }
