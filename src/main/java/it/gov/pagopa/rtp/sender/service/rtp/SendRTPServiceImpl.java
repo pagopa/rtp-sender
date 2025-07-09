@@ -109,7 +109,7 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
   @NonNull
   @Override
   public Mono<Rtp> cancelRtp(@NonNull final ResourceID rtpId) {
-    final var rtpToCancel = this.rtpRepository
+    return this.rtpRepository
         .findById(rtpId)
         .doFirst(() -> log.info("Retrieving RTP with id {}", rtpId.getId()))
         .switchIfEmpty(Mono.error(() -> new RtpNotFoundException(rtpId.getId())))
@@ -117,20 +117,27 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
             rtp -> log.info("RTP retrieved with id {} and status {}", rtp.resourceID().getId(),
                 rtp.status()))
         .doOnError(error -> log.error("Error retrieving RTP: {}", error.getMessage(), error))
-        .flatMap(rtp -> this.rtpStatusUpdater.canCancel(rtp)
-                .filter(Boolean::booleanValue)
-                .switchIfEmpty(Mono.error(new IllegalStateException(String.format("Cannot transition RTP with id %s in status %s",
-                        rtp.resourceID().getId(), rtp.status()))))
-                .thenReturn(rtp));
+        .flatMap(this::doCancelRtp);
 
-    return rtpToCancel
+  }
+
+
+  private Mono<Rtp> doCancelRtp(@NonNull final Rtp rtpToCancel) {
+    final var rtpToCancelMono = Mono.just(rtpToCancel)
+        .flatMap(rtp -> this.rtpStatusUpdater.canCancel(rtp)
+        .filter(Boolean::booleanValue)
+        .switchIfEmpty(Mono.error(new IllegalStateException(String.format("Cannot transition RTP with id %s in status %s",
+            rtp.resourceID().getId(), rtp.status()))))
+        .thenReturn(rtp));
+
+    return rtpToCancelMono
         .doOnError(error -> log.error(error.getMessage(), error))
         .doOnNext(rtp -> LoggingUtils.logAsJson(
             () -> sepaRequestToPayMapper.toEpcRequestToCancel(rtp), objectMapper))
         .flatMap(this.sendRtpProcessor::sendRtpCancellationToServiceProviderDebtor)
         .doOnError(error -> log.error("Error cancel RTP: {}", error.getMessage(), error));
-
   }
+
 
   @NonNull
   @Override
