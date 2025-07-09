@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,6 +67,12 @@ class SendRtpHandlerTest {
   @Mock
   private ServiceProviderConfig.Send.Retry retryConfig;
 
+  @Mock
+  private PagoPaConfigProperties pagoPaConfigProperties;
+
+  @Mock
+  private PagoPaConfigProperties.OperationSlug operationSlug;
+
   private SendRtpHandler sendRtpHandler;
 
   @BeforeEach
@@ -75,8 +82,10 @@ class SendRtpHandlerTest {
     lenient().when(retryConfig.maxAttempts()).thenReturn(MAX_ATTEMPTS);
     lenient().when(retryConfig.backoffMinDuration()).thenReturn(BACKOFF_MIN_DURATION);
     lenient().when(retryConfig.backoffJitter()).thenReturn(BACKOFF_JITTER);
+    lenient().when(pagoPaConfigProperties.operationSlug()).thenReturn(operationSlug);
+    lenient().when(operationSlug.send()).thenReturn("send");
 
-    sendRtpHandler = new SendRtpHandler(webClientFactory, epcClientFactory, sepaRequestToPayMapper, serviceProviderConfig);
+    sendRtpHandler = new SendRtpHandler(webClientFactory, epcClientFactory, sepaRequestToPayMapper, serviceProviderConfig, pagoPaConfigProperties);
   }
 
   @Test
@@ -123,6 +132,7 @@ class SendRtpHandlerTest {
         .verifyComplete();
 
     verify(epcClient).postRequestToPayRequests(any(), any(), any());
+    verify(operationSlug).send();
   }
 
   @Test

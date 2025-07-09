@@ -86,3 +86,6 @@ pagopa:
   details:
     iban: iban
     fiscal-code: fiscal_code
+  operation-slug:
+    send: /send-operation-slug
+    cancel: /cancel-operation-slug
