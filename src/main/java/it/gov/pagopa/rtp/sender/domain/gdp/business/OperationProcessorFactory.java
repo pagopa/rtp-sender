@@ -6,7 +6,7 @@ import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
-import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
+import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -31,7 +31,7 @@ import reactor.core.publisher.Mono;
 public class OperationProcessorFactory {
 
   private final GdpMapper gdpMapper;
-  private final SendRTPService sendRTPService;
+  private final SendRTPServiceImpl sendRTPService;
   private final GdpEventHubProperties gdpEventHubProperties;
   private final RegistryDataService registryDataService;
 
@@ -47,7 +47,7 @@ public class OperationProcessorFactory {
    */
   public OperationProcessorFactory(
           @NonNull final GdpMapper gdpMapper,
-          @NonNull final SendRTPService sendRTPService,
+          @NonNull final SendRTPServiceImpl sendRTPService,
           @NonNull final GdpEventHubProperties gdpEventHubProperties,
           @NonNull final RegistryDataService registryDataService) {
 
