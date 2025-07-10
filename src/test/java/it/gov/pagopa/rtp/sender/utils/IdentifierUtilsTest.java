@@ -128,6 +128,18 @@ class IdentifierUtilsTest {
   }
 
   @Test
+  void givenSameOperationSlugAndDifferentRtpIds_whenGenerateDeterministicIdempotencyKey_thenReturnsDifferentUUIDs() {
+    String operationSlug = "/operation-slug";
+    UUID rtpId1 = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    UUID rtpId2 = UUID.fromString("223e4567-e89b-12d3-a456-426614174000");
+
+    UUID result1 = IdentifierUtils.generateDeterministicIdempotencyKey(operationSlug, rtpId1);
+    UUID result2 = IdentifierUtils.generateDeterministicIdempotencyKey(operationSlug, rtpId2);
+
+    assertThat(result1).isNotEqualTo(result2);
+  }
+
+  @Test
   void givenDifferentInputs_whenGenerateDeterministicIdempotencyKey_thenReturnsDifferentUUIDs() {
     String operationSlugSend = "/send-operation-slug";
     String operationSlugCancel = "/cancel-operation-slug";
