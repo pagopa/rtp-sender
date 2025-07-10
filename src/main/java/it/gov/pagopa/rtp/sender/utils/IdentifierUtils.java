@@ -81,6 +81,7 @@ public class IdentifierUtils {
      * @param operationSlug a string representing the operation (e.g. "/sepa-request-to-pay-requests")
      * @param rtpId the UUID of the RTP resource
      * @return a UUID generated deterministically from the operation and RTP ID
+     * @throws IllegalArgumentException if the input is null or does not conform
      */
     @NonNull
     public static UUID generateDeterministicIdempotencyKey(@NonNull final String operationSlug, @NonNull final UUID rtpId) {
