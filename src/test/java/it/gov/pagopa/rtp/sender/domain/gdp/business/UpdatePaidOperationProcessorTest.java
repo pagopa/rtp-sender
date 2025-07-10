@@ -131,9 +131,10 @@ class UpdatePaidOperationProcessorTest {
 
   @ParameterizedTest
   @MethodSource("provideValidRtpStatuses")
-  void givenAcceptedStatusAndNonMatchingPsp_whenProcessOperation_thenThrowsUnsupportedOperationException(RtpStatus rtpStatus) {
+  void givenValidRtpStatusAndNonMatchingPsp_whenProcessOperation_thenUpdateRtp(RtpStatus rtpStatus) {
     final var inputOperationId = 1L;
     final var inputPspTaxCode = "psp-code";
+    final var resourceID = ResourceID.createNew();
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
@@ -142,21 +143,69 @@ class UpdatePaidOperationProcessorTest {
         .build();
 
     final var rtp = Rtp.builder()
+        .resourceID(resourceID)
         .status(rtpStatus)
-        .serviceProviderDebtor("other-sp-id")
+        .serviceProviderDebtor("sp-id")
         .build();
 
-    final var serviceProvider = new ServiceProvider("sp-id", "name", "tsp-id", inputPspTaxCode);
+    final var updatedRtp = Rtp.builder()
+        .resourceID(resourceID)
+        .status(RtpStatus.CANCELLED_PAID)
+        .serviceProviderDebtor("sp-id")
+        .build();
+
+    final var serviceProvider = new ServiceProvider("non-matching-sp-id", "name", "tsp-id", inputPspTaxCode);
 
     when(sendRTPService.findRtpByCompositeKey(inputOperationId, "dispatcher"))
         .thenReturn(Mono.just(rtp));
     when(registryDataService.getServiceProvidersByPspTaxCode())
         .thenReturn(Mono.just(Map.of(inputPspTaxCode, serviceProvider)));
+    when(sendRTPService.updateRtpCancelPaid(rtp))
+        .thenReturn(Mono.just(updatedRtp));
 
     final var result = processor.processOperation(message);
 
     StepVerifier.create(result)
-        .expectError(UnsupportedOperationException.class)
+        .expectNext(updatedRtp)
+        .verifyComplete();
+  }
+
+
+  @ParameterizedTest
+  @MethodSource("provideValidRtpStatuses")
+  void givenValidRtpStatusAndNonMatchingPspFails_whenProcessOperation_thenThrowsIllegalStateException(RtpStatus rtpStatus) {
+    final var inputOperationId = 1L;
+    final var inputPspTaxCode = "psp-code";
+    final var resourceID = ResourceID.createNew();
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .pspTaxCode(inputPspTaxCode)
+        .status(Status.PAID)
+        .build();
+
+    final var rtp = Rtp.builder()
+        .resourceID(resourceID)
+        .status(rtpStatus)
+        .serviceProviderDebtor("sp-id")
+        .build();
+
+    final var expectedException = new IllegalStateException("error");
+
+    final var serviceProvider = new ServiceProvider("non-matching-sp-id", "name", "tsp-id", inputPspTaxCode);
+
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, "dispatcher"))
+        .thenReturn(Mono.just(rtp));
+    when(registryDataService.getServiceProvidersByPspTaxCode())
+        .thenReturn(Mono.just(Map.of(inputPspTaxCode, serviceProvider)));
+    when(sendRTPService.updateRtpCancelPaid(rtp))
+        .thenReturn(Mono.error(expectedException));
+
+    final var result = processor.processOperation(message);
+
+    StepVerifier.create(result)
+        .expectErrorMatches(ex -> ex instanceof IllegalStateException
+            && ex.getMessage().equals(expectedException.getMessage()))
         .verify();
   }
 

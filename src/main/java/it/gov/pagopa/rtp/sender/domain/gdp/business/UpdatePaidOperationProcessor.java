@@ -98,14 +98,26 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
 
 
   /**
-   * Handles updates for RTPs where the PSP tax code does not match the debtor service provider.
+   * Handles the update of an RTP (Request to Pay) when the payer's PSP (Payment Service Provider) tax code
+   * differs from the debtor service provider, indicating that different PSPs are involved.
+   * <p>
+   * This method delegates the update to the {@link SendRTPServiceImpl}, which handles the RTP
+   * as a cancellation followed by a paid update.
+   * </p>
    *
-   * @param rtp the RTP with differing PSP and debtor service provider; must not be {@code null}
-   * @return a {@link Mono} signaling the result of the handling
-   * @throws UnsupportedOperationException always, as this method is not yet implemented
+   * @param rtp the RTP to be updated; must not be {@code null}
+   * @return a {@link Mono} emitting the updated {@link Rtp} on success, or an error if the update fails
    */
   @NonNull
   private Mono<Rtp> handleDifferentPsp(@NonNull final Rtp rtp) {
-    return Mono.error(new UnsupportedOperationException("Not supported yet"));
+    return Mono.just(rtp)
+        .doFirst(() ->
+            log.info("Handling paid RTP with different psp scenario. Id: {}, PSP BIC: {}", rtp.resourceID().getId(), rtp.serviceProviderDebtor()))
+
+        .flatMap(this.sendRTPService::updateRtpCancelPaid)
+
+        .doOnSuccess(rtpUpdated ->
+            log.info("Successfully updated paid RTP with different psp scenario. Id: {}, PSP BIC: {}", rtp.resourceID().getId(), rtp.serviceProviderDebtor()))
+        .doOnError(throwable -> log.error("Error updating paid RTP. Id: {}, PSP BIC: {}", rtp.resourceID().getId(), rtp.serviceProviderDebtor(), throwable));
   }
 }
