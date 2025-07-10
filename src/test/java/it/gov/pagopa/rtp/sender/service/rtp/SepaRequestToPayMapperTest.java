@@ -34,7 +34,8 @@ class SepaRequestToPayMapperTest {
     );
 
     pagoPaConfigProperties = new PagoPaConfigProperties(
-        new Details("iban", "fiscalCode")
+        new Details("iban", "fiscalCode"),
+        new PagoPaConfigProperties.OperationSlug("send", "cancel")
     );
 
     sepaRequestToPayMapper = new SepaRequestToPayMapper(callbackProperties, pagoPaConfigProperties);

@@ -1,13 +1,16 @@
 package it.gov.pagopa.rtp.sender.service.rtp.handler;
 
 import it.gov.pagopa.rtp.sender.configuration.OpenAPIClientFactory;
+import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
 import it.gov.pagopa.rtp.sender.configuration.mtlswebclient.WebClientFactory;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import it.gov.pagopa.rtp.sender.epcClient.api.DefaultApi;
 import it.gov.pagopa.rtp.sender.service.rtp.SepaRequestToPayMapper;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import it.gov.pagopa.rtp.sender.utils.IdentifierUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
@@ -28,6 +31,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class SendRtpHandler extends EpcApiInvokerHandler implements RequestHandler<EpcRequest> {
 
+    private final PagoPaConfigProperties pagoPaConfigProperties;
   /**
    * Constructs a {@code SendRtpHandler} with required dependencies.
    *
@@ -40,8 +44,10 @@ public class SendRtpHandler extends EpcApiInvokerHandler implements RequestHandl
       @NonNull final WebClientFactory webClientFactory,
       @NonNull final OpenAPIClientFactory<DefaultApi> epcClientFactory,
       @NonNull final SepaRequestToPayMapper sepaRequestToPayMapper,
-      @NonNull final ServiceProviderConfig serviceProviderConfig) {
+      @NonNull final ServiceProviderConfig serviceProviderConfig,
+      @NonNull final PagoPaConfigProperties pagoPaConfigProperties) {
     super(webClientFactory, epcClientFactory, sepaRequestToPayMapper, serviceProviderConfig);
+    this.pagoPaConfigProperties = Objects.requireNonNull(pagoPaConfigProperties);
   }
 
   /**
@@ -61,12 +67,16 @@ public class SendRtpHandler extends EpcApiInvokerHandler implements RequestHandl
           final var rtpToSend = request.rtpToSend();
           final var sepaRequest = this.sepaRequestToPayMapper.toEpcRequestToPay(rtpToSend);
           final var basePath = request.serviceProviderFullData().tsp().serviceEndpoint();
+          final var idempotencyKey = IdentifierUtils.generateDeterministicIdempotencyKey(
+                  this.pagoPaConfigProperties.operationSlug().send(),
+                  request.rtpToSend().resourceID().getId()
+          );
 
           epcClient.getApiClient().setBasePath(basePath);
           this.injectTokenIntoEpcRequest(epcClient, request);
 
           return Mono.defer(() -> epcClient.postRequestToPayRequests(
-                  request.rtpToSend().resourceID().getId(),
+                  idempotencyKey,
                   UUID.randomUUID().toString(),
                   sepaRequest))
               .doFirst(() -> log.info("Sending RTP to {}", rtpToSend.serviceProviderDebtor()))

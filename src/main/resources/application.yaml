@@ -70,6 +70,9 @@ pagopa:
   details:
     iban: IT96K999999999900SRTPPAGOPA
     fiscal-code: 15376371009
+  operation-slug:
+    send: /sepa-request-to-pay-requests
+    cancel: /sepa-request-to-pay-requests/cancellation-requests
 
 # enable spring boot actuator health endpoint
 management:
