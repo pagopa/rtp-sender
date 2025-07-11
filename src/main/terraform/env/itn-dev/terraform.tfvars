@@ -56,18 +56,18 @@ rtp_environment_secrets = {
 
 rtp_environment_configs = {
   DB_NAME                                 : "rtp"
-  BASE_URL                                : "https://api-rtp.dev.cstar.pagopa.it/rtp/activation/"
-  SP_BASE_URL                             : "https://api-rtp.dev.cstar.pagopa.it/rtp/rtps/"
+  BASE_URL                                : "https://api-rtp.dev.cstar.pagopa.it/rtp-itn/activation/"
+  SP_BASE_URL                             : "https://api-rtp.dev.cstar.pagopa.it/rtp-itn/rtps/"
   OTEL_TRACES_SAMPLER                     : "always_on"
-  EPC_MOCK_URL                            : "https://api-rtp.dev.cstar.pagopa.it/rtp/mock"
+  EPC_MOCK_URL                            : "https://api-rtp.dev.cstar.pagopa.it/rtp-itn/mock"
   EPC_SEND_RETRY_MAX_ATTEMPTS             : 1
   EPC_SEND_RETRY_BACKOFF_MIN_DURATION_MS  : 1000
   EPC_SEND_RETRY_BACKOFF_JITTER           : 0.75
   EPC_SEND_TIMEOUT_MS                     : 6000
-  AZURE_STORAGE_ACCOUNT_NAME              : "cstardweurtpblobstorage"
+  AZURE_STORAGE_ACCOUNT_NAME              : "cstarditnsrtpsa"
   AZURE_STORAGE_CONTAINER_NAME            : "rtp-debtor-service-provider"
   AZURE_BLOB_NAME                         : "serviceregistry.json"
-  CALLBACK_BASE_URL                       : "https://api-rtp-cb.dev.cstar.pagopa.it/rtp/cb"
+  CALLBACK_BASE_URL                       : "https://api-rtp-cb.dev.cstar.pagopa.it/rtp-itn/cb"
   GDP_EVENTHUB_NAME                       : "pagopa-d-itn-gps-rtp-integration-evh"
   GDP_EVENTHUB_TOPIC                      : "rtp-events"
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
