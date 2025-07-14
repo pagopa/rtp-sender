@@ -412,12 +412,107 @@ class SendRTPServiceTest {
             .verify();
   }
 
+  @Test
+  void givenValidRtp_whenUpdateRtpPaid_thenUpdateSuccessfully() {
+    final var rtp = mock(Rtp.class);
+    final var resourceID = new ResourceID(UUID.randomUUID());
+    final var updatedRtp = mock(Rtp.class);
+
+    when(rtp.resourceID())
+        .thenReturn(resourceID);
+
+    when(rtpStatusUpdater.triggerPayRtp(rtp))
+        .thenReturn(Mono.just(updatedRtp));
+
+    StepVerifier.create(sendRTPService.updateRtpPaid(rtp))
+        .expectNext(updatedRtp)
+        .verifyComplete();
+
+    verify(rtpStatusUpdater).triggerPayRtp(rtp);
+  }
+
+  @Test
+  void givenTriggerPayFails_whenUpdateRtpPaid_thenThrowsIllegalStateException() {
+    final var rtp = mock(Rtp.class);
+    final var resourceID = new ResourceID(UUID.randomUUID());
+    final var exception = new IllegalStateException("Update failed");
+
+    when(rtp.resourceID())
+        .thenReturn(resourceID);
+
+    when(rtpStatusUpdater.triggerPayRtp(rtp))
+        .thenReturn(Mono.error(exception));
+
+    StepVerifier.create(sendRTPService.updateRtpPaid(rtp))
+        .expectErrorMatches(throwable -> throwable instanceof IllegalStateException &&
+            throwable.getMessage().equals("Update failed"))
+        .verify();
+
+    verify(rtpStatusUpdater).triggerPayRtp(rtp);
+  }
+
+  @Test
+  void givenValidRtp_whenUpdateRtpCancelPaid_thenUpdateSuccessfully() {
+    final var resourceID = ResourceID.createNew();
+    final var rtp = mockRtp(RtpStatus.CREATED, resourceID, LocalDateTime.now());
+    final var cancelledRtp = mockRtp(RtpStatus.CANCELLED, resourceID, LocalDateTime.now());
+    final var updatedRtp = mockRtp(RtpStatus.CANCELLED_PAID, resourceID, LocalDateTime.now());
+
+    when(rtpStatusUpdater.canCancel(rtp))
+        .thenReturn(Mono.just(true));
+    when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(rtp))
+        .thenReturn(Mono.just(cancelledRtp));
+    when(rtpStatusUpdater.triggerCancelRtpPaid(cancelledRtp))
+        .thenReturn(Mono.just(updatedRtp));
+
+    StepVerifier.create(sendRTPService.updateRtpCancelPaid(rtp))
+        .expectNext(updatedRtp)
+        .verifyComplete();
+
+    verify(rtpStatusUpdater).triggerCancelRtpPaid(cancelledRtp);
+  }
+
+  @Test
+  void givenTriggerPayFails_whenUpdateRtpCancelPaid_thenThrowsIllegalStateException() {
+    final var resourceID = ResourceID.createNew();
+    final var rtp = mockRtp(RtpStatus.CREATED, resourceID, LocalDateTime.now());
+    final var cancelledRtp = mockRtp(RtpStatus.CANCELLED, resourceID, LocalDateTime.now());
+    final var exception = new IllegalStateException("Update failed");
+
+    when(rtpStatusUpdater.canCancel(rtp))
+        .thenReturn(Mono.just(true));
+    when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(rtp))
+        .thenReturn(Mono.just(cancelledRtp));
+    when(rtpStatusUpdater.triggerCancelRtpPaid(cancelledRtp))
+        .thenReturn(Mono.error(exception));
+
+    StepVerifier.create(sendRTPService.updateRtpCancelPaid(rtp))
+        .expectErrorMatches(throwable -> throwable instanceof IllegalStateException &&
+            throwable.getMessage().equals("Update failed"))
+        .verify();
+
+    verify(rtpStatusUpdater).triggerCancelRtpPaid(cancelledRtp);
+  }
+
+  @Test
+  void givenCancelRtpFails_whenUpdateRtpCancelPaid_thenThrowsIllegalStateException() {
+    final var resourceID = ResourceID.createNew();
+    final var rtp = mockRtp(RtpStatus.CREATED, resourceID, LocalDateTime.now());
+
+    when(rtpStatusUpdater.canCancel(rtp))
+        .thenReturn(Mono.just(false));
+
+    StepVerifier.create(sendRTPService.updateRtpCancelPaid(rtp))
+        .expectError(IllegalStateException.class)
+        .verify();
+  }
+
+
   private Rtp mockRtpWithStatus(RtpStatus status, UUID id) {
     return Rtp.builder()
             .resourceID(new ResourceID(id))
             .status(status)
             .build();
   }
-
 
 }

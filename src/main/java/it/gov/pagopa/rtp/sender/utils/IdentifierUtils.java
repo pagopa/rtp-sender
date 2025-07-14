@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -70,4 +71,27 @@ public class IdentifierUtils {
                 .map(UUID::fromString)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid UUID format"));
     }
+
+    /**
+     * Generates a deterministic UUID using the provided operation slug and RTP ID.
+     *
+     * <p>This is typically used for generating idempotency keys where the combination of operation type
+     * and resource ID needs to produce the same UUID across retries.
+     *
+     * @param operationSlug a string representing the operation (e.g. "/sepa-request-to-pay-requests")
+     * @param rtpId the UUID of the RTP resource
+     * @return a UUID generated deterministically from the operation and RTP ID
+     * @throws IllegalArgumentException if the input is null or does not conform
+     */
+    @NonNull
+    public static UUID generateDeterministicIdempotencyKey(@NonNull final String operationSlug, @NonNull final UUID rtpId) {
+        Objects.requireNonNull(operationSlug, "operationSlug cannot be null");
+        Objects.requireNonNull(rtpId, "rtpId cannot be null");
+
+        return Optional.of(operationSlug + rtpId)
+                .map(String::getBytes)
+                .map(UUID::nameUUIDFromBytes)
+                .orElseThrow(() -> new IllegalArgumentException("Cannot generate Deterministic Idempotency Key"));
+    }
+
 }

@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.service.rtp.handler;
 
+import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import java.util.HashSet;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +62,12 @@ class CancelRtpHandlerTest {
   @Mock
   private ServiceProviderConfig.Send.Retry retryConfig;
 
+  @Mock
+  private PagoPaConfigProperties pagoPaConfigProperties;
+
+  @Mock
+  private PagoPaConfigProperties.OperationSlug operationSlug;
+
   private CancelRtpHandler cancelRtpHandler;
 
   @BeforeEach
@@ -70,8 +77,10 @@ class CancelRtpHandlerTest {
     lenient().when(retryConfig.maxAttempts()).thenReturn(MAX_ATTEMPTS);
     lenient().when(retryConfig.backoffMinDuration()).thenReturn(BACKOFF_MIN_DURATION);
     lenient().when(retryConfig.backoffJitter()).thenReturn(BACKOFF_JITTER);
+    lenient().when(pagoPaConfigProperties.operationSlug()).thenReturn(operationSlug);
+    lenient().when(operationSlug.cancel()).thenReturn("cancel");
 
-    cancelRtpHandler = new CancelRtpHandler(webClientFactory, epcClientFactory, sepaRequestToPayMapper, serviceProviderConfig);
+    cancelRtpHandler = new CancelRtpHandler(webClientFactory, epcClientFactory, sepaRequestToPayMapper, serviceProviderConfig, pagoPaConfigProperties);
   }
 
   @Test
@@ -120,6 +129,7 @@ class CancelRtpHandlerTest {
         .verifyComplete();
 
     verify(epcClient).postRequestToPayCancellationRequest(any(), any(), any(), any());
+    verify(operationSlug).cancel();
   }
 
   @Test

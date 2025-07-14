@@ -29,7 +29,8 @@ class GdpMapperTest {
         new GdpEventHubProperties.Consumer("test-topic", "test-consumer")
     );
     final var details = new PagoPaConfigProperties.Details("IT00A1234567890123456789012", "CF1234567890");
-    final var pagoPaConfigProperties = new PagoPaConfigProperties(details);
+    final var operationSlug = new PagoPaConfigProperties.OperationSlug("send", "cancel");
+    final var pagoPaConfigProperties = new PagoPaConfigProperties(details, operationSlug);
 
     gdpMapper = new GdpMapper(gdpEventHubProperties, pagoPaConfigProperties);
   }
