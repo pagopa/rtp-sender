@@ -71,8 +71,8 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
             .flatMap(operationProcessor -> operationProcessor.processOperation(payload))
         )
         .contextWrite(ctx -> ctx
-                .put("foreignStatus", message.status())
-                .put("eventDispatcher", this.gdpEventHubProperties.eventDispatcher())
+                .put("foreignStatus", Objects.requireNonNull(message.status(),"foreignStatus is required"))
+                .put("eventDispatcher", Objects.requireNonNull(this.gdpEventHubProperties.eventDispatcher(),"eventDispatcher is required"))
         );
   }
 }
