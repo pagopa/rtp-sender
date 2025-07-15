@@ -2,15 +2,15 @@
 # General variables.
 # ------------------------------------------------------------------------------
 prefix         = "cstar"
-env_short      = "d"
-env            = "dev"
+env_short      = "p"
+env            = "prod"
 location       = "italynorth"
 location_short = "itn" 
 domain         = "srtp"
 
 tags = {
   CreatedBy   = "Terraform"
-  Environment = "dev"
+  Environment = "prod"
   Owner       = "cstar"
   Source      = "https://github.com/pagopa/rtp-sender/tree/main/src/main/terraform"
   CostCenter  = "TS310 - PAGAMENTI & SERVIZI"
@@ -20,11 +20,11 @@ tags = {
 # ------------------------------------------------------------------------------
 # External resources.
 # ------------------------------------------------------------------------------
-cae_name                       = "cstar-d-itn-srtp-cae"
-cae_resource_group_name        = "cstar-d-itn-srtp-compute-rg"
-id_name                        = "cstar-d-itn-srtp-sender-id"
-id_resource_group_name         = "cstar-d-itn-srtp-identity-rg"
-rtp_sender_file_share_storage_name = "cstar-d-itn-srtp-sender-fss"
+cae_name                       = "cstar-p-itn-srtp-cae"
+cae_resource_group_name        = "cstar-p-itn-srtp-compute-rg"
+id_name                        = "cstar-p-itn-srtp-sender-id"
+id_resource_group_name         = "cstar-p-itn-srtp-identity-rg"
+rtp_sender_file_share_storage_name = "cstar-p-itn-srtp-sender-fss"
 
 # ------------------------------------------------------------------------------
 # Names of key vault secrets.
@@ -54,21 +54,21 @@ rtp_environment_secrets = {
 
 rtp_environment_configs = {
   DB_NAME                                 : "rtp"
-  BASE_URL                                : "https://api-rtp.dev.cstar.pagopa.it/rtp/activation/"
-  SP_BASE_URL                             : "https://api-rtp.dev.cstar.pagopa.it/rtp/rtps/"
+  BASE_URL                                : "https://api-rtp.cstar.pagopa.it/rtp/activation/"
+  SP_BASE_URL                             : "https://api-rtp.cstar.pagopa.it/rtp/rtps/"
   OTEL_TRACES_SAMPLER                     : "always_on"
-  EPC_MOCK_URL                            : "https://api-rtp.dev.cstar.pagopa.it/rtp/mock"
+  EPC_MOCK_URL                            : "https://api-rtp.cstar.pagopa.it/rtp/mock"
   EPC_SEND_RETRY_MAX_ATTEMPTS             : 1
   EPC_SEND_RETRY_BACKOFF_MIN_DURATION_MS  : 1000
   EPC_SEND_RETRY_BACKOFF_JITTER           : 0.75
   EPC_SEND_TIMEOUT_MS                     : 6000
-  AZURE_STORAGE_ACCOUNT_NAME              : "cstarditnsrtpsa"
+  AZURE_STORAGE_ACCOUNT_NAME              : "cstarpitnsrtpsa"
   AZURE_STORAGE_CONTAINER_NAME            : "rtp-debtor-service-provider"
   AZURE_BLOB_NAME                         : "serviceregistry.json"
-  CALLBACK_BASE_URL                       : "https://api-rtp-cb.dev.cstar.pagopa.it/rtp/cb"
-  GDP_EVENTHUB_NAME                       : "pagopa-d-itn-gps-rtp-integration-evh"
+  CALLBACK_BASE_URL                       : "https://api-rtp-cb.cstar.pagopa.it/rtp/cb"
+  GDP_EVENTHUB_NAME                       : "pagopa-p-itn-gps-rtp-integration-evh"
   GDP_EVENTHUB_TOPIC                      : "rtp-events"
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
-  REGISTRY_DATA_CACHE_TTL                 : "PT5M"
+  REGISTRY_DATA_CACHE_TTL                 : "PD1"
 }
 
