@@ -3,6 +3,7 @@ package it.gov.pagopa.rtp.sender.service.callback;
 import com.fasterxml.jackson.databind.JsonNode;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import it.gov.pagopa.rtp.sender.service.rtp.RtpStatusUpdater;
 import lombok.NonNull;
@@ -94,7 +95,11 @@ public class CallbackHandler {
             }
             case RJCT -> {
                 log.debug("Triggering REJECT transition for RTP {}", rtpToUpdate.resourceID().getId());
-                yield this.rtpStatusUpdater.triggerRejectRtp(rtpToUpdate);
+                yield Mono.just(rtpToUpdate)
+                    .filter(rtp -> RtpStatus.ACCEPTED.equals(rtp.status()))
+                    .flatMap(this.rtpStatusUpdater::triggerUserRejectRtp)
+                    .switchIfEmpty(
+                        Mono.defer(() -> this.rtpStatusUpdater.triggerRejectRtp(rtpToUpdate)));
             }
             case ERROR -> {
                 log.debug("Triggering ERROR transition for RTP {}", rtpToUpdate.resourceID().getId());
