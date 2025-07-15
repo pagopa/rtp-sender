@@ -42,6 +42,8 @@ public record Rtp(String noticeNumber, BigDecimal amount, String description, Lo
         .events(List.of(
             Event.builder()
                 .timestamp(Instant.now())
+                .eventDispatcher(events.getFirst().eventDispatcher())
+                .foreignStatus(events.getFirst().foreignStatus())
                 .triggerEvent(RtpEvent.CREATE_RTP)
                 .build()
         ))

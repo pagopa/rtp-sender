@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.business.OperationProcessor;
 import it.gov.pagopa.rtp.sender.domain.gdp.business.OperationProcessorFactory;
@@ -32,6 +33,7 @@ import reactor.core.publisher.Mono;
 public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rtp>> {
 
   private final OperationProcessorFactory operationProcessorFactory;
+  private final GdpEventHubProperties gdpEventHubProperties;
 
 
   /**
@@ -40,8 +42,10 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
    * @param operationProcessorFactory the factory used to resolve operation-specific processors
    */
   public GdpMessageProcessor(
-      @NonNull final OperationProcessorFactory operationProcessorFactory) {
+          @NonNull final OperationProcessorFactory operationProcessorFactory,
+          @NonNull final GdpEventHubProperties gdpEventHubProperties) {
     this.operationProcessorFactory = Objects.requireNonNull(operationProcessorFactory);
+    this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
   }
 
 
@@ -61,10 +65,15 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
   public Mono<Rtp> processMessage(@NonNull final GdpMessage message) {
     Objects.requireNonNull(message, "GdpMessage cannot be null");
 
-    return Mono.just(message)
+    return Mono.fromSupplier(() -> message)
         .doOnNext(payload -> log.info("Operation: {}", payload.operation()))
         .flatMap(payload -> this.operationProcessorFactory.getProcessor(payload)
-            .flatMap(operationProcessor -> operationProcessor.processOperation(payload)));
+            .flatMap(operationProcessor -> operationProcessor.processOperation(payload))
+        )
+        .contextWrite(ctx -> ctx
+                .put("foreignStatus", message.status())
+                .put("eventDispatcher", this.gdpEventHubProperties.eventDispatcher())
+        );
   }
 }
 
