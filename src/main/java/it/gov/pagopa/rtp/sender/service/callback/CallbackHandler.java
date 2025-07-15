@@ -56,19 +56,21 @@ public class CallbackHandler {
      */
     public Mono<JsonNode> handle(@NonNull final JsonNode requestBody) {
         final var transactionStatus = callbackFieldsExtractor.extractTransactionStatusSend(requestBody);
-        final var resourceId = callbackFieldsExtractor.extractResourceIDSend(requestBody);
 
-        return resourceId
-                .flatMap(rtpRepository::findById)
-                .switchIfEmpty(Mono.error(new IllegalStateException("RTP not found for resourceId")))
-                .doOnNext(rtp -> log.info("Retrieved RTP with id {}", rtp.resourceID().getId()))
-                .flatMap(rtpToUpdate -> transactionStatus
-                        .doOnNext(status -> log.debug("Processing transaction status: {}", status))
-                        .concatMap(status -> triggerStatus(status, rtpToUpdate))
-                        .then(Mono.just(rtpToUpdate))
-                )
-                .doOnSuccess(r -> log.info("Completed handling callback response"))
-                .thenReturn(requestBody);
+        return this.callbackFieldsExtractor.extractResourceIDSend(requestBody)
+            .doFirst(() -> log.info("Extracting resource ID from callback request body"))
+            .doOnNext(resourceID -> log.info("Attempting to retrieve RTP with resourceId: {}", resourceID.getId()))
+            .flatMap(resourceID -> this.rtpRepository.findById(resourceID)
+                .switchIfEmpty(
+                    Mono.error(new IllegalStateException("RTP not found for resourceId " + resourceID.getId()))))
+            .doOnNext(rtp -> log.info("Retrieved RTP with id {}", rtp.resourceID().getId()))
+            .flatMap(rtpToUpdate -> transactionStatus
+                .doOnNext(status -> log.info("Processing transaction status: {}", status))
+                .concatMap(status -> triggerStatus(status, rtpToUpdate))
+                .then(Mono.just(rtpToUpdate))
+            )
+            .doOnSuccess(r -> log.info("Completed handling callback response"))
+            .thenReturn(requestBody);
     }
 
     /**
