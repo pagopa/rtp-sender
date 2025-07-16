@@ -89,7 +89,7 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
         .onErrorMap(WebClientResponseException.class, this::mapActivationResponseToException);
 
     final var rtpToSend = activationData.map(act -> act.getPayer().getRtpSpId())
-        .map(rtp::toRtpWithActivationInfo)
+        .map(rtp::withServiceProviderDebtor)
         .doOnSuccess(
             rtpWithActivationInfo -> log.info("Saving Rtp to be sent, with resourceId: {} and serviceProviderDebtor: {}", rtpWithActivationInfo.resourceID(), rtpWithActivationInfo.serviceProviderDebtor()))
         .flatMap(rtpRepository::save)

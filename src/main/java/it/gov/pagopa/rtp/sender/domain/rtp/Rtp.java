@@ -1,7 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.rtp;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,35 +17,4 @@ public record Rtp(String noticeNumber, BigDecimal amount, String description, Lo
                   String iban,
                   String payTrxRef, String flgConf, RtpStatus status,
                   String serviceProviderCreditor, List<Event> events,
-                  Long operationId, String eventDispatcher) {
-
-  public Rtp toRtpWithActivationInfo(String rtpSpId) {
-    return Rtp.builder()
-        .serviceProviderDebtor(rtpSpId)
-        .iban(this.iban())
-        .payTrxRef(this.payTrxRef())
-        .flgConf(this.flgConf())
-        .payerName(this.payerName())
-        .payerId(this.payerId())
-        .payeeName(this.payeeName())
-        .payeeId(this.payeeId())
-        .noticeNumber(this.noticeNumber())
-        .amount(this.amount())
-        .description(this.description())
-        .expiryDate(this.expiryDate())
-        .resourceID(this.resourceID())
-        .subject(this.subject())
-        .serviceProviderCreditor(this.serviceProviderCreditor())
-        .savingDateTime(this.savingDateTime())
-        .status(RtpStatus.CREATED)
-        .events(List.of(
-            Event.builder()
-                .timestamp(Instant.now())
-                .triggerEvent(RtpEvent.CREATE_RTP)
-                .build()
-        ))
-        .eventDispatcher(this.eventDispatcher())
-        .operationId(this.operationId())
-        .build();
-  }
-}
+                  Long operationId, String eventDispatcher) {}
