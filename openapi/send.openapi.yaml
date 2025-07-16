@@ -21,6 +21,7 @@ paths:
         - oAuth2: [ admin_rtp_send, read_rtp_send ]
       parameters:
         - $ref: '#/components/parameters/NoticeNumber'
+        - $ref: '#/components/parameters/RequestId'
         - $ref: '#/components/parameters/Version'
       responses:
         "200":
