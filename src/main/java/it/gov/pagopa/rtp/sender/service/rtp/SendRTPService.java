@@ -14,5 +14,7 @@ public interface SendRTPService {
 
     Mono<Rtp> findRtp(UUID rtpId);
 
+    Mono<Rtp> findRtpByNoticeNumber(String noticeNumber);
+
     Mono<Rtp> findRtpByCompositeKey(Long operationId, String eventDispatcher);
 }

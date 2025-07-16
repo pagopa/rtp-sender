@@ -29,6 +29,7 @@ import it.gov.pagopa.rtp.sender.utils.LoggingUtils;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -150,6 +151,27 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
             .doOnNext(rtp -> log.info("RTP retrieved with id: {}", rtpId))
             .switchIfEmpty(Mono.error(new RtpNotFoundException(rtpId)));
   }
+
+
+  @Override
+  @NonNull
+  public Mono<Rtp> findRtpByNoticeNumber(@NonNull final String noticeNumber) {
+    return Mono.just(noticeNumber)
+        .doFirst(() -> MDC.put("notice_number", noticeNumber))
+
+        .doFirst(() -> log.info("Attempting to find RTP by notice number"))
+        .flatMap(this.rtpRepository::findByNoticeNumber)
+        .doOnNext(rtp -> MDC.put("resource_id", rtp.resourceID().getId().toString()))
+
+        .switchIfEmpty(Mono.error(new RtpNotFoundException(
+            String.format("RTP not found for notice number: %s", noticeNumber))))
+
+        .doOnSuccess(rtp -> log.info("Successfully found RTP by notice number"))
+        .doOnError(error -> log.error("Error finding RTP by notice number: {}", error.getMessage(), error))
+
+        .doFinally(signal -> MDC.clear());
+  }
+
 
   @NonNull
   @Override
