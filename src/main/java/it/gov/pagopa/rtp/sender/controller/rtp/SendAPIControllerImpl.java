@@ -13,6 +13,7 @@ import it.gov.pagopa.rtp.sender.utils.TokenInfo;
 import java.net.URI;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -102,7 +103,31 @@ public class SendAPIControllerImpl implements RtpsApi {
   @PreAuthorize("hasRole('read_rtp_send')")
   public Mono<ResponseEntity<Flux<RtpDto>>> findRtpByNoticeNumber(String noticeNumber, UUID requestId,
       String version, ServerWebExchange exchange) {
-    return Mono.error(new UnsupportedOperationException());
+
+    return Mono.just(noticeNumber)
+        .doFirst(() -> {
+          MDC.put("notice_number", noticeNumber);
+          MDC.put("requestId", requestId.toString());
+        })
+
+        .doFirst(() -> log.info("Received request to find RTP by notice number"))
+        .flatMap(sendRTPService::findRtpByNoticeNumber)
+        .doOnNext(rtp -> log.info("RTP retrieved by notice number"))
+
+        .doOnNext(rtp -> log.debug("Mapping RTP to DTO" ))
+        .map(rtpDtoMapper::toRtpDto)
+        .doOnNext(dto -> log.debug("Mapped RTP to DTO"))
+
+        .map(ResponseEntity::ok)
+        .onErrorResume(RtpNotFoundException.class, ex -> {
+          log.warn("RTP by notice number not found: {}", ex.getMessage());
+          return Mono.just(ResponseEntity.notFound().build());
+        })
+
+        .doOnSuccess(response -> log.info("Successfully retrieved RTP by notice number"))
+        .doOnError(ex -> log.error("Error retrieving RTP by notice number {}", ex.getMessage()))
+
+        .doFinally(signal -> MDC.clear());
   }
 
 }
