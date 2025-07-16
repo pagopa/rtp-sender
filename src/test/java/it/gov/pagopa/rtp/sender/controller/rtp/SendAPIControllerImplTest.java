@@ -11,6 +11,7 @@ import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import it.gov.pagopa.rtp.sender.configuration.SecurityConfig;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
 import it.gov.pagopa.rtp.sender.domain.errors.*;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
@@ -508,7 +509,14 @@ class SendAPIControllerImplTest {
     LocalDateTime localDateTime = LocalDateTime.of(2025, 1, 1, 1, 0, 0);
     Instant dateInstant = localDateTime.toInstant(ZoneOffset.UTC);
     LocalDate expiry = LocalDate.of(2025, 1, 1);
-    Event event = new Event(dateInstant, RtpStatus.CREATED, RtpEvent.SEND_RTP);
+
+    Event event = Event.builder()
+            .timestamp(dateInstant)
+            .eventDispatcher("GdpEvent")
+            .foreignStatus(GdpMessage.Status.VALID)
+            .precStatus(RtpStatus.CREATED)
+            .triggerEvent(RtpEvent.SEND_RTP)
+            .build();
 
     return Rtp.builder()
             .noticeNumber("123456789")
