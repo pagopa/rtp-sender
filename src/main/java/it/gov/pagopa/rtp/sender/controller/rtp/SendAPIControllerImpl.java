@@ -99,8 +99,8 @@ public class SendAPIControllerImpl implements RtpsApi {
 
   @Override
   @PreAuthorize("hasRole('read_rtp_send')")
-  public Mono<ResponseEntity<RtpDto>> findRtpByNoticeNumber(String noticeNumber, String version,
-      ServerWebExchange exchange) {
+  public Mono<ResponseEntity<RtpDto>> findRtpByNoticeNumber(String noticeNumber, UUID requestId,
+      String version, ServerWebExchange exchange) {
     return Mono.error(new UnsupportedOperationException());
   }
 
