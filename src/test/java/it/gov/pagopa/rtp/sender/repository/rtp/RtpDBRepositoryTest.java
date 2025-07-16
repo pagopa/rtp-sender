@@ -2,14 +2,20 @@ package it.gov.pagopa.rtp.sender.repository.rtp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import it.gov.pagopa.rtp.sender.domain.rtp.Event;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -260,4 +266,128 @@ class RtpDBRepositoryTest {
               .verify();
     }
 
+  @Test
+  void givenExistingRtpByNoticeNumber_whenFindByNoticeNumber_thenReturnsMappedRtp() {
+    final var noticeNumber = "849244626700453217";
+    final var rtpId = UUID.randomUUID();
+    final var resourceID = new ResourceID(rtpId);
+
+    final var rtpEntity = RtpEntity.builder()
+        .resourceID(rtpId)
+        .noticeNumber(noticeNumber)
+        .amount(BigDecimal.valueOf(100.50))
+        .description("Test Description")
+        .expiryDate(Instant.now())
+        .payerId("payer123")
+        .payerName("Payer Name")
+        .payeeId("payee123")
+        .payeeName("Payee Name")
+        .subject("subject")
+        .savingDateTime(Instant.now())
+        .serviceProviderDebtor("serviceProviderDebtor")
+        .iban("iban123")
+        .payTrxRef("ABC/124")
+        .flgConf("Y")
+        .status(RtpStatus.CREATED)
+        .serviceProviderCreditor("PagoPA")
+        .events(List.of(
+            Event.builder()
+                .timestamp(Instant.now())
+                .triggerEvent(RtpEvent.CREATE_RTP)
+                .build()
+        ))
+        .eventDispatcher("eventDispatcher")
+        .operationId(1L)
+        .build();
+
+    final var expectedRtp = Rtp.builder()
+        .resourceID(resourceID)
+        .noticeNumber(rtpEntity.getNoticeNumber())
+        .amount(rtpEntity.getAmount())
+        .description(rtpEntity.getDescription())
+        .expiryDate(LocalDate.ofInstant(rtpEntity.getExpiryDate(), ZoneOffset.UTC))
+        .payerId(rtpEntity.getPayerId())
+        .payerName(rtpEntity.getPayerName())
+        .payeeId(rtpEntity.getPayeeId())
+        .payeeName(rtpEntity.getPayeeName())
+        .subject(rtpEntity.getSubject())
+        .savingDateTime(LocalDateTime.ofInstant(rtpEntity.getSavingDateTime(), ZoneOffset.UTC))
+        .serviceProviderDebtor(rtpEntity.getServiceProviderDebtor())
+        .iban(rtpEntity.getIban())
+        .payTrxRef(rtpEntity.getPayTrxRef())
+        .flgConf(rtpEntity.getFlgConf())
+        .status(rtpEntity.getStatus())
+        .serviceProviderCreditor(rtpEntity.getServiceProviderCreditor())
+        .events(rtpEntity.getEvents())
+        .eventDispatcher(rtpEntity.getEventDispatcher())
+        .operationId(rtpEntity.getOperationId())
+        .build();
+
+    when(rtpDB.findByNoticeNumber(noticeNumber))
+        .thenReturn(Mono.just(rtpEntity));
+
+    StepVerifier.create(rtpDbRepository.findByNoticeNumber(noticeNumber))
+        .assertNext(actualRtp -> {
+          assertEquals(expectedRtp.noticeNumber(), actualRtp.noticeNumber());
+          assertEquals(expectedRtp.amount(), actualRtp.amount());
+          assertEquals(expectedRtp.description(), actualRtp.description());
+          assertEquals(expectedRtp.expiryDate(), actualRtp.expiryDate());
+          assertEquals(expectedRtp.payerId(), actualRtp.payerId());
+          assertEquals(expectedRtp.payerName(), actualRtp.payerName());
+          assertEquals(expectedRtp.payeeId(), actualRtp.payeeId());
+          assertEquals(expectedRtp.payeeName(), actualRtp.payeeName());
+          assertEquals(expectedRtp.subject(), actualRtp.subject());
+          assertEquals(expectedRtp.savingDateTime(), actualRtp.savingDateTime());
+          assertEquals(expectedRtp.serviceProviderDebtor(), actualRtp.serviceProviderDebtor());
+          assertEquals(expectedRtp.iban(), actualRtp.iban());
+          assertEquals(expectedRtp.payTrxRef(), actualRtp.payTrxRef());
+          assertEquals(expectedRtp.flgConf(), actualRtp.flgConf());
+          assertEquals(expectedRtp.status(), actualRtp.status());
+          assertEquals(expectedRtp.serviceProviderCreditor(), actualRtp.serviceProviderCreditor());
+          assertEquals(resourceID.getId(), actualRtp.resourceID().getId());
+          assertEquals(expectedRtp.events(), actualRtp.events());
+          assertEquals(expectedRtp.eventDispatcher(), actualRtp.eventDispatcher());
+          assertEquals(expectedRtp.operationId(), actualRtp.operationId());
+        })
+        .verifyComplete();
+
+    verify(rtpDB).findByNoticeNumber(noticeNumber);
+  }
+
+  @Test
+  void givenNonExistingRtpByNoticeNumber_whenFindByNoticeNumber_thenReturnsEmptyMono() {
+    final var noticeNumber = "NON_EXISTENT";
+
+    when(rtpDB.findByNoticeNumber(noticeNumber))
+        .thenReturn(Mono.empty());
+
+    StepVerifier.create(rtpDbRepository.findByNoticeNumber(noticeNumber))
+        .verifyComplete();
+
+    verify(rtpDB).findByNoticeNumber(noticeNumber);
+  }
+
+  @Test
+  void givenRepositoryThrows_whenFindByNoticeNumber_thenPropagatesError() {
+    final var noticeNumber = "849244626700453217";
+    final var ex = new RuntimeException("Database error");
+
+    when(rtpDB.findByNoticeNumber(noticeNumber))
+        .thenReturn(Mono.error(ex));
+
+    StepVerifier.create(rtpDbRepository.findByNoticeNumber(noticeNumber))
+        .expectErrorMatches(e -> e instanceof RuntimeException &&
+            e.getMessage().equals("Database error"))
+        .verify();
+
+    verify(rtpDB).findByNoticeNumber(noticeNumber);
+  }
+
+  @Test
+  void givenNullNoticeNumber_whenFindByNoticeNumber_thenPropagatesNullPointerException() {
+
+    assertThrows(NullPointerException.class, () -> rtpDbRepository.findByNoticeNumber(null));
+
+    verifyNoInteractions(rtpDB);
+  }
 }
