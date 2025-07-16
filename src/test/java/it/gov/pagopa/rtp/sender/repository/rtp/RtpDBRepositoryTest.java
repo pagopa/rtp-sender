@@ -133,6 +133,14 @@ class RtpDBRepositoryTest {
         .flgConf("Y")
         .status(RtpStatus.CREATED)
         .serviceProviderCreditor("PagoPA")
+        .events(List.of(
+            Event.builder()
+                .timestamp(Instant.now())
+                .triggerEvent(RtpEvent.CREATE_RTP)
+                .build()
+        ))
+        .eventDispatcher("eventDispatcher")
+        .operationId(1L)
         .build();
 
     final var expectedRtp = Rtp.builder()
@@ -153,6 +161,9 @@ class RtpDBRepositoryTest {
         .flgConf(rtpEntity.getFlgConf())
         .status(rtpEntity.getStatus())
         .serviceProviderCreditor(rtpEntity.getServiceProviderCreditor())
+        .events(rtpEntity.getEvents())
+        .eventDispatcher(rtpEntity.getEventDispatcher())
+        .operationId(rtpEntity.getOperationId())
         .build();
 
     when(rtpDB.findById(rtpId)).thenReturn(Mono.just(rtpEntity));
@@ -176,6 +187,9 @@ class RtpDBRepositoryTest {
           assertEquals(expectedRtp.status(), actualRtp.status());
           assertEquals(expectedRtp.serviceProviderCreditor(), actualRtp.serviceProviderCreditor());
           assertEquals(resourceID.getId(), actualRtp.resourceID().getId());
+          assertEquals(expectedRtp.events(), actualRtp.events());
+          assertEquals(expectedRtp.eventDispatcher(), actualRtp.eventDispatcher());
+          assertEquals(expectedRtp.operationId(), actualRtp.operationId());
         })
         .verifyComplete();
   }
