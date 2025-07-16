@@ -52,7 +52,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);
@@ -110,7 +110,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var exception = new RuntimeException("OAuth2 error");
@@ -142,7 +142,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);
@@ -178,7 +178,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);
@@ -213,7 +213,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);
@@ -275,7 +275,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var exception = new RuntimeException("OAuth2 error");
@@ -309,7 +309,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);
@@ -346,7 +346,7 @@ class SendRtpProcessorImplTest {
     final var oauth2Data = mock(OAuth2.class);
     final var tspData = new TechnicalServiceProvider("tspId", "tspName", "tspUrl", "tspSecret",
         oauth2Data, false);
-    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "pspTaxCode", tspData);
+    final var serviceProviderData = new ServiceProviderFullData(spId, "spName", "psp_tax_code", tspData);
     final var inputEpcRequest = new EpcRequest(rtpToSend, null, null, null);
     final var epcRequestWithRegistryData = new EpcRequest(rtpToSend, serviceProviderData, null, null);
     final var epcRequestWithToken = new EpcRequest(rtpToSend, serviceProviderData, token, null);

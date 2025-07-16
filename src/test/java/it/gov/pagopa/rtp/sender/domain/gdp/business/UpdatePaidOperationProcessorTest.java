@@ -57,7 +57,7 @@ class UpdatePaidOperationProcessorTest {
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
-        .pspTaxCode(inputPspTaxCode)
+        .psp_tax_code(inputPspTaxCode)
         .status(Status.PAID)
         .build();
 
@@ -99,7 +99,7 @@ class UpdatePaidOperationProcessorTest {
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
-        .pspTaxCode(inputPspTaxCode)
+        .psp_tax_code(inputPspTaxCode)
         .status(Status.PAID)
         .build();
 
@@ -138,7 +138,7 @@ class UpdatePaidOperationProcessorTest {
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
-        .pspTaxCode(inputPspTaxCode)
+        .psp_tax_code(inputPspTaxCode)
         .status(Status.PAID)
         .build();
 
@@ -180,7 +180,7 @@ class UpdatePaidOperationProcessorTest {
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
-        .pspTaxCode(inputPspTaxCode)
+        .psp_tax_code(inputPspTaxCode)
         .status(Status.PAID)
         .build();
 
@@ -225,7 +225,7 @@ class UpdatePaidOperationProcessorTest {
   void givenInvalidRtpStatus_whenProcessOperation_thenThrowsIllegalArgumentException(RtpStatus invalidRtpStatus) {
     final var message = GdpMessage.builder()
         .id(1L)
-        .pspTaxCode("psp-code")
+        .psp_tax_code("psp-code")
         .status(Status.PAID)
         .build();
 
@@ -263,7 +263,7 @@ class UpdatePaidOperationProcessorTest {
   void givenMissingServiceProvider_whenProcessOperation_thenThrowsServiceProviderNotFoundException() {
     final var message = GdpMessage.builder()
         .id(1L)
-        .pspTaxCode("unknown-code")
+        .psp_tax_code("unknown-code")
         .status(Status.PAID)
         .build();
 
@@ -291,7 +291,7 @@ class UpdatePaidOperationProcessorTest {
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
-        .pspTaxCode("psp-code")
+        .psp_tax_code("psp-code")
         .status(Status.PAID)
         .build();
 
@@ -310,7 +310,7 @@ class UpdatePaidOperationProcessorTest {
   void givenNonPaidStatus_whenProcessOperation_thenThrowsIllegalArgumentException(Status nonPaidStatus) {
     final var message = GdpMessage.builder()
         .id(1L)
-        .pspTaxCode("psp-code")
+        .psp_tax_code("psp-code")
         .status(nonPaidStatus)
         .build();
 
