@@ -95,10 +95,6 @@ variable "rtp_sender_min_replicas" {
   default = 1
 }
 
-variable "rtp_sender_base_url" {
-  type = string
-}
-
 variable "rtp_sender_cpu" {
   type    = number
   default = 1

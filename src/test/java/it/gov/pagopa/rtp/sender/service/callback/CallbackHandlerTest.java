@@ -77,6 +77,28 @@ class CallbackHandlerTest {
     }
 
     @Test
+    void givenValidRJCTStatusAndRtpAccepted_whenHandle_thenUserRejectTriggeredAndSaved() {
+        final var request = mock(JsonNode.class);
+        final var acceptedRtp = this.rtp.withStatus(RtpStatus.ACCEPTED);
+        final var userRejectedRtp = this.rtp.withStatus(RtpStatus.USER_REJECTED);
+
+        when(callbackFieldsExtractor.extractTransactionStatusSend(request))
+            .thenReturn(Flux.just(TransactionStatus.RJCT));
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+            .thenReturn(Mono.just(resourceID));
+        when(rtpRepository.findById(resourceID))
+            .thenReturn(Mono.just(acceptedRtp));
+        when(rtpStatusUpdater.triggerUserRejectRtp(acceptedRtp))
+            .thenReturn(Mono.just(userRejectedRtp));
+
+        StepVerifier.create(callbackHandler.handle(request))
+            .expectNext(request)
+            .verifyComplete();
+
+        verify(rtpStatusUpdater).triggerUserRejectRtp(acceptedRtp);
+    }
+
+    @Test
     void givenValidERRORStatus_whenHandle_thenThrowsIllegalStateException() {
         JsonNode request = mock(JsonNode.class);
 
