@@ -1,7 +1,9 @@
 package it.gov.pagopa.rtp.sender.repository.rtp;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -49,5 +51,30 @@ public class RtpDBRepository implements RtpRepository {
             .map(rtpMapper::toDomain)
             .doOnNext(rtp -> log.debug("Mapped RTP entity to domain object: {}", rtp))
             .doOnError(error -> log.error("Error while retrieving RTP: {}", error.getMessage(), error));
+  }
+
+
+  @Override
+  @NonNull
+  public Mono<Rtp> findByNoticeNumber(@NonNull final String noticeNumber) {
+    return Mono.just(noticeNumber)
+        .doFirst(() -> MDC.put("notice_number", noticeNumber))
+
+        .doFirst(() -> log.debug("Retrieving RTP by Notice Number"))
+        .flatMap(rtpDB::findByNoticeNumber)
+        .doOnNext(entity -> MDC.put("resource_id", entity.getResourceID().toString()))
+        .doOnNext(entity -> log.debug("Found RTP by Notice Number"))
+
+        .doOnNext(rtp -> log.debug("Mapping RTP entity to domain object"))
+        .map(rtpMapper::toDomain)
+        .doOnNext(rtp -> log.debug("Mapped RTP entity to domain object"))
+
+        .doOnSuccess(entity -> Optional.ofNullable(entity)
+            .ifPresentOrElse(
+                rtp -> log.debug("Successfully retrieved RTP by Notice Number"),
+                () -> log.warn("RTP not found by Notice Number")))
+        .doOnError(error -> log.error("Error while retrieving RTP: {}", error.getMessage(), error))
+
+        .doFinally(signal -> MDC.clear());
   }
 }

@@ -7,5 +7,6 @@ public interface RtpRepository {
   Mono<Rtp> save(Rtp rtp);
   Mono<Rtp> findById(ResourceID id);
   Mono<Rtp> findByOperationIdAndEventDispatcher(Long operationId, String eventDispatcher);
+  Mono<Rtp> findByNoticeNumber(String noticeNumber);
 
 }
