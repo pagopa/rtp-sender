@@ -4,15 +4,15 @@
 prefix         = "cstar"
 env_short      = "p"
 env            = "prod"
-location       = "westeurope" # this will be "italynorth"
-location_short = "weu"        # this will be "itn"
-domain         = "rtp"
+location       = "italynorth"
+location_short = "itn" 
+domain         = "srtp"
 
 tags = {
   CreatedBy   = "Terraform"
   Environment = "prod"
   Owner       = "cstar"
-  Source      = "https://github.com/pagopa/rtp_sender/tree/main/src/main/terraform"
+  Source      = "https://github.com/pagopa/rtp-sender/tree/main/src/main/terraform"
   CostCenter  = "TS310 - PAGAMENTI & SERVIZI"
   Domain      = "rtp"
 }
@@ -20,11 +20,11 @@ tags = {
 # ------------------------------------------------------------------------------
 # External resources.
 # ------------------------------------------------------------------------------
-cae_name                       = "cstar-p-mcshared-cae"
-cae_resource_group_name        = "cstar-p-mcshared-app-rg"
-id_name                        = "cstar-p-weu-rtp-sender-id"
-id_resource_group_name         = "cstar-p-weu-rtp-identity-rg"
-rtp_sender_file_share_storage_name = "cstar-p-weu-rtp-sender-fss"
+cae_name                       = "cstar-p-itn-srtp-cae"
+cae_resource_group_name        = "cstar-p-itn-srtp-compute-rg"
+id_name                        = "cstar-p-itn-srtp-sender-id"
+id_resource_group_name         = "cstar-p-itn-srtp-identity-rg"
+rtp_sender_file_share_storage_name = "cstar-p-itn-srtp-sender-fss"
 
 # ------------------------------------------------------------------------------
 # Names of key vault secrets.
@@ -40,10 +40,9 @@ rtp_sender_cpu                               = 0.25
 rtp_sender_memory                            = "0.5Gi"
 rtp_sender_max_replicas                      = 5
 rtp_sender_min_replicas                      = 1
-rtp_sender_base_url                          = "https://mil-d-apim.azure-api.net/rtp_sender"
 
 rtp_environment_secrets = {
-  COSMOS_ACCOUNT_RTP_CONNECTION_STRING  : "cosmosdb-account-rtp-connection-string"
+  COSMOS_ACCOUNT_RTP_CONNECTION_STRING  : "cosmosdb-account-rtp-primary-connection-string"
   APPLICATIONINSIGHTS_CONNECTION_STRING : "appinsights-connection-string"
   CLIENT_CERTIFICATE                    : "client-certificate"
   CLIENT_SECRET_CBI                     : "client-secret-cbi"
@@ -51,6 +50,7 @@ rtp_environment_secrets = {
   JKS_TRUST_STORE_PASSWORD              : "jks-trust-store-password"
   GDP_EVENTHUB_CONNECTION_STRING        : "gdp-eventhub-connection-string"
 }
+
 
 rtp_environment_configs = {
   DB_NAME                                 : "rtp"
@@ -62,7 +62,7 @@ rtp_environment_configs = {
   EPC_SEND_RETRY_BACKOFF_MIN_DURATION_MS  : 1000
   EPC_SEND_RETRY_BACKOFF_JITTER           : 0.75
   EPC_SEND_TIMEOUT_MS                     : 6000
-  AZURE_STORAGE_ACCOUNT_NAME              : "cstarpweurtpblobstorage"
+  AZURE_STORAGE_ACCOUNT_NAME              : "cstarpitnsrtpsa"
   AZURE_STORAGE_CONTAINER_NAME            : "rtp-debtor-service-provider"
   AZURE_BLOB_NAME                         : "serviceregistry.json"
   CALLBACK_BASE_URL                       : "https://api-rtp-cb.cstar.pagopa.it/rtp/cb"
@@ -71,3 +71,4 @@ rtp_environment_configs = {
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
   REGISTRY_DATA_CACHE_TTL                 : "PD1"
 }
+

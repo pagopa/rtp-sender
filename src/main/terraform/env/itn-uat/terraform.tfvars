@@ -4,9 +4,9 @@
 prefix         = "cstar"
 env_short      = "u"
 env            = "uat"
-location       = "westeurope" # this will be "italynorth"
-location_short = "weu"        # this will be "itn"
-domain         = "rtp"
+location       = "italynorth"
+location_short = "itn" 
+domain         = "srtp"
 
 tags = {
   CreatedBy   = "Terraform"
@@ -20,11 +20,11 @@ tags = {
 # ------------------------------------------------------------------------------
 # External resources.
 # ------------------------------------------------------------------------------
-cae_name                       = "cstar-u-mcshared-cae"
-cae_resource_group_name        = "cstar-u-mcshared-app-rg"
-id_name                        = "cstar-u-weu-rtp-sender-id"
-id_resource_group_name         = "cstar-u-weu-rtp-identity-rg"
-rtp_sender_file_share_storage_name = "cstar-u-weu-rtp-sender-fss"
+cae_name                       = "cstar-u-itn-srtp-cae"
+cae_resource_group_name        = "cstar-u-itn-srtp-compute-rg"
+id_name                        = "cstar-u-itn-srtp-sender-id"
+id_resource_group_name         = "cstar-u-itn-srtp-identity-rg"
+rtp_sender_file_share_storage_name = "cstar-u-itn-srtp-sender-fss"
 
 # ------------------------------------------------------------------------------
 # Names of key vault secrets.
@@ -40,11 +40,9 @@ rtp_sender_cpu                               = 0.25
 rtp_sender_memory                            = "0.5Gi"
 rtp_sender_max_replicas                      = 5
 rtp_sender_min_replicas                      = 1
-rtp_sender_base_url                          = "https://mil-d-apim.azure-api.net/rtp-sender"
-
 
 rtp_environment_secrets = {
-  COSMOS_ACCOUNT_RTP_CONNECTION_STRING  : "cosmosdb-account-rtp-connection-string"
+  COSMOS_ACCOUNT_RTP_CONNECTION_STRING  : "cosmosdb-account-rtp-primary-connection-string"
   APPLICATIONINSIGHTS_CONNECTION_STRING : "appinsights-connection-string"
   CLIENT_CERTIFICATE                    : "client-certificate"
   CLIENT_SECRET_CBI                     : "client-secret-cbi"
@@ -64,7 +62,7 @@ rtp_environment_configs = {
   EPC_SEND_RETRY_BACKOFF_MIN_DURATION_MS  : 1000
   EPC_SEND_RETRY_BACKOFF_JITTER           : 0.75
   EPC_SEND_TIMEOUT_MS                     : 6000
-  AZURE_STORAGE_ACCOUNT_NAME              : "cstaruweurtpblobstorage"
+  AZURE_STORAGE_ACCOUNT_NAME              : "cstaruitnsrtpsa"
   AZURE_STORAGE_CONTAINER_NAME            : "rtp-debtor-service-provider"
   AZURE_BLOB_NAME                         : "serviceregistry.json"
   CALLBACK_BASE_URL                       : "https://api-rtp-cb.uat.cstar.pagopa.it/rtp/cb"
@@ -73,3 +71,4 @@ rtp_environment_configs = {
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
   REGISTRY_DATA_CACHE_TTL                 : "PT5M"
 }
+
