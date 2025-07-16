@@ -81,10 +81,13 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
     final var activationData = activationApi.findActivationByPayerId(UUID.randomUUID(),
             rtp.payerId(),
             serviceProviderConfig.activation().apiVersion())
-        .doFirst(() -> log.info("Finding activation data for payerId: {}", rtp.payerId()))
+        .doFirst(() -> log.info("Finding activation data for payeeId: {} and serviceProvider: {}",
+            rtp.payeeId(), rtp.serviceProviderDebtor()))
         .doOnSuccess(act -> log.info("Activation data found for the requested payerId"))
         .doOnError(
-            error -> log.error("Error finding activation data for payerId: {}", rtp.payerId(),
+            error -> log.error("Error finding activation data for payeeId: {} and serviceProvider: {}",
+                rtp.payeeId(),
+                rtp.serviceProviderDebtor(),
                 error))
         .onErrorMap(WebClientResponseException.class, this::mapActivationResponseToException);
 
