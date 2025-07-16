@@ -3,6 +3,7 @@ package it.gov.pagopa.rtp.sender.service.callback;
 import com.fasterxml.jackson.databind.JsonNode;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.domain.rtp.TransactionStatus;
 import it.gov.pagopa.rtp.sender.service.rtp.RtpStatusUpdater;
 import lombok.NonNull;
@@ -56,19 +57,21 @@ public class CallbackHandler {
      */
     public Mono<JsonNode> handle(@NonNull final JsonNode requestBody) {
         final var transactionStatus = callbackFieldsExtractor.extractTransactionStatusSend(requestBody);
-        final var resourceId = callbackFieldsExtractor.extractResourceIDSend(requestBody);
 
-        return resourceId
-                .flatMap(rtpRepository::findById)
-                .switchIfEmpty(Mono.error(new IllegalStateException("RTP not found for resourceId")))
-                .doOnNext(rtp -> log.info("Retrieved RTP with id {}", rtp.resourceID().getId()))
-                .flatMap(rtpToUpdate -> transactionStatus
-                        .doOnNext(status -> log.debug("Processing transaction status: {}", status))
-                        .concatMap(status -> triggerStatus(status, rtpToUpdate))
-                        .then(Mono.just(rtpToUpdate))
-                )
-                .doOnSuccess(r -> log.info("Completed handling callback response"))
-                .thenReturn(requestBody);
+        return this.callbackFieldsExtractor.extractResourceIDSend(requestBody)
+            .doFirst(() -> log.info("Extracting resource ID from callback request body"))
+            .doOnNext(resourceID -> log.info("Attempting to retrieve RTP with resourceId: {}", resourceID.getId()))
+            .flatMap(resourceID -> this.rtpRepository.findById(resourceID)
+                .switchIfEmpty(
+                    Mono.error(new IllegalStateException("RTP not found for resourceId " + resourceID.getId()))))
+            .doOnNext(rtp -> log.info("Retrieved RTP with id {}", rtp.resourceID().getId()))
+            .flatMap(rtpToUpdate -> transactionStatus
+                .doOnNext(status -> log.info("Processing transaction status: {}", status))
+                .concatMap(status -> triggerStatus(status, rtpToUpdate))
+                .then(Mono.just(rtpToUpdate))
+            )
+            .doOnSuccess(r -> log.info("Completed handling callback response"))
+            .thenReturn(requestBody);
     }
 
     /**
@@ -92,7 +95,11 @@ public class CallbackHandler {
             }
             case RJCT -> {
                 log.debug("Triggering REJECT transition for RTP {}", rtpToUpdate.resourceID().getId());
-                yield this.rtpStatusUpdater.triggerRejectRtp(rtpToUpdate);
+                yield Mono.just(rtpToUpdate)
+                    .filter(rtp -> RtpStatus.ACCEPTED.equals(rtp.status()))
+                    .flatMap(this.rtpStatusUpdater::triggerUserRejectRtp)
+                    .switchIfEmpty(
+                        Mono.defer(() -> this.rtpStatusUpdater.triggerRejectRtp(rtpToUpdate)));
             }
             case ERROR -> {
                 log.debug("Triggering ERROR transition for RTP {}", rtpToUpdate.resourceID().getId());
