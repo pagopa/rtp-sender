@@ -12,6 +12,47 @@ tags:
     description: API Group aims to notify a pagoPa notice through Request To Pay (RTP)
 paths:
   /rtps:
+    get:
+      operationId: findRtpByNoticeNumber
+      summary: Retrieve a RTP by the Notice Number associated to it
+      description: Returns RTP data associated with the given ID
+      tags: [ rtps ]
+      security:
+        - oAuth2: [ admin_rtp_send, read_rtp_send ]
+      parameters:
+        - $ref: '#/components/parameters/NoticeNumber'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/Version'
+      responses:
+        "200":
+          $ref: '#/components/responses/findRtp'
+        "400":
+          #description: Bad request.
+          $ref: '#/components/responses/Error'
+        "401":
+          #description: Wrong credentials.
+          $ref: '#/components/responses/Error'
+        "403":
+          #description: Forbidden.
+          $ref: '#/components/responses/Error'
+        "404":
+          #description: Not found.
+          $ref: '#/components/responses/Error'
+        "406":
+          #description: Not acceptable. Did you require application/json?
+          $ref: '#/components/responses/Error'
+        "429":
+          #description: Too many requests
+          $ref: '#/components/responses/Error'
+        "500":
+          #description: Server error.
+          $ref: '#/components/responses/Error'
+        "504":
+          #description: Timeout communicating with Debtor Service Provider.
+          $ref: '#/components/responses/Error'
+        default:
+          #description: Unexpected error.
+          $ref: '#/components/responses/Error'
     post:
       tags:
         - rtps
@@ -720,6 +761,14 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/RequestId'
+
+    NoticeNumber:
+      name: noticeNumber
+      in: query
+      description: Notice number associated to a RTP.
+      required: true
+      schema:
+        $ref: '#/components/schemas/NoticeNumber'
 
     RtpId:
       name: rtpId
