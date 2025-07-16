@@ -96,4 +96,12 @@ public class SendAPIControllerImpl implements RtpsApi {
             .doOnError(a -> log.error("Error retrieving RTP {}", a.getMessage()));
   }
 
+
+  @Override
+  @PreAuthorize("hasRole('read_rtp_send')")
+  public Mono<ResponseEntity<RtpDto>> findRtpByNoticeNumber(String noticeNumber, String version,
+      ServerWebExchange exchange) {
+    return Mono.error(new UnsupportedOperationException());
+  }
+
 }
