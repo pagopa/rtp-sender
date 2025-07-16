@@ -13,4 +13,5 @@ import java.util.UUID;
 public interface RtpDB extends ReactiveMongoRepository<RtpEntity, UUID> {
 
     Mono<RtpEntity> findByOperationIdAndEventDispatcher(Long operationId, String eventDispatcher);
+    Mono<RtpEntity> findByNoticeNumber(String noticeNumber);
 }
