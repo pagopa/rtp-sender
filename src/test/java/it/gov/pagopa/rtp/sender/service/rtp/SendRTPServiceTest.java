@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.service.rtp;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -505,6 +506,70 @@ class SendRTPServiceTest {
     StepVerifier.create(sendRTPService.updateRtpCancelPaid(rtp))
         .expectError(IllegalStateException.class)
         .verify();
+  }
+
+  @Test
+  void givenExistingRtp_whenFindRtpByNoticeNumber_thenReturnsRtp() {
+    final var noticeNumber = "1234567890";
+    final var resourceId = ResourceID.createNew();
+    final var expectedRtp = Rtp.builder()
+        .resourceID(resourceId)
+        .build();
+
+    when(rtpRepository.findByNoticeNumber(noticeNumber))
+        .thenReturn(Mono.just(expectedRtp));
+
+    final var result = sendRTPService.findRtpByNoticeNumber(noticeNumber);
+
+    StepVerifier.create(result)
+        .expectNext(expectedRtp)
+        .verifyComplete();
+
+    verify(rtpRepository)
+        .findByNoticeNumber(noticeNumber);
+  }
+
+  @Test
+  void givenMissingRtp_whenFindRtpByNoticeNumber_thenThrowsRtpNotFoundException() {
+    final var noticeNumber = "NON_EXISTENT";
+
+    when(rtpRepository.findByNoticeNumber(noticeNumber))
+        .thenReturn(Mono.empty());
+
+    final var result = sendRTPService.findRtpByNoticeNumber(noticeNumber);
+
+    StepVerifier.create(result)
+        .expectErrorSatisfies(error -> 
+          assertThat(error)
+              .isInstanceOf(RtpNotFoundException.class)
+              .hasMessageContaining("RTP not found for notice number: " + noticeNumber))
+        .verify();
+
+    verify(rtpRepository).findByNoticeNumber(noticeNumber);
+  }
+
+  @Test
+  void givenRepositoryError_whenFindRtpByNoticeNumber_thenPropagatesError() {
+    final var noticeNumber = "0000000000";
+    final var exception = new RuntimeException("Database failure");
+
+    when(rtpRepository.findByNoticeNumber(noticeNumber))
+        .thenReturn(Mono.error(exception));
+
+    final var result = sendRTPService.findRtpByNoticeNumber(noticeNumber);
+
+    StepVerifier.create(result)
+        .expectErrorMatches(error ->
+            error instanceof RuntimeException &&
+                error.getMessage().equals("Database failure"))
+        .verify();
+
+    verify(rtpRepository).findByNoticeNumber(noticeNumber);
+  }
+
+  @Test
+  void givenNullNoticeNumber_whenFindRtpByNoticeNumber_thenThrowsNullPointerException() {
+    assertThrows(NullPointerException.class, () -> sendRTPService.findRtpByNoticeNumber(null));
   }
 
 
