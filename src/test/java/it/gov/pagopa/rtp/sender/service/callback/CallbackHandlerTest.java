@@ -34,7 +34,7 @@ class CallbackHandlerTest {
     private final Rtp rtp = Rtp.builder().resourceID(resourceID).status(RtpStatus.CREATED).build();
 
     @Test
-    void givenValidTransactionStatus_whenHandle_thenAcceptTriggeredAndSaved() {
+    void givenValidACTCStatus_whenHandle_thenAcceptTriggeredAndSaved() {
         final var transactionStatus = TransactionStatus.ACTC;
         final var request = mock(JsonNode.class);
 
@@ -52,6 +52,27 @@ class CallbackHandlerTest {
                 .verifyComplete();
 
         verify(rtpStatusUpdater).triggerAcceptRtp(rtp);
+    }
+
+    @Test
+    void givenValidACCPStatus_whenHandle_thenUserAcceptTriggeredAndSaved() {
+        final var transactionStatus = TransactionStatus.ACCP;
+        final var request = mock(JsonNode.class);
+
+        when(callbackFieldsExtractor.extractTransactionStatusSend(request))
+                .thenReturn(Flux.just(transactionStatus));
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+                .thenReturn(Mono.just(resourceID));
+        when(rtpRepository.findById(resourceID))
+                .thenReturn(Mono.just(rtp));
+        when(rtpStatusUpdater.triggerUserAcceptRtp(rtp))
+                .thenReturn(Mono.just(rtp));
+
+        StepVerifier.create(callbackHandler.handle(request))
+                .expectNext(request)
+                .verifyComplete();
+
+        verify(rtpStatusUpdater).triggerUserAcceptRtp(rtp);
     }
 
     @Test
