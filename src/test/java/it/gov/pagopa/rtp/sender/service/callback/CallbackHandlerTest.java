@@ -35,6 +35,7 @@ class CallbackHandlerTest {
 
     @Test
     void givenValidACTCStatus_whenHandle_thenAcceptTriggeredAndSaved() {
+
         final var transactionStatus = TransactionStatus.ACTC;
         final var request = mock(JsonNode.class);
 
