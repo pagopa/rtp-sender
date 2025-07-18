@@ -18,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -99,7 +100,7 @@ public class SendAPIControllerImpl implements RtpsApi {
 
   @Override
   @PreAuthorize("hasRole('read_rtp_send')")
-  public Mono<ResponseEntity<RtpDto>> findRtpByNoticeNumber(String noticeNumber, UUID requestId,
+  public Mono<ResponseEntity<Flux<RtpDto>>> findRtpByNoticeNumber(String noticeNumber, UUID requestId,
       String version, ServerWebExchange exchange) {
     return Mono.error(new UnsupportedOperationException());
   }
