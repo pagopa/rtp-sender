@@ -104,29 +104,24 @@ public class SendAPIControllerImpl implements RtpsApi {
   public Mono<ResponseEntity<Flux<RtpDto>>> findRtpByNoticeNumber(String noticeNumber, UUID requestId,
       String version, ServerWebExchange exchange) {
 
-    return Mono.just(noticeNumber)
+    final var rtpsByNoticeNumberFlux = Flux.just(noticeNumber)
         .doFirst(() -> {
           MDC.put("notice_number", noticeNumber);
           MDC.put("requestId", requestId.toString());
         })
 
         .doFirst(() -> log.info("Received request to find RTP by notice number"))
-        .flatMap(sendRTPService::findRtpByNoticeNumber)
-        .doOnNext(rtp -> log.info("RTP retrieved by notice number"))
+        .flatMap(sendRTPService::findRtpsByNoticeNumber)
+        .doOnComplete(() -> log.info("RTPs retrieved by notice number"))
 
         .doOnNext(rtp -> log.debug("Mapping RTP to DTO" ))
         .map(rtpDtoMapper::toRtpDto)
         .doOnNext(dto -> log.debug("Mapped RTP to DTO"))
 
-        .map(ResponseEntity::ok)
-        .onErrorResume(RtpNotFoundException.class, ex -> {
-          log.warn("RTP by notice number not found: {}", ex.getMessage());
-          return Mono.just(ResponseEntity.notFound().build());
-        })
+        .doOnComplete(() -> log.info("Successfully retrieved RTP by notice number"))
+        .doOnError(ex -> log.error("Error retrieving RTP by notice number {}", ex.getMessage(), ex));
 
-        .doOnSuccess(response -> log.info("Successfully retrieved RTP by notice number"))
-        .doOnError(ex -> log.error("Error retrieving RTP by notice number {}", ex.getMessage()))
-
+    return Mono.just(ResponseEntity.ok(rtpsByNoticeNumberFlux))
         .doFinally(signal -> MDC.clear());
   }
 
