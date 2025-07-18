@@ -40,7 +40,7 @@ class RegistryDataServiceImplTest {
 
     var tsp = new TechnicalServiceProvider("TSP1", "Tech Provider 1", "https://endpoint.com",
         "cert123", null, true);
-    var sp = new ServiceProvider("SP1", "Service Provider 1", "TSP1", "pspTaxCode");
+    var sp = new ServiceProvider("SP1", "Service Provider 1", "TSP1", "psp_tax_code");
     var serviceProviderDataResponse = new ServiceProviderDataResponse(List.of(tsp), List.of(sp));
 
     when(blobStorageClient.getServiceProviderData()).thenReturn(
@@ -53,7 +53,7 @@ class RegistryDataServiceImplTest {
             map.containsKey("SP1")
                 && map.get("SP1").spName().equals("Service Provider 1")
                 && map.get("SP1").tsp().id().equals("TSP1")
-                && map.get("SP1").pspTaxCode().equals("pspTaxCode")
+                && map.get("SP1").pspTaxCode().equals("psp_tax_code")
         )
         .verifyComplete();
 
@@ -86,7 +86,7 @@ class RegistryDataServiceImplTest {
     ServiceProviderDataResponse mockResponse = new ServiceProviderDataResponse(
         List.of(new TechnicalServiceProvider("TSP1", "Technical Service Provider 1",
             "https://example.com", "123456", null, false)),
-        List.of(new ServiceProvider("SP1", "Service Provider 1", "TSP1", "pspTaxCode"))
+        List.of(new ServiceProvider("SP1", "Service Provider 1", "TSP1", "psp_tax_code"))
     );
 
     when(blobStorageClient.getServiceProviderData()).thenReturn(Mono.just(mockResponse));
@@ -97,7 +97,7 @@ class RegistryDataServiceImplTest {
         .expectNextMatches(map ->
             map.containsKey("SP1")
                 && map.get("SP1").spName().equals("Service Provider 1")
-                && map.get("SP1").pspTaxCode().equals("pspTaxCode")
+                && map.get("SP1").pspTaxCode().equals("psp_tax_code")
                 && map.get("SP1").tsp() != null
                 && map.get("SP1").tsp().id().equals("TSP1")
         )

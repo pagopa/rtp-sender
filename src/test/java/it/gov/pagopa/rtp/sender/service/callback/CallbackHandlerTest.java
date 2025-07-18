@@ -5,8 +5,6 @@ import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.service.rtp.RtpStatusUpdater;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,13 +33,13 @@ class CallbackHandlerTest {
     private final ResourceID resourceID = new ResourceID(UUID.randomUUID());
     private final Rtp rtp = Rtp.builder().resourceID(resourceID).status(RtpStatus.CREATED).build();
 
-    @ParameterizedTest
-    @EnumSource(value = TransactionStatus.class, names = { "ACCP", "ACWC", "ACTC" })
-    void givenValidTransactionStatus_whenHandle_thenAcceptTriggeredAndSaved(TransactionStatus status) {
-        JsonNode request = mock(JsonNode.class);
+    @Test
+    void givenValidTransactionStatus_whenHandle_thenAcceptTriggeredAndSaved() {
+        final var transactionStatus = TransactionStatus.ACTC;
+        final var request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
-                .thenReturn(Flux.just(status));
+                .thenReturn(Flux.just(transactionStatus));
         when(callbackFieldsExtractor.extractResourceIDSend(request))
                 .thenReturn(Mono.just(resourceID));
         when(rtpRepository.findById(resourceID))
@@ -74,6 +72,28 @@ class CallbackHandlerTest {
                 .verifyComplete();
 
         verify(rtpStatusUpdater).triggerRejectRtp(rtp);
+    }
+
+    @Test
+    void givenValidRJCTStatusAndRtpAccepted_whenHandle_thenUserRejectTriggeredAndSaved() {
+        final var request = mock(JsonNode.class);
+        final var acceptedRtp = this.rtp.withStatus(RtpStatus.ACCEPTED);
+        final var userRejectedRtp = this.rtp.withStatus(RtpStatus.USER_REJECTED);
+
+        when(callbackFieldsExtractor.extractTransactionStatusSend(request))
+            .thenReturn(Flux.just(TransactionStatus.RJCT));
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+            .thenReturn(Mono.just(resourceID));
+        when(rtpRepository.findById(resourceID))
+            .thenReturn(Mono.just(acceptedRtp));
+        when(rtpStatusUpdater.triggerUserRejectRtp(acceptedRtp))
+            .thenReturn(Mono.just(userRejectedRtp));
+
+        StepVerifier.create(callbackHandler.handle(request))
+            .expectNext(request)
+            .verifyComplete();
+
+        verify(rtpStatusUpdater).triggerUserRejectRtp(acceptedRtp);
     }
 
     @Test
@@ -156,7 +176,7 @@ class CallbackHandlerTest {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
-                .thenReturn(Flux.just(TransactionStatus.ACCP, TransactionStatus.RJCT));
+                .thenReturn(Flux.just(TransactionStatus.ACTC, TransactionStatus.RJCT));
         when(callbackFieldsExtractor.extractResourceIDSend(request))
                 .thenReturn(Mono.just(resourceID));
         when(rtpRepository.findById(resourceID))
@@ -179,7 +199,7 @@ class CallbackHandlerTest {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
-                .thenReturn(Flux.just(TransactionStatus.ACCP));
+                .thenReturn(Flux.just(TransactionStatus.ACTC));
         when(callbackFieldsExtractor.extractResourceIDSend(request))
                 .thenReturn(Mono.just(resourceID));
         when(rtpRepository.findById(resourceID))
@@ -195,7 +215,7 @@ class CallbackHandlerTest {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
-                .thenReturn(Flux.just(TransactionStatus.ACCP));
+                .thenReturn(Flux.just(TransactionStatus.ACTC));
         when(callbackFieldsExtractor.extractResourceIDSend(request))
                 .thenReturn(Mono.just(resourceID));
         when(rtpRepository.findById(resourceID))

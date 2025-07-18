@@ -1,17 +1,16 @@
 package it.gov.pagopa.rtp.sender.controller.rtp;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import it.gov.pagopa.rtp.sender.domain.rtp.Event;
+import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import org.springframework.stereotype.Component;
 
 import it.gov.pagopa.rtp.sender.configuration.PagoPaConfigProperties;
-import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
-import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 
 @Component
 public class RtpDtoMapper {
@@ -47,7 +46,15 @@ public class RtpDtoMapper {
         .payeeId(createRtpDto.getPayee().getPayeeId()).serviceProviderDebtor("serviceProviderDebtor").iban(config.details().iban())
         .subject(createRtpDto.getPaymentNotice().getSubject())
         .serviceProviderCreditor(tokenSub)
-        .payTrxRef(createRtpDto.getPayee().getPayTrxRef()).flgConf("flgConf").build();
+        .payTrxRef(createRtpDto.getPayee().getPayTrxRef()).flgConf("flgConf")
+        .status(RtpStatus.CREATED)
+        .events(List.of(
+                Event.builder()
+                        .timestamp(Instant.now())
+                        .triggerEvent(RtpEvent.CREATE_RTP)
+                        .build()
+        ))
+        .build();
   }
 
   public RtpDto toRtpDto(Rtp rtp) {

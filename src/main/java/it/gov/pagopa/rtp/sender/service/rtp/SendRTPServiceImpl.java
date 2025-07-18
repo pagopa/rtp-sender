@@ -81,17 +81,17 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
     final var activationData = activationApi.findActivationByPayerId(UUID.randomUUID(),
             rtp.payerId(),
             serviceProviderConfig.activation().apiVersion())
-        .doFirst(() -> log.info("Finding activation data for payerId: {}", rtp.payerId()))
+        .doFirst(() -> log.info("Finding activation data for resourceId: {}", rtp.resourceID().getId()))
         .doOnSuccess(act -> log.info("Activation data found for the requested payerId"))
         .doOnError(
-            error -> log.error("Error finding activation data for payerId: {}", rtp.payerId(),
+            error -> log.error("Error finding activation data with resourceId: {}", rtp.resourceID().getId(),
                 error))
         .onErrorMap(WebClientResponseException.class, this::mapActivationResponseToException);
 
     final var rtpToSend = activationData.map(act -> act.getPayer().getRtpSpId())
-        .map(rtp::toRtpWithActivationInfo)
+        .map(rtp::withServiceProviderDebtor)
         .doOnSuccess(
-            rtpWithActivationInfo -> log.info("Saving Rtp to be sent, with resourceId: {} and serviceProviderDebtor: {}", rtpWithActivationInfo.resourceID(), rtpWithActivationInfo.serviceProviderDebtor()))
+            rtpWithActivationInfo -> log.info("Saving Rtp to be sent, with resourceId: {} and serviceProviderDebtor: {}", rtpWithActivationInfo.resourceID().getId(), rtpWithActivationInfo.serviceProviderDebtor()))
         .flatMap(rtpRepository::save)
         .doOnNext(savedRtp -> LoggingUtils.logAsJson(
             () -> sepaRequestToPayMapper.toEpcRequestToPay(savedRtp), objectMapper))

@@ -81,14 +81,14 @@ class GdpEventHandlerTest {
         .iuv("testIuv")
         .subject("testSubject")
         .description("testDescription")
-        .ecTaxCode("testEcTaxCode")
-        .debtorTaxCode("testDebtorTaxCode")
+        .ec_tax_code("testEcTaxCode")
+        .debtor_tax_code("testDebtorTaxCode")
         .nav("testNav")
-        .dueDate(LocalDate.now())
+        .due_date(LocalDate.now())
         .amount(100)
         .status(GdpMessage.Status.VALID)
-        .pspCode("testPspCode")
-        .pspTaxCode("testPspTaxCode")
+        .psp_code("testPspCode")
+        .psp_tax_code("testPspTaxCode")
         .build();
   }
 

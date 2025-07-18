@@ -40,8 +40,6 @@ rtp_sender_cpu                               = 0.25
 rtp_sender_memory                            = "0.5Gi"
 rtp_sender_max_replicas                      = 5
 rtp_sender_min_replicas                      = 1
-rtp_sender_base_url                          = "https://mil-d-apim.azure-api.net/rtp-sender"
-
 
 rtp_environment_secrets = {
   COSMOS_ACCOUNT_RTP_CONNECTION_STRING  : "cosmosdb-account-rtp-primary-connection-string"

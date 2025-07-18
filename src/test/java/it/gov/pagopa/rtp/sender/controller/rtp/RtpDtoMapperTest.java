@@ -98,6 +98,7 @@ class RtpDtoMapperTest {
     createRtpDto.setPayee(payeeDto);
 
     Rtp rtp = rtpDtoMapper.toRtpWithServiceProviderCreditor(createRtpDto,subject);
+    Event event = rtp.events().getFirst();
     assertThat(rtp).isNotNull();
     assertThat(rtp.resourceID()).isNotNull();
     assertThat(rtp.savingDateTime()).isNotNull();
@@ -115,6 +116,10 @@ class RtpDtoMapperTest {
     assertThat(rtp.payTrxRef()).isEqualTo(createRtpDto.getPayee().getPayTrxRef());
     assertThat(rtp.flgConf()).isEqualTo("flgConf");
     assertThat(rtp.serviceProviderCreditor()).isEqualTo(subject);
+    assertThat(rtp.status()).isEqualTo(RtpStatus.CREATED);
+    assertThat(rtp.events()).hasSize(1);
+    assertThat(event.triggerEvent()).isEqualTo(RtpEvent.CREATE_RTP);
+    assertThat(event.timestamp()).isNotNull();
   }
   
   @Test

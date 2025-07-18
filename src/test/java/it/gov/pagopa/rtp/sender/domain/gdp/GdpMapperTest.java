@@ -51,14 +51,14 @@ class GdpMapperTest {
         .iuv("IUV1234567890")
         .subject("Mario Rossi")
         .description("Pagamento TARI")
-        .ecTaxCode("12345678901")
-        .debtorTaxCode("09876543210")
+        .ec_tax_code("12345678901")
+        .debtor_tax_code("09876543210")
         .nav("NAV001")
-        .dueDate(LocalDate.of(2025, 1, 1))
+        .due_date(LocalDate.of(2025, 1, 1))
         .amount(1500)
         .status(GdpMessage.Status.VALID)
-        .pspCode("PSPCODE01")
-        .pspTaxCode("PSPTAX01")
+        .psp_code("PSPCODE01")
+        .psp_tax_code("PSPTAX01")
         .build();
 
     final var expectedEventDispatcer = this.gdpEventHubProperties.eventDispatcher();
@@ -67,7 +67,7 @@ class GdpMapperTest {
 
     assertThat(result).isNotNull();
     assertThat(result.resourceID()).isNotNull();
-    assertThat(result.noticeNumber()).isEqualTo("IUV1234567890");
+    assertThat(result.noticeNumber()).isEqualTo("NAV001");
     assertThat(result.amount()).isEqualByComparingTo("1500");
     assertThat(result.description()).isEqualTo("Pagamento TARI");
     assertThat(result.expiryDate()).isEqualTo(LocalDate.of(2025, 1, 1));

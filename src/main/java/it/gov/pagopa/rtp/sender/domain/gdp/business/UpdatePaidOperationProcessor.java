@@ -66,7 +66,7 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
   protected Mono<Rtp> updateRtp(
       @NonNull final Rtp rtp, @NonNull final GdpMessage gdpMessage) {
 
-    return this.retrieveServiceProviderIdByPspTaxCode(gdpMessage.pspTaxCode())
+    return this.retrieveServiceProviderIdByPspTaxCode(gdpMessage.psp_tax_code())
         .filter(pspBic -> pspBic.equals(rtp.serviceProviderDebtor()))
         .flatMap(pspBic -> this.handleSamePsp(rtp))
         .switchIfEmpty(Mono.fromDirect(this.handleDifferentPsp(rtp)));
