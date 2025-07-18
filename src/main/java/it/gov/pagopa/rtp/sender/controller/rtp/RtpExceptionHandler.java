@@ -113,6 +113,13 @@ public class RtpExceptionHandler {
   }
 
 
+  /**
+   * Handles {@link ConstraintViolationException} exceptions thrown upon parsing incoming requests
+   * when some field in the payload doesn't abide to provided constraints.
+   *
+   * @param ex the {@link ConstraintViolationException} thrown upon parsing request.
+   * @return a {@link ResponseEntity} with status {@code 400 Bad Request}.
+   */
   @ExceptionHandler(ConstraintViolationException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ResponseEntity<ErrorDto> handleConstraintViolationException(
