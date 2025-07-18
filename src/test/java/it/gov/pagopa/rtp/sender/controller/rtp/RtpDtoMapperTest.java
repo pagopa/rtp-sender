@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.controller.rtp;
 
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import org.junit.jupiter.api.Test;
@@ -129,29 +130,36 @@ class RtpDtoMapperTest {
     LocalDateTime nowLdt = LocalDateTime.ofInstant(nowInstant, ZoneOffset.UTC);
     LocalDate expiry = LocalDate.now().plusDays(10);
 
-    Event event = new Event(nowInstant, RtpStatus.CREATED, RtpEvent.SEND_RTP);
-    Rtp rtp = new Rtp(
-            "123456789",
-            BigDecimal.valueOf(150.75),
-            "Pagamento TARI",
-            expiry,
-            "payer-001",
-            "Mario Rossi",
-            "Comune di Roma",
-            "payee-002",
-            new ResourceID(uuid),
-            "TARI 2025",
-            nowLdt,
-            "DEBTOR-001",
-            "IT60X0542811101000000123456",
-            "TX123456",
-            "Y",
-            RtpStatus.SENT,
-            "CREDITOR-001",
-            List.of(event),
-            1L,
-            "eventDispatcher"
-    );
+    Event event = Event.builder()
+            .timestamp(nowInstant)
+            .eventDispatcher("GdpEvent")
+            .foreignStatus(GdpMessage.Status.VALID)
+            .precStatus(RtpStatus.CREATED)
+            .triggerEvent(RtpEvent.SEND_RTP)
+            .build();
+
+    Rtp rtp = Rtp.builder()
+            .noticeNumber("123456789")
+            .amount(BigDecimal.valueOf(150.75))
+            .description("Pagamento TARI")
+            .expiryDate(expiry)
+            .payerId("payer-001")
+            .payerName("Mario Rossi")
+            .payeeName("Comune di Roma")
+            .payeeId("payee-002")
+            .resourceID(new ResourceID(uuid))
+            .subject("TARI 2025")
+            .savingDateTime(nowLdt)
+            .serviceProviderDebtor("DEBTOR-001")
+            .iban("IT60X0542811101000000123456")
+            .payTrxRef("TX123456")
+            .flgConf("Y")
+            .status(RtpStatus.SENT)
+            .serviceProviderCreditor("CREDITOR-001")
+            .events(List.of(event))
+            .operationId(1L)
+            .eventDispatcher("eventDispatcher")
+            .build();
 
     RtpDto dto = rtpDtoMapper.toRtpDto(rtp);
 

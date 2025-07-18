@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.statemachine;
 
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.Event;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
@@ -97,8 +98,20 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
         .flatMap(transition -> Mono.just(source)
                 .flatMap(rtpEntity ->
                     this.applyActions(rtpEntity, transition.getPreTransactionActions()))
-                .map(rtpEntity ->
-                    this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent()))
+                .flatMap(rtpEntity -> Mono.deferContextual(ctxView -> {
+                  GdpMessage.Status foreignStatus = ctxView.getOrDefault("foreignStatus", null);
+                  String eventDispatcher = ctxView.getOrDefault("eventDispatcher", null);
+
+                    RtpEntity updated = this.advanceStatus(
+                          rtpEntity,
+                          transition.getDestination(),
+                          transition.getEvent(),
+                          foreignStatus,
+                          eventDispatcher
+                  );
+
+                  return Mono.just(updated);
+                }))
                 .flatMap(rtpEntity ->
                     this.applyActions(rtpEntity, transition.getPostTransactionActions())));
   }
@@ -158,7 +171,9 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
   private RtpEntity advanceStatus(
       @NonNull final RtpEntity rtpEntity,
       @NonNull final RtpStatus newStatus,
-      @NonNull final RtpEvent triggerEvent) {
+      @NonNull final RtpEvent triggerEvent,
+      final GdpMessage.Status foreignStatus,
+      final String eventDispatcher) {
 
     Objects.requireNonNull(rtpEntity, "Entity cannot be null");
     Objects.requireNonNull(newStatus, "Status cannot be null");
@@ -168,6 +183,8 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
             rtpEntity.getEvents().stream(), Stream.of(
                 Event.builder()
                     .timestamp(Instant.now())
+                    .foreignStatus(foreignStatus)
+                    .eventDispatcher(eventDispatcher)
                     .precStatus(rtpEntity.getStatus())
                     .triggerEvent(triggerEvent)
                     .build()
