@@ -14,7 +14,7 @@ paths:
   /rtps:
     get:
       operationId: findRtpByNoticeNumber
-      summary: Retrieve a RTP by the Notice Number associated to it
+      summary: Retrieve RTPs by their Notice Number associated
       description: Returns RTP data associated with the given ID
       tags: [ rtps ]
       security:
@@ -25,7 +25,7 @@ paths:
         - $ref: '#/components/parameters/Version'
       responses:
         "200":
-          $ref: '#/components/responses/findRtp'
+          $ref: '#/components/responses/RtpListByNoticeNumber'
         "400":
           #description: Bad request.
           $ref: '#/components/responses/Error'
@@ -458,6 +458,11 @@ components:
         - payer
         - payee
 
+    RtpList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Rtp"
+
     Rtp:
       type: object
       properties:
@@ -682,6 +687,37 @@ components:
           required: false
           schema:
             $ref: '#/components/schemas/RetryAfter'
+
+    RtpListByNoticeNumber:
+      description: RTPs successfully retrieved by notice number.
+      headers:
+        Access-Control-Allow-Origin:
+          description: |
+            Indicates whether the response can be shared with requesting code
+            from the given origin.
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccessControlAllowOrigin'
+        RateLimit-Limit:
+          description: The number of allowed requests in the current period.
+          required: false
+          schema:
+            $ref: '#/components/schemas/RateLimitLimit'
+        RateLimit-Reset:
+          description: The number of seconds left in the current period.
+          required: false
+          schema:
+            $ref: '#/components/schemas/RateLimitReset'
+        Retry-After:
+          description: |
+            The number of seconds to wait before allowing a follow-up request.
+          required: false
+          schema:
+            $ref: '#/components/schemas/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RtpList'
 
     findRtp:
       description: RTP successfully retrieved by ID.
