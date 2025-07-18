@@ -93,6 +93,10 @@ public class CallbackHandler {
                 log.debug("Triggering ACCEPT transition for RTP {}", rtpToUpdate.resourceID().getId());
                 yield this.rtpStatusUpdater.triggerAcceptRtp(rtpToUpdate);
             }
+            case ACCP -> {
+                log.debug("Triggering USER ACCEPT transition for RTP {}", rtpToUpdate.resourceID().getId());
+                yield this.rtpStatusUpdater.triggerUserAcceptRtp(rtpToUpdate);
+            }
             case RJCT -> {
                 log.debug("Triggering REJECT transition for RTP {}", rtpToUpdate.resourceID().getId());
                 yield Mono.just(rtpToUpdate)
