@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -509,20 +510,27 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenExistingRtp_whenFindRtpByNoticeNumber_thenReturnsRtp() {
+  void givenExistingRtp_whenFindRtpByNoticeNumber_thenReturnsRtps() {
     final var noticeNumber = "1234567890";
-    final var resourceId = ResourceID.createNew();
-    final var expectedRtp = Rtp.builder()
-        .resourceID(resourceId)
+    final var resourceId1 = ResourceID.createNew();
+    final var expectedRtp1 = Rtp.builder()
+        .resourceID(resourceId1)
+        .noticeNumber(noticeNumber)
+        .build();
+    final var resourceId2 = ResourceID.createNew();
+    final var expectedRtp2 = Rtp.builder()
+        .resourceID(resourceId2)
+        .noticeNumber(noticeNumber)
         .build();
 
     when(rtpRepository.findByNoticeNumber(noticeNumber))
-        .thenReturn(Mono.just(expectedRtp));
+        .thenReturn(Flux.fromIterable(List.of(expectedRtp1, expectedRtp2)));
 
-    final var result = sendRTPService.findRtpByNoticeNumber(noticeNumber);
+    final var result = sendRTPService.findRtpsByNoticeNumber(noticeNumber);
 
     StepVerifier.create(result)
-        .expectNext(expectedRtp)
+        .expectNext(expectedRtp1)
+        .expectNext(expectedRtp2)
         .verifyComplete();
 
     verify(rtpRepository)
@@ -530,33 +538,30 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenMissingRtp_whenFindRtpByNoticeNumber_thenThrowsRtpNotFoundException() {
+  void givenMissingRtp_whenFindRtpByNoticeNumber_thenReturnEmptyFlux() {
     final var noticeNumber = "NON_EXISTENT";
 
     when(rtpRepository.findByNoticeNumber(noticeNumber))
-        .thenReturn(Mono.empty());
+        .thenReturn(Flux.empty());
 
-    final var result = sendRTPService.findRtpByNoticeNumber(noticeNumber);
+    final var result = sendRTPService.findRtpsByNoticeNumber(noticeNumber);
 
     StepVerifier.create(result)
-        .expectErrorSatisfies(error -> 
-          assertThat(error)
-              .isInstanceOf(RtpNotFoundException.class)
-              .hasMessageContaining("RTP not found for notice number: " + noticeNumber))
-        .verify();
+        .expectSubscription()
+        .verifyComplete();
 
     verify(rtpRepository).findByNoticeNumber(noticeNumber);
   }
 
   @Test
-  void givenRepositoryError_whenFindRtpByNoticeNumber_thenPropagatesError() {
+  void givenRepositoryError_whenFindRtpsByNoticeNumber_thenPropagatesError() {
     final var noticeNumber = "0000000000";
     final var exception = new RuntimeException("Database failure");
 
     when(rtpRepository.findByNoticeNumber(noticeNumber))
-        .thenReturn(Mono.error(exception));
+        .thenReturn(Flux.error(exception));
 
-    final var result = sendRTPService.findRtpByNoticeNumber(noticeNumber);
+    final var result = sendRTPService.findRtpsByNoticeNumber(noticeNumber);
 
     StepVerifier.create(result)
         .expectErrorMatches(error ->
@@ -568,8 +573,8 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenNullNoticeNumber_whenFindRtpByNoticeNumber_thenThrowsNullPointerException() {
-    assertThrows(NullPointerException.class, () -> sendRTPService.findRtpByNoticeNumber(null));
+  void givenNullNoticeNumber_whenFindRtpsByNoticeNumber_thenThrowsNullPointerException() {
+    assertThrows(NullPointerException.class, () -> sendRTPService.findRtpsByNoticeNumber(null));
   }
 
 
