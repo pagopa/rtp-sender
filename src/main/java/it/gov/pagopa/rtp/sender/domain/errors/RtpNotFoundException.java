@@ -8,6 +8,10 @@ public class RtpNotFoundException extends RuntimeException {
   private static final String COMPOSITE_KEY_ERROR_MESSAGE = "RTP not found with composite key: OperationId %s and EventDispatcher %s";
 
 
+  public RtpNotFoundException(String message) {
+    super(message);
+  }
+
   public RtpNotFoundException(UUID id) {
     super(String.format(DEFAULT_ERROR_MESSAGE, id));
   }

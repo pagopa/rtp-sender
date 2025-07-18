@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Method;
@@ -115,7 +116,10 @@ public class ReactiveMongoTraceInterceptor implements MethodInterceptor {
     }
     if (traceMongo != null) {
       // Apply tracing logic
-      return tracingLogic(invocation);
+      if (invocation.getMethod().getReturnType().equals(Flux.class))
+        return tracingLogicFlux(invocation);
+      else
+        return tracingMonoLogic(invocation);
     } else {
       // Skip tracing
       return invocation.proceed();
@@ -123,7 +127,7 @@ public class ReactiveMongoTraceInterceptor implements MethodInterceptor {
   }
 
   /**
-   * Implements the core tracing logic for MongoDB operations.
+   * Implements the core tracing logic for MongoDB operations returning a Mono.
    * Creates and manages OpenTelemetry spans for tracking MongoDB operations,
    * including success and error scenarios.
    *
@@ -131,7 +135,7 @@ public class ReactiveMongoTraceInterceptor implements MethodInterceptor {
    * @return A Mono containing the result of the operation
    * @throws Throwable if the operation fails
    */
-  private Object tracingLogic(MethodInvocation invocation) throws Throwable {
+  private Object tracingMonoLogic(MethodInvocation invocation) throws Throwable {
     // Check if the target is a ReactiveMongoRepository implementation
     if (!(invocation.getThis() instanceof ReactiveMongoRepository<?, ?>)) {
       return invocation.proceed();
@@ -181,6 +185,72 @@ public class ReactiveMongoTraceInterceptor implements MethodInterceptor {
               span.setStatus(StatusCode.ERROR, "MongoDB operation failed: " + e.getMessage());
               span.end();
               return Mono.error(e);
+            }
+          });
+    });
+  }
+
+
+  /**
+   * Implements the core tracing logic for MongoDB operations returning a Flux.
+   * Creates and manages OpenTelemetry spans for tracking MongoDB operations,
+   * including success and error scenarios.
+   *
+   * @param invocation The method invocation to be traced
+   * @return A Flux containing the result of the operation
+   * @throws Throwable if the operation fails
+   */
+  private Object tracingLogicFlux(MethodInvocation invocation) throws Throwable {
+    // Check if the target is a ReactiveMongoRepository implementation
+    if (!(invocation.getThis() instanceof ReactiveMongoRepository<?, ?>)) {
+      return invocation.proceed();
+    }
+
+    ReactiveMongoRepository<?, ?> repository = (ReactiveMongoRepository<?, ?>) invocation.getThis();
+    Method method = invocation.getMethod();
+    String methodName = method.getName();
+
+    if (methodsToIgnore.contains(methodName)) {
+      return invocation.proceed();
+    }
+
+    String repositoryName = getRepositoryName(repository);
+    String collectionName = getCollectionName(repositoryName);
+    String queryDetails = extractQueryDetails(method, invocation.getArguments());
+
+    return Flux.deferContextual(ctx -> {
+      // Create and configure the OpenTelemetry span
+      Span span = tracer.spanBuilder(repositoryName + "." + methodName)
+          .setParent(Context.current().with(Span.current()))
+          .setSpanKind(SpanKind.CLIENT)
+          .setAttribute("db.system", "mongodb")
+          .setAttribute("db.operation", methodName)
+          .setAttribute("db.mongodb.collection", collectionName)
+          .setAttribute("db.statement", queryDetails)
+          .startSpan();
+
+      // Execute the MongoDB operation with tracing
+      return mongoTemplate.getMongoDatabase()
+          .switchIfEmpty(Mono.error(new IllegalStateException("Database not available")))
+          .flatMapMany(Flux::just)
+          .flatMap(database -> {
+            span.setAttribute("db.name", database.getName());
+
+            try {
+              return ((Flux<?>) invocation.proceed())
+                  .doOnSubscribe(subscription -> span.addEvent("MongoDB operation started"))
+                  .doOnComplete(() -> span.addEvent("MongoDB operation completed successfully"))
+                  .doOnError(error -> {
+                    span.recordException(error);
+                    span.setStatus(StatusCode.ERROR,
+                        "MongoDB operation failed: " + error.getMessage());
+                  })
+                  .doFinally(signalType -> span.end());
+            } catch (Throwable e) {
+              span.recordException(e);
+              span.setStatus(StatusCode.ERROR, "MongoDB operation failed: " + e.getMessage());
+              span.end();
+              return Flux.error(e);
             }
           });
     });
