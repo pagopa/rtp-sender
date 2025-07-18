@@ -1,6 +1,5 @@
 package it.gov.pagopa.rtp.sender.repository.rtp;
 
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -10,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpRepository;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -91,27 +91,28 @@ public class RtpDBRepository implements RtpRepository {
    * Retrieves an RTP using the given notice number.
    *
    * @param noticeNumber the notice number of the RTP; must not be {@code null}
-   * @return a {@link Mono} emitting the corresponding RTP if found, or an empty Mono otherwise
+   * @return a {@link Flux} emitting the corresponding RTPs if any, or an empty Flux otherwise
    */
   @Override
   @NonNull
-  public Mono<Rtp> findByNoticeNumber(@NonNull final String noticeNumber) {
-    return Mono.just(noticeNumber)
+  public Flux<Rtp> findByNoticeNumber(@NonNull final String noticeNumber) {
+    return Flux.just(noticeNumber)
+        .log()
         .doFirst(() -> MDC.put("notice_number", noticeNumber))
 
-        .doFirst(() -> log.debug("Retrieving RTP by Notice Number"))
-        .flatMap(rtpDB::findByNoticeNumber)
+        .doFirst(() -> log.debug("Retrieving RTPs by Notice Number"))
+        .flatMap(rtpDB::findAllByNoticeNumber)
         .doOnNext(entity -> MDC.put("resource_id", entity.getResourceID().toString()))
-        .doOnNext(entity -> log.debug("Found RTP by Notice Number"))
+        .doOnNext(entity -> log.debug("Found RTPs by Notice Number"))
 
         .doOnNext(rtp -> log.debug("Mapping RTP entity to domain object"))
         .map(rtpMapper::toDomain)
         .doOnNext(rtp -> log.debug("Mapped RTP entity to domain object"))
 
-        .doOnSuccess(entity -> Optional.ofNullable(entity)
-            .ifPresentOrElse(
-                rtp -> log.debug("Successfully retrieved RTP by Notice Number"),
-                () -> log.warn("RTP not found by Notice Number")))
+        .switchIfEmpty(Flux.<Rtp>empty()
+            .doOnComplete(() -> log.warn("No RTPs found for Notice Number")))
+
+        .doOnComplete(() -> log.debug("Successfully retrieved RTPs by Notice Number"))
         .doOnError(error -> log.error("Error while retrieving RTP: {}", error.getMessage(), error))
 
         .doFinally(signal -> MDC.clear());
