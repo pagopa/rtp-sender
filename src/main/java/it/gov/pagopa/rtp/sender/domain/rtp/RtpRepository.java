@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.rtp;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -47,8 +48,8 @@ public interface RtpRepository {
    * Retrieves an {@link Rtp} by its associated notice number.
    *
    * @param noticeNumber the notice number to search for
-   * @return a {@link Mono} emitting the RTP if found, or empty if not found
+   * @return a {@link Flux} emitting found RTPs
    */
-  Mono<Rtp> findByNoticeNumber(String noticeNumber);
+  Flux<Rtp> findByNoticeNumber(String noticeNumber);
 
 }
