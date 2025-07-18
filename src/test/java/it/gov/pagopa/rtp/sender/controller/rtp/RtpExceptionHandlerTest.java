@@ -146,15 +146,17 @@ class RtpExceptionHandlerTest {
 
     @Test
     void givenViolationOnNoticeNumber_whenHandleException_thenReturnInvalidNoticeNumberFormat() {
-        final var message = "Validation failed for field 'noticeNumber'";
+        final var message = "testAPI.noticeNumber: deve corrispondere a \"\\d{18}\"";
         final var ex = new ConstraintViolationException(message, Set.of());
+
+        final var expectedErrorCode = SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT;
 
         final var response = rtpExceptionHandler.handleConstraintViolationException(ex);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getCode(), response.getBody().getCode());
-        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getMessage(), response.getBody().getDescription());
+        assertEquals(expectedErrorCode.getCode(), response.getBody().getCode());
+        assertEquals(expectedErrorCode.getMessage(), response.getBody().getDescription());
     }
 
     @Test
@@ -162,12 +164,14 @@ class RtpExceptionHandlerTest {
         final var message = "Validation failed for field 'someOtherField'";
         final var ex = new ConstraintViolationException(message, Set.of());
 
+        final var expectedErrorCode = SendErrorCode.INVALID_REQUEST_FORMAT;
+
         final var response = rtpExceptionHandler.handleConstraintViolationException(ex);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getCode(), response.getBody().getCode());
-        assertEquals(SendErrorCode.INVALID_REQUEST_FORMAT.getMessage(), response.getBody().getDescription());
+        assertEquals(expectedErrorCode.getCode(), response.getBody().getCode());
+        assertEquals(expectedErrorCode.getMessage(), response.getBody().getDescription());
     }
 
     @Test
@@ -175,12 +179,14 @@ class RtpExceptionHandlerTest {
         final var message = "Something went wrong without a field";
         final var ex = new ConstraintViolationException(message, Set.of());
 
+        final var expectedErrorCode = SendErrorCode.INVALID_REQUEST_FORMAT;
+
         final var response = rtpExceptionHandler.handleConstraintViolationException(ex);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getCode(), response.getBody().getCode());
-        assertEquals(SendErrorCode.INVALID_REQUEST_FORMAT.getMessage(), response.getBody().getDescription());
+        assertEquals(expectedErrorCode.getCode(), response.getBody().getCode());
+        assertEquals(expectedErrorCode.getMessage(), response.getBody().getDescription());
     }
 
 }
