@@ -34,6 +34,7 @@ import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -155,19 +156,19 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
 
   @Override
   @NonNull
-  public Mono<Rtp> findRtpByNoticeNumber(@NonNull final String noticeNumber) {
-    return Mono.just(noticeNumber)
+  public Flux<Rtp> findRtpsByNoticeNumber(@NonNull final String noticeNumber) {
+    return Flux.just(noticeNumber)
         .doFirst(() -> MDC.put("notice_number", noticeNumber))
 
-        .doFirst(() -> log.info("Attempting to find RTP by notice number"))
+        .doFirst(() -> log.info("Attempting to find RTPs by notice number"))
         .flatMap(this.rtpRepository::findByNoticeNumber)
         .doOnNext(rtp -> MDC.put("resource_id", rtp.resourceID().getId().toString()))
 
-        .switchIfEmpty(Mono.error(new RtpNotFoundException(
-            String.format("RTP not found for notice number: %s", noticeNumber))))
+        .switchIfEmpty(Flux.<Rtp>empty()
+            .doOnComplete(() -> log.warn("No RTPs found for Notice Number")))
 
-        .doOnSuccess(rtp -> log.info("Successfully found RTP by notice number"))
-        .doOnError(error -> log.error("Error finding RTP by notice number: {}", error.getMessage(), error))
+        .doOnComplete(() -> log.info("Successfully found RTPs by notice number"))
+        .doOnError(error -> log.error("Error finding RTPs by notice number: {}", error.getMessage(), error))
 
         .doFinally(signal -> MDC.clear());
   }
