@@ -26,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -337,8 +338,8 @@ class RtpDBRepositoryTest {
         .operationId(rtpEntity.getOperationId())
         .build();
 
-    when(rtpDB.findByNoticeNumber(noticeNumber))
-        .thenReturn(Mono.just(rtpEntity));
+    when(rtpDB.findAllByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.just(rtpEntity));
 
     StepVerifier.create(rtpDbRepository.findByNoticeNumber(noticeNumber))
         .assertNext(actualRtp -> {
@@ -365,20 +366,20 @@ class RtpDBRepositoryTest {
         })
         .verifyComplete();
 
-    verify(rtpDB).findByNoticeNumber(noticeNumber);
+    verify(rtpDB).findAllByNoticeNumber(noticeNumber);
   }
 
   @Test
   void givenNonExistingRtpByNoticeNumber_whenFindByNoticeNumber_thenReturnsEmptyMono() {
     final var noticeNumber = "NON_EXISTENT";
 
-    when(rtpDB.findByNoticeNumber(noticeNumber))
-        .thenReturn(Mono.empty());
+    when(rtpDB.findAllByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.empty());
 
     StepVerifier.create(rtpDbRepository.findByNoticeNumber(noticeNumber))
         .verifyComplete();
 
-    verify(rtpDB).findByNoticeNumber(noticeNumber);
+    verify(rtpDB).findAllByNoticeNumber(noticeNumber);
   }
 
   @Test
@@ -386,15 +387,15 @@ class RtpDBRepositoryTest {
     final var noticeNumber = "849244626700453217";
     final var ex = new RuntimeException("Database error");
 
-    when(rtpDB.findByNoticeNumber(noticeNumber))
-        .thenReturn(Mono.error(ex));
+    when(rtpDB.findAllByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.error(ex));
 
     StepVerifier.create(rtpDbRepository.findByNoticeNumber(noticeNumber))
         .expectErrorMatches(e -> e instanceof RuntimeException &&
             e.getMessage().equals("Database error"))
         .verify();
 
-    verify(rtpDB).findByNoticeNumber(noticeNumber);
+    verify(rtpDB).findAllByNoticeNumber(noticeNumber);
   }
 
   @Test
