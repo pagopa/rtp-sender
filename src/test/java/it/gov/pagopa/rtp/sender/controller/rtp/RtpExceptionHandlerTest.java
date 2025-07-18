@@ -7,12 +7,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.netty.handler.timeout.ReadTimeoutException;
-import it.gov.pagopa.rtp.sender.activateClient.model.ErrorDto;
-import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import it.gov.pagopa.rtp.sender.exception.SendErrorCode;
 import it.gov.pagopa.rtp.sender.model.generated.send.MalformedRequestErrorResponseDto;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -133,23 +133,54 @@ class RtpExceptionHandlerTest {
 
     @Test
     void givenHandlerInvoked_whenPayerNotActivated_thenReturnsUnprocessableEntityWithProperError() {
-        // Given – no setup required
+        final var response = rtpExceptionHandler.handlePayerNotActivated();
 
-        // When
-        ResponseEntity<ErrorsDto> response = rtpExceptionHandler.handlePayerNotActivated();
-
-        // Then
         assertNotNull(response, "Response should not be null");
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode(), "Status should be 422 Unprocessable Entity");
 
-        ErrorsDto body = response.getBody();
+        final var body = response.getBody();
         assertNotNull(body, "Response body should not be null");
-        assertNotNull(body.getErrors(), "Errors list should not be null");
-        assertEquals(1, body.getErrors().size(), "There should be one error");
+        assertEquals(SendErrorCode.PAYER_NOT_ACTIVATED.getCode(), body.getCode(), "Error code should match");
+        assertEquals(SendErrorCode.PAYER_NOT_ACTIVATED.getMessage(), body.getDescription(), "Error message should match");
+    }
 
-        ErrorDto error = body.getErrors().getFirst();
-        assertEquals(SendErrorCode.PAYER_NOT_ACTIVATED.getCode(), error.getCode(), "Error code should match");
-        assertEquals(SendErrorCode.PAYER_NOT_ACTIVATED.getMessage(), error.getDescription(), "Error message should match");
+    @Test
+    void givenViolationOnNoticeNumber_whenHandleException_thenReturnInvalidNoticeNumberFormat() {
+        final var message = "Validation failed for field 'noticeNumber'";
+        final var ex = new ConstraintViolationException(message, Set.of());
+
+        final var response = rtpExceptionHandler.handleConstraintViolationException(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getCode(), response.getBody().getCode());
+        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getMessage(), response.getBody().getDescription());
+    }
+
+    @Test
+    void givenViolationOnOtherField_whenHandleException_thenReturnInvalidRequestFormat() {
+        final var message = "Validation failed for field 'someOtherField'";
+        final var ex = new ConstraintViolationException(message, Set.of());
+
+        final var response = rtpExceptionHandler.handleConstraintViolationException(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getCode(), response.getBody().getCode());
+        assertEquals(SendErrorCode.INVALID_REQUEST_FORMAT.getMessage(), response.getBody().getDescription());
+    }
+
+    @Test
+    void givenNoMatchingField_whenHandleException_thenReturnInvalidRequestFormat() {
+        final var message = "Something went wrong without a field";
+        final var ex = new ConstraintViolationException(message, Set.of());
+
+        final var response = rtpExceptionHandler.handleConstraintViolationException(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT.getCode(), response.getBody().getCode());
+        assertEquals(SendErrorCode.INVALID_REQUEST_FORMAT.getMessage(), response.getBody().getDescription());
     }
 
 }
