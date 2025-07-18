@@ -14,7 +14,7 @@ tags = {
   Owner       = "cstar"
   Source      = "https://github.com/pagopa/rtp-sender/tree/main/src/main/terraform"
   CostCenter  = "TS310 - PAGAMENTI & SERVIZI"
-  Domain      = "srtp"
+  Domain      = "rtp"
 }
 
 # ------------------------------------------------------------------------------
