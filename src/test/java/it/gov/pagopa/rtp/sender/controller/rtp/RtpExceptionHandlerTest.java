@@ -146,7 +146,7 @@ class RtpExceptionHandlerTest {
 
     @Test
     void givenViolationOnNoticeNumber_whenHandleException_thenReturnInvalidNoticeNumberFormat() {
-        final var message = "testAPI.noticeNumber: deve corrispondere a \"\\d{18}\"";
+        final var message = "testAPI.noticeNumber: must correspond to \"\\d{18}\"";
         final var ex = new ConstraintViolationException(message, Set.of());
 
         final var expectedErrorCode = SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT;
