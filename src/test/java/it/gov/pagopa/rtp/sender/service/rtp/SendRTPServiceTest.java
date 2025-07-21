@@ -511,22 +511,22 @@ class SendRTPServiceTest {
 
   @Test
   void givenExistingRtp_whenFindRtpByNoticeNumber_thenReturnsRtps() {
-    final var noticeNumber = "1234567890";
+    final var rtpNoticeNumber = "1234567890";
     final var resourceId1 = ResourceID.createNew();
     final var expectedRtp1 = Rtp.builder()
         .resourceID(resourceId1)
-        .noticeNumber(noticeNumber)
+        .noticeNumber(rtpNoticeNumber)
         .build();
     final var resourceId2 = ResourceID.createNew();
     final var expectedRtp2 = Rtp.builder()
         .resourceID(resourceId2)
-        .noticeNumber(noticeNumber)
+        .noticeNumber(rtpNoticeNumber)
         .build();
 
-    when(rtpRepository.findByNoticeNumber(noticeNumber))
+    when(rtpRepository.findByNoticeNumber(rtpNoticeNumber))
         .thenReturn(Flux.fromIterable(List.of(expectedRtp1, expectedRtp2)));
 
-    final var result = sendRTPService.findRtpsByNoticeNumber(noticeNumber);
+    final var result = sendRTPService.findRtpsByNoticeNumber(rtpNoticeNumber);
 
     StepVerifier.create(result)
         .expectNext(expectedRtp1)
@@ -534,34 +534,34 @@ class SendRTPServiceTest {
         .verifyComplete();
 
     verify(rtpRepository)
-        .findByNoticeNumber(noticeNumber);
+        .findByNoticeNumber(rtpNoticeNumber);
   }
 
   @Test
   void givenMissingRtp_whenFindRtpByNoticeNumber_thenReturnEmptyFlux() {
-    final var noticeNumber = "NON_EXISTENT";
+    final var rtpNoticeNumber = "NON_EXISTENT";
 
-    when(rtpRepository.findByNoticeNumber(noticeNumber))
+    when(rtpRepository.findByNoticeNumber(rtpNoticeNumber))
         .thenReturn(Flux.empty());
 
-    final var result = sendRTPService.findRtpsByNoticeNumber(noticeNumber);
+    final var result = sendRTPService.findRtpsByNoticeNumber(rtpNoticeNumber);
 
     StepVerifier.create(result)
         .expectSubscription()
         .verifyComplete();
 
-    verify(rtpRepository).findByNoticeNumber(noticeNumber);
+    verify(rtpRepository).findByNoticeNumber(rtpNoticeNumber);
   }
 
   @Test
   void givenRepositoryError_whenFindRtpsByNoticeNumber_thenPropagatesError() {
-    final var noticeNumber = "0000000000";
+    final var rtpNoticeNumber = "0000000000";
     final var exception = new RuntimeException("Database failure");
 
-    when(rtpRepository.findByNoticeNumber(noticeNumber))
+    when(rtpRepository.findByNoticeNumber(rtpNoticeNumber))
         .thenReturn(Flux.error(exception));
 
-    final var result = sendRTPService.findRtpsByNoticeNumber(noticeNumber);
+    final var result = sendRTPService.findRtpsByNoticeNumber(rtpNoticeNumber);
 
     StepVerifier.create(result)
         .expectErrorMatches(error ->
@@ -569,7 +569,7 @@ class SendRTPServiceTest {
                 error.getMessage().equals("Database failure"))
         .verify();
 
-    verify(rtpRepository).findByNoticeNumber(noticeNumber);
+    verify(rtpRepository).findByNoticeNumber(rtpNoticeNumber);
   }
 
   @Test
