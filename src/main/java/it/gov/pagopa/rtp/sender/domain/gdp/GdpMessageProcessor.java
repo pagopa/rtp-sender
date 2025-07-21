@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.domain.gdp;
 
+import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.business.OperationProcessor;
 import it.gov.pagopa.rtp.sender.domain.gdp.business.OperationProcessorFactory;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-
 
 /**
  * Message processor responsible for handling incoming {@link GdpMessage} instances by delegating
@@ -32,7 +32,7 @@ import reactor.core.publisher.Mono;
 public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rtp>> {
 
   private final OperationProcessorFactory operationProcessorFactory;
-
+  private final GdpEventHubProperties gdpEventHubProperties;
 
   /**
    * Constructs a new {@code GdpMessageProcessor} with the given {@link OperationProcessorFactory}.
@@ -40,10 +40,11 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
    * @param operationProcessorFactory the factory used to resolve operation-specific processors
    */
   public GdpMessageProcessor(
-      @NonNull final OperationProcessorFactory operationProcessorFactory) {
+      @NonNull final OperationProcessorFactory operationProcessorFactory,
+      @NonNull final GdpEventHubProperties gdpEventHubProperties) {
     this.operationProcessorFactory = Objects.requireNonNull(operationProcessorFactory);
+    this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
   }
-
 
   /**
    * Processes the given {@link GdpMessage} by determining its {@link Operation} type
@@ -60,11 +61,16 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
   @NonNull
   public Mono<Rtp> processMessage(@NonNull final GdpMessage message) {
     Objects.requireNonNull(message, "GdpMessage cannot be null");
+    final var foreignStatus = Objects.requireNonNull(message.status(),"foreignStatus is required");
+    final var eventDispatcher = Objects.requireNonNull(this.gdpEventHubProperties.eventDispatcher(),"eventDispatcher is required");
 
-    return Mono.just(message)
+    return Mono.fromSupplier(() -> message)
         .doOnNext(payload -> log.info("Operation: {}", payload.operation()))
-        .flatMap(payload -> this.operationProcessorFactory.getProcessor(payload)
-            .flatMap(operationProcessor -> operationProcessor.processOperation(payload)));
+        .flatMap(payload -> this.operationProcessorFactory
+                .getProcessor(payload)
+                .flatMap(operationProcessor -> operationProcessor.processOperation(payload)))
+        .contextWrite(ctx -> ctx
+                .put("foreignStatus", foreignStatus)
+                .put("eventDispatcher",eventDispatcher));
   }
 }
-

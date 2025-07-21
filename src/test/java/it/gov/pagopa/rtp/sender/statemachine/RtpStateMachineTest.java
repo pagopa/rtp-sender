@@ -1,11 +1,9 @@
 package it.gov.pagopa.rtp.sender.statemachine;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.Event;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
@@ -149,7 +147,63 @@ class RtpStateMachineTest {
     assertThrows(NullPointerException.class, () -> methodInvoker.apply(stateMachine, RtpEvent.SEND_RTP));
   }
 
-  private static Stream<Arguments> provideNullInputsForCanTransitionAndTransition() {
+    @Test
+    void givenValidTransitionWithContext_whenTransition_thenIncludeContextInEvent() {
+        final var destination = RtpStatus.SENT;
+        final var triggerEvent = RtpEvent.SEND_RTP;
+
+        when(transitionConfiguration.getTransition(transitionKey))
+                .thenReturn(Optional.of(transition));
+
+        when(transition.getPreTransactionActions()).thenReturn(List.of());
+        when(transition.getDestination()).thenReturn(destination);
+        when(transition.getEvent()).thenReturn(triggerEvent);
+        when(transition.getPostTransactionActions()).thenReturn(List.of());
+
+        final var expectedForeignStatus = GdpMessage.Status.VALID;
+        final var expectedDispatcher = "dispatcher-test";
+
+        StepVerifier.create(
+                Mono.deferContextual(ctx ->
+                                Mono.from(stateMachine.transition(rtp, event))
+                ).contextWrite(ctx -> ctx
+                        .put("foreignStatus", GdpMessage.Status.VALID)
+                        .put("eventDispatcher", "dispatcher-test"))
+                )
+                .assertNext(result -> {
+                    Event lastEvent = result.getEvents().getLast();
+                    assertEquals(expectedForeignStatus, lastEvent.foreignStatus());
+                    assertEquals(expectedDispatcher, lastEvent.eventDispatcher());
+                    assertEquals(sourceStatus, lastEvent.precStatus());
+                    assertEquals(triggerEvent, lastEvent.triggerEvent());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void givenValidTransitionWithoutContext_whenTransition_thenEventFieldsAreNull() {
+        final var destination = RtpStatus.SENT;
+        final var triggerEvent = RtpEvent.SEND_RTP;
+
+        when(transitionConfiguration.getTransition(transitionKey))
+                .thenReturn(Optional.of(transition));
+        when(transition.getPreTransactionActions()).thenReturn(List.of());
+        when(transition.getDestination()).thenReturn(destination);
+        when(transition.getEvent()).thenReturn(triggerEvent);
+        when(transition.getPostTransactionActions()).thenReturn(List.of());
+
+        StepVerifier.create(stateMachine.transition(rtp, event))
+                .assertNext(result -> {
+                    Event lastEvent = result.getEvents().getLast();
+                    assertEquals(sourceStatus, lastEvent.precStatus());
+                    assertEquals(triggerEvent, lastEvent.triggerEvent());
+                    assertNull(lastEvent.foreignStatus());
+                    assertNull(lastEvent.eventDispatcher());
+                })
+                .verifyComplete();
+    }
+
+    private static Stream<Arguments> provideNullInputsForCanTransitionAndTransition() {
     return Stream.of(
         Arguments.of("canTransition(null, event)", (BiFunction<RtpStateMachine, RtpEvent, Publisher<?>>) (sm, ev) -> sm.canTransition(null, ev)),
         Arguments.of("canTransition(source, null)", (BiFunction<RtpStateMachine, RtpEvent, Publisher<?>>) (sm, ev) -> {
