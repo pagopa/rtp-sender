@@ -126,7 +126,7 @@ public class RtpExceptionHandler {
       @NonNull final ConstraintViolationException ex) {
 
     final var errorCode = Optional.of(ex)
-        .map(ConstraintViolationException::getLocalizedMessage)
+        .map(ConstraintViolationException::getMessage)
         .map(FIELD_NAME_REGEX_PATTERN::matcher)
         .filter(Matcher::find)
         .map(matcher -> matcher.group("field"))
