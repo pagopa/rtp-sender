@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.service.rtp;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -33,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -505,6 +507,74 @@ class SendRTPServiceTest {
     StepVerifier.create(sendRTPService.updateRtpCancelPaid(rtp))
         .expectError(IllegalStateException.class)
         .verify();
+  }
+
+  @Test
+  void givenExistingRtp_whenFindRtpByNoticeNumber_thenReturnsRtps() {
+    final var rtpNoticeNumber = "1234567890";
+    final var resourceId1 = ResourceID.createNew();
+    final var expectedRtp1 = Rtp.builder()
+        .resourceID(resourceId1)
+        .noticeNumber(rtpNoticeNumber)
+        .build();
+    final var resourceId2 = ResourceID.createNew();
+    final var expectedRtp2 = Rtp.builder()
+        .resourceID(resourceId2)
+        .noticeNumber(rtpNoticeNumber)
+        .build();
+
+    when(rtpRepository.findByNoticeNumber(rtpNoticeNumber))
+        .thenReturn(Flux.fromIterable(List.of(expectedRtp1, expectedRtp2)));
+
+    final var result = sendRTPService.findRtpsByNoticeNumber(rtpNoticeNumber);
+
+    StepVerifier.create(result)
+        .expectNext(expectedRtp1)
+        .expectNext(expectedRtp2)
+        .verifyComplete();
+
+    verify(rtpRepository)
+        .findByNoticeNumber(rtpNoticeNumber);
+  }
+
+  @Test
+  void givenMissingRtp_whenFindRtpByNoticeNumber_thenReturnEmptyFlux() {
+    final var rtpNoticeNumber = "NON_EXISTENT";
+
+    when(rtpRepository.findByNoticeNumber(rtpNoticeNumber))
+        .thenReturn(Flux.empty());
+
+    final var result = sendRTPService.findRtpsByNoticeNumber(rtpNoticeNumber);
+
+    StepVerifier.create(result)
+        .expectSubscription()
+        .verifyComplete();
+
+    verify(rtpRepository).findByNoticeNumber(rtpNoticeNumber);
+  }
+
+  @Test
+  void givenRepositoryError_whenFindRtpsByNoticeNumber_thenPropagatesError() {
+    final var rtpNoticeNumber = "0000000000";
+    final var exception = new RuntimeException("Database failure");
+
+    when(rtpRepository.findByNoticeNumber(rtpNoticeNumber))
+        .thenReturn(Flux.error(exception));
+
+    final var result = sendRTPService.findRtpsByNoticeNumber(rtpNoticeNumber);
+
+    StepVerifier.create(result)
+        .expectErrorMatches(error ->
+            error instanceof RuntimeException &&
+                error.getMessage().equals("Database failure"))
+        .verify();
+
+    verify(rtpRepository).findByNoticeNumber(rtpNoticeNumber);
+  }
+
+  @Test
+  void givenNullNoticeNumber_whenFindRtpsByNoticeNumber_thenThrowsNullPointerException() {
+    assertThrows(NullPointerException.class, () -> sendRTPService.findRtpsByNoticeNumber(null));
   }
 
 
