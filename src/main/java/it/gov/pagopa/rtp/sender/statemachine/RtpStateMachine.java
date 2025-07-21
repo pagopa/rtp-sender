@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -172,8 +173,8 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
       @NonNull final RtpEntity rtpEntity,
       @NonNull final RtpStatus newStatus,
       @NonNull final RtpEvent triggerEvent,
-      final GdpMessage.Status foreignStatus,
-      final String eventDispatcher) {
+      @Nullable final GdpMessage.Status foreignStatus,
+      @Nullable final String eventDispatcher) {
 
     Objects.requireNonNull(rtpEntity, "Entity cannot be null");
     Objects.requireNonNull(newStatus, "Status cannot be null");
