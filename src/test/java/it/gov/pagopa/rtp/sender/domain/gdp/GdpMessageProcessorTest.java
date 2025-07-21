@@ -124,11 +124,12 @@ class GdpMessageProcessorTest {
     final var message =
         GdpMessage.builder().operation(GdpMessage.Operation.CREATE).status(null).build();
 
-    StepVerifier.create(gdpMessageProcessor.processMessage(message))
-        .expectErrorMatches(error ->
-                error instanceof NullPointerException
-                    && error.getMessage().contains("foreignStatus is required"))
-        .verify();
+    final var exception = assertThrows(
+            NullPointerException.class,
+            () -> gdpMessageProcessor.processMessage(message)
+    );
+
+    assertEquals("foreignStatus is required", exception.getMessage());
   }
 
   @Test
@@ -144,10 +145,11 @@ class GdpMessageProcessorTest {
 
     GdpMessageProcessor processor = new GdpMessageProcessor(operationProcessorFactory, props);
 
-    StepVerifier.create(processor.processMessage(message))
-        .expectErrorMatches(error ->
-                error instanceof NullPointerException
-                    && error.getMessage().contains("eventDispatcher is required"))
-        .verify();
+    final var exception = assertThrows(
+            NullPointerException.class,
+            () -> processor.processMessage(message)
+    );
+
+    assertEquals("eventDispatcher is required", exception.getMessage());
   }
 }
