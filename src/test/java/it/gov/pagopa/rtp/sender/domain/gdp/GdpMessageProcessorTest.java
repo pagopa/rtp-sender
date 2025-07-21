@@ -35,26 +35,20 @@ class GdpMessageProcessorTest {
 
   @ParameterizedTest
   @EnumSource(value = Operation.class, names = "CREATE")
-  void givenSupportedOperation_whenMessageProcessed_thenRtpIsMappedAndSent(final Operation operation) {
-    final var message = GdpMessage.builder()
-        .operation(operation)
-        .status(GdpMessage.Status.VALID)
-        .build();
+  void givenSupportedOperation_whenMessageProcessed_thenRtpIsMappedAndSent(
+      final Operation operation) {
+    final var message = GdpMessage.builder().operation(operation).status(GdpMessage.Status.VALID).build();
 
     final var rtp = Rtp.builder().build();
 
-    when(gdpEventHubProperties.eventDispatcher())
-        .thenReturn("test-dispatcher");
+    when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
     when(this.operationProcessorFactory.getProcessor(message))
         .thenReturn(Mono.just(this.operationProcessor));
-    when(this.operationProcessor.processOperation(message))
-        .thenReturn(Mono.just(rtp));
+    when(this.operationProcessor.processOperation(message)).thenReturn(Mono.just(rtp));
 
     final var result = gdpMessageProcessor.processMessage(message);
 
-    StepVerifier.create(result)
-        .expectNext(rtp)
-        .verifyComplete();
+    StepVerifier.create(result).expectNext(rtp).verifyComplete();
 
     verify(this.operationProcessorFactory).getProcessor(message);
   }
@@ -65,15 +59,13 @@ class GdpMessageProcessorTest {
         .status(GdpMessage.Status.VALID)
         .build();
 
-    when(gdpEventHubProperties.eventDispatcher())
-            .thenReturn("test-dispatcher");
+    when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
     when(this.operationProcessorFactory.getProcessor(message))
         .thenReturn(Mono.error(new NullPointerException()));
 
     final var result = gdpMessageProcessor.processMessage(message);
 
-    StepVerifier.create(result)
-        .verifyError(NullPointerException.class);
+    StepVerifier.create(result).verifyError(NullPointerException.class);
 
     verify(this.operationProcessorFactory).getProcessor(message);
   }
@@ -88,15 +80,13 @@ class GdpMessageProcessorTest {
             .status(GdpMessage.Status.VALID)
             .build();
 
-    when(gdpEventHubProperties.eventDispatcher())
-            .thenReturn("test-dispatcher");
+    when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
     when(this.operationProcessorFactory.getProcessor(message))
-            .thenReturn(Mono.error(new UnsupportedOperationException()));
+        .thenReturn(Mono.error(new UnsupportedOperationException()));
 
     final var result = gdpMessageProcessor.processMessage(message);
 
-    StepVerifier.create(result)
-            .verifyError(UnsupportedOperationException.class);
+    StepVerifier.create(result).verifyError(UnsupportedOperationException.class);
 
     verify(this.operationProcessorFactory).getProcessor(message);
   }
@@ -108,46 +98,43 @@ class GdpMessageProcessorTest {
 
   @Test
   void givenValidMessage_whenProcessed_thenContextContainsForeignStatusAndDispatcher() {
-    final var message = GdpMessage.builder()
-            .operation(Operation.CREATE)
-            .status(GdpMessage.Status.VALID)
-            .build();
+    final var message =
+        GdpMessage.builder().operation(Operation.CREATE).status(GdpMessage.Status.VALID).build();
 
     final var rtp = Rtp.builder().build();
 
     when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
     when(operationProcessorFactory.getProcessor(message)).thenReturn(Mono.just(operationProcessor));
-    when(operationProcessor.processOperation(message)).thenReturn(
-            Mono.deferContextual(ctx -> {
-              assertEquals(GdpMessage.Status.VALID, ctx.get("foreignStatus"));
-              assertEquals("test-dispatcher", ctx.get("eventDispatcher"));
-              return Mono.just(rtp);
-            })
-    );
+    when(operationProcessor.processOperation(message))
+        .thenReturn(
+            Mono.deferContextual(
+                ctx -> {
+                  assertEquals(GdpMessage.Status.VALID, ctx.get("foreignStatus"));
+                  assertEquals("test-dispatcher", ctx.get("eventDispatcher"));
+                  return Mono.just(rtp);
+                }));
 
     StepVerifier.create(gdpMessageProcessor.processMessage(message))
-            .expectNext(rtp)
-            .verifyComplete();
+        .expectNext(rtp)
+        .verifyComplete();
   }
 
   @Test
   void givenMessageWithoutStatus_whenProcessed_thenThrowsNullPointerException() {
-    final var message = GdpMessage.builder()
-            .operation(GdpMessage.Operation.CREATE)
-            .status(null)
-            .build();
+    final var message =
+        GdpMessage.builder().operation(GdpMessage.Operation.CREATE).status(null).build();
 
     StepVerifier.create(gdpMessageProcessor.processMessage(message))
-            .expectErrorMatches(error ->
-                    error instanceof NullPointerException &&
-                            error.getMessage().contains("foreignStatus is required")
-            )
-            .verify();
+        .expectErrorMatches(error ->
+                error instanceof NullPointerException
+                    && error.getMessage().contains("foreignStatus is required"))
+        .verify();
   }
 
   @Test
   void givenNullEventDispatcher_whenProcessed_thenThrowsNullPointerException() {
-    final var message = GdpMessage.builder()
+    final var message =
+        GdpMessage.builder()
             .operation(GdpMessage.Operation.CREATE)
             .status(GdpMessage.Status.VALID)
             .build();
@@ -158,10 +145,9 @@ class GdpMessageProcessorTest {
     GdpMessageProcessor processor = new GdpMessageProcessor(operationProcessorFactory, props);
 
     StepVerifier.create(processor.processMessage(message))
-            .expectErrorMatches(error ->
-                    error instanceof NullPointerException &&
-                            error.getMessage().contains("eventDispatcher is required")
-            )
-            .verify();
+        .expectErrorMatches(error ->
+                error instanceof NullPointerException
+                    && error.getMessage().contains("eventDispatcher is required"))
+        .verify();
   }
 }

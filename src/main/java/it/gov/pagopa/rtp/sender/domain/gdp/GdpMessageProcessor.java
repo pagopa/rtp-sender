@@ -11,7 +11,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-
 /**
  * Message processor responsible for handling incoming {@link GdpMessage} instances by delegating
  * the processing to an appropriate {@link OperationProcessor} based on the message's {@link Operation} type.
@@ -35,19 +34,17 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
   private final OperationProcessorFactory operationProcessorFactory;
   private final GdpEventHubProperties gdpEventHubProperties;
 
-
   /**
    * Constructs a new {@code GdpMessageProcessor} with the given {@link OperationProcessorFactory}.
    *
    * @param operationProcessorFactory the factory used to resolve operation-specific processors
    */
   public GdpMessageProcessor(
-          @NonNull final OperationProcessorFactory operationProcessorFactory,
-          @NonNull final GdpEventHubProperties gdpEventHubProperties) {
+      @NonNull final OperationProcessorFactory operationProcessorFactory,
+      @NonNull final GdpEventHubProperties gdpEventHubProperties) {
     this.operationProcessorFactory = Objects.requireNonNull(operationProcessorFactory);
     this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
   }
-
 
   /**
    * Processes the given {@link GdpMessage} by determining its {@link Operation} type
@@ -67,13 +64,11 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
 
     return Mono.fromSupplier(() -> message)
         .doOnNext(payload -> log.info("Operation: {}", payload.operation()))
-        .flatMap(payload -> this.operationProcessorFactory.getProcessor(payload)
-            .flatMap(operationProcessor -> operationProcessor.processOperation(payload))
-        )
+        .flatMap(payload -> this.operationProcessorFactory
+                .getProcessor(payload)
+                .flatMap(operationProcessor -> operationProcessor.processOperation(payload)))
         .contextWrite(ctx -> ctx
-                .put("foreignStatus", Objects.requireNonNull(message.status(),"foreignStatus is required"))
-                .put("eventDispatcher", Objects.requireNonNull(this.gdpEventHubProperties.eventDispatcher(),"eventDispatcher is required"))
-        );
+                .put("foreignStatus", Objects.requireNonNull(message.status(), "foreignStatus is required"))
+                .put("eventDispatcher", Objects.requireNonNull(this.gdpEventHubProperties.eventDispatcher(), "eventDispatcher is required")));
   }
 }
-
