@@ -16,14 +16,14 @@ public record GdpMessage(
     String iuv,
     String subject,
     String description,
-    String ecTaxCode,
-    String debtorTaxCode,
+    String ec_tax_code,
+    String debtor_tax_code,
     String nav,
-    LocalDate dueDate,
+    LocalDate due_date,
     @Positive int amount,
     Status status,
-    String pspCode,
-    String pspTaxCode
+    String psp_code,
+    String psp_tax_code
 ) {
 
   public enum Operation {
