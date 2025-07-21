@@ -128,6 +128,14 @@ public class ReactiveMongoTraceInterceptor implements MethodInterceptor {
   }
 
 
+  /**
+   * Applies tracing logic to the intercepted MongoDB repository method,
+   * delegating to either Mono or Flux tracing logic depending on return type.
+   *
+   * @param invocation The intercepted method invocation
+   * @return The traced result, as a {@link Mono} or {@link Flux}
+   * @throws Throwable if the method invocation fails
+   */
   @Nullable
   private Object tracingLogic(@NonNull final MethodInvocation invocation) throws Throwable {
     // Check if the target is a ReactiveMongoRepository implementation
