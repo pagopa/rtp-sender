@@ -106,15 +106,13 @@ class GdpMessageProcessorTest {
     when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
     when(operationProcessorFactory.getProcessor(message)).thenReturn(Mono.just(operationProcessor));
     when(operationProcessor.processOperation(message))
-        .thenReturn(
-            Mono.deferContextual(
-                ctx -> {
-                  assertEquals(GdpMessage.Status.VALID, ctx.get("foreignStatus"));
-                  assertEquals("test-dispatcher", ctx.get("eventDispatcher"));
-                  return Mono.just(rtp);
-                }));
+        .thenReturn(Mono.deferContextual(ctx -> Mono.just(rtp)));
 
     StepVerifier.create(gdpMessageProcessor.processMessage(message))
+        .expectAccessibleContext()
+        .contains("foreignStatus", GdpMessage.Status.VALID)
+        .contains("eventDispatcher", "test-dispatcher")
+        .then()
         .expectNext(rtp)
         .verifyComplete();
   }
