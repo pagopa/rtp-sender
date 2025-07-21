@@ -113,57 +113,33 @@ public class ReactiveMongoTraceInterceptor implements MethodInterceptor {
    * @throws Throwable if the invocation fails
    */
   @Override
-  public Object invoke(@NonNull final MethodInvocation invocation) throws Throwable {
-    final var traceMongoMethodAnnotation = Optional.of(invocation)
-        .map(MethodInvocation::getMethod)
-        .map(method ->
-            AnnotationUtils.findAnnotation(method, TraceMongo.class));
-
-    final var traceMongoClassAnnotation = Optional.of(invocation)
-        .map(MethodInvocation::getThis)
-        .map(Object::getClass)
-        .map(clazz ->
-            AnnotationUtils.findAnnotation(clazz, TraceMongo.class));
-
-    return Optional.of(invocation)
-        .flatMap( methodInvocation -> traceMongoMethodAnnotation)
-        .or(() -> traceMongoClassAnnotation)
-        .map(annotation -> tracingLogic(invocation))
-        .orElseGet(() -> {
-          try {
-            return invocation.proceed();
-
-          } catch (Throwable e) {
-            throw new RuntimeException(e);
-          }
-        });
+  public Object invoke(MethodInvocation invocation) throws Throwable {
+    TraceMongo traceMongo = AnnotationUtils.findAnnotation(invocation.getMethod(), TraceMongo.class);
+    if (traceMongo == null) {
+      traceMongo = AnnotationUtils.findAnnotation(invocation.getThis().getClass(), TraceMongo.class);
+    }
+    if (traceMongo != null) {
+      // Apply tracing logic
+      return tracingLogic(invocation);
+    } else {
+      // Skip tracing
+      return invocation.proceed();
+    }
   }
 
 
   @Nullable
-  private Object tracingLogic(@NonNull final MethodInvocation invocation) {
+  private Object tracingLogic(@NonNull final MethodInvocation invocation) throws Throwable {
     // Check if the target is a ReactiveMongoRepository implementation
-    if (!(invocation.getThis() instanceof ReactiveMongoRepository<?, ?>)) {
-      try {
-        return invocation.proceed();
-
-      } catch (Throwable e) {
-        throw new RuntimeException(e);
-      }
-    }
+    if (!(invocation.getThis() instanceof ReactiveMongoRepository<?, ?>))
+      return invocation.proceed();
 
     final var repository = (ReactiveMongoRepository<?, ?>) invocation.getThis();
     final var method = invocation.getMethod();
     final var methodName = method.getName();
 
-    if (METHODS_TO_IGNORE.contains(methodName)) {
-      try {
-        return invocation.proceed();
-
-      } catch (Throwable e) {
-        throw new RuntimeException(e);
-      }
-    }
+    if (METHODS_TO_IGNORE.contains(methodName))
+      return invocation.proceed();
 
     final var repositoryName = getRepositoryName(repository);
     final var collectionName = getCollectionName(repositoryName);
