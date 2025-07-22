@@ -20,26 +20,31 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
-
 /**
  * Handles the cancellation of a Request-to-Pay (RTP) request.
  * This class extends {@link EpcApiInvokerHandler} to interact with the EPC API,
  * sending RTP cancellation requests to the external service provider.
- * It ensures secure communication using mTLS and OAuth2 authentication when required.
+ * It ensures secure communication using mTLS and OAuth2 authentication when
+ * required.
  */
 @Component("cancelRtpHandler")
 @Slf4j
 public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHandler<EpcRequest> {
 
-    private final PagoPaConfigProperties pagoPaConfigProperties;
+  private final PagoPaConfigProperties pagoPaConfigProperties;
+
   /**
    * Constructs a {@code CancelRtpHandler} with required dependencies.
    *
-   * @param webClientFactory       Factory for creating web clients (with or without mTLS).
-   * @param epcClientFactory       Factory for creating API clients for EPC (European Payments
+   * @param webClientFactory       Factory for creating web clients (with or
+   *                               without mTLS).
+   * @param epcClientFactory       Factory for creating API clients for EPC
+   *                               (European Payments
    *                               Council) communication.
-   * @param sepaRequestToPayMapper Mapper for converting RTP cancellation requests into EPC-compliant format.
-   * @param serviceProviderConfig  Configuration settings for the service provider.
+   * @param sepaRequestToPayMapper Mapper for converting RTP cancellation requests
+   *                               into EPC-compliant format.
+   * @param serviceProviderConfig  Configuration settings for the service
+   *                               provider.
    */
   public CancelRtpHandler(
       @NonNull final WebClientFactory webClientFactory,
@@ -53,8 +58,10 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
   }
 
   /**
-   * Handles an incoming EPC request by sending an RTP cancellation request to the external service provider.
-   * The request follows multiple steps, including creating an EPC API client, setting API credentials,
+   * Handles an incoming EPC request by sending an RTP cancellation request to the
+   * external service provider.
+   * The request follows multiple steps, including creating an EPC API client,
+   * setting API credentials,
    * and handling retries in case of failures.
    *
    * @param request The EPC request containing RTP cancellation details.
@@ -70,19 +77,31 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
           final var sepaRequest = this.sepaRequestToPayMapper.toEpcRequestToCancel(rtpToSend);
           final var basePath = request.serviceProviderFullData().tsp().serviceEndpoint();
           final var idempotencyKey = IdentifierUtils.generateDeterministicIdempotencyKey(
-                  this.pagoPaConfigProperties.operationSlug().cancel(),
-                  request.rtpToSend().resourceID().getId()
-          );
+              this.pagoPaConfigProperties.operationSlug().cancel(),
+              request.rtpToSend().resourceID().getId());
 
           epcClient.getApiClient().setBasePath(basePath);
           this.injectTokenIntoEpcRequest(epcClient, request);
 
           return Mono.defer(() -> epcClient.postRequestToPayCancellationRequest(
-                  idempotencyKey,
-                  UUID.randomUUID().toString(),
-                  request.rtpToSend().resourceID().getId().toString(),
-                  sepaRequest))
+              idempotencyKey,
+              UUID.randomUUID().toString(),
+              request.rtpToSend().resourceID().getId().toString(),
+              sepaRequest))
               .doFirst(() -> log.info("Sending RTP cancellation request to {}", rtpToSend.serviceProviderDebtor()))
+              .doOnSuccess(response -> {
+                log.info("Successfully received response from EPC service");
+                log.info("Response: {}", response);
+              })
+              .doOnError(error -> {
+                log.error("Error occurred while sending RTP", error);
+                if (error instanceof WebClientResponseException) {
+                  WebClientResponseException wcre = (WebClientResponseException) error;
+                  log.error("HTTP Status: {}, Response Body: {}",
+                      wcre.getStatusCode(),
+                      wcre.getResponseBodyAsString());
+                }
+              })
               .retryWhen(sendRetryPolicy());
         })
         .map(resp -> request.withResponse(TransactionStatus.CNCL))
@@ -93,13 +112,16 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
   }
 
   /**
-   * Handles errors that occur during the retry process of sending an RTP cancellation request. It
-   * distinguishes between different types of errors and returns the appropriate transaction status.
+   * Handles errors that occur during the retry process of sending an RTP
+   * cancellation request. It
+   * distinguishes between different types of errors and returns the appropriate
+   * transaction status.
    *
-   * @param ex The exception thrown during the retry process.
+   * @param ex      The exception thrown during the retry process.
    * @param request The original EPC request.
-   * @return A {@code Mono} containing the EPC request with an updated status based on the error
-   *     type.
+   * @return A {@code Mono} containing the EPC request with an updated status
+   *         based on the error
+   *         type.
    */
   @NonNull
   private Mono<EpcRequest> handleRetryError(
@@ -118,4 +140,3 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
         .orElse(Mono.just(request.withResponse(TransactionStatus.ERROR)));
   }
 }
-
