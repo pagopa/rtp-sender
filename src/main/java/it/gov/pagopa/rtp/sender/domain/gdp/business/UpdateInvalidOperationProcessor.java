@@ -32,14 +32,14 @@ public class UpdateInvalidOperationProcessor extends UpdateOperationProcessor {
       return Mono.just(rtp)
         .doFirst(() -> log.info("Start processing INVALID update. messageId={}, rtpId={}",
                 gdpMessage.id(), rtp.resourceID().getId()))
-        .flatMap(r -> this.retrieveServiceProviderIdByPspTaxCode(gdpMessage.psp_tax_code()))
-        .doOnNext(pspId -> log.debug("Resolved PSP taxCode {} to serviceProviderId {}",
-                gdpMessage.psp_tax_code(), pspId))
-        .filter(pspId -> !pspId.equals(rtp.serviceProviderDebtor()))
-        .doOnNext(__ -> log.info("PSP mismatch detected. Proceeding to cancel RTP {}",
+        .flatMap(rtpToUpdate -> this.retrieveServiceProviderIdByPspTaxCode(gdpMessage.psp_tax_code()))
+        .doOnNext(pspTaxCode -> log.debug("Resolved PSP taxCode {} to serviceProviderId {}",
+                gdpMessage.psp_tax_code(), pspTaxCode))
+        .filter(pspTaxCode -> !pspTaxCode.equals(rtp.serviceProviderDebtor()))
+        .doOnNext(pspTaxCode -> log.info("PSP mismatch detected. Proceeding to cancel RTP {}",
                 rtp.resourceID().getId()))
-        .flatMap(__ -> sendRTPService.doCancelRtp(rtp))
-        .doOnSuccess(__ -> log.info("RTP cancelled successfully. rtpId {}",
+        .flatMap(pspTaxCode -> sendRTPService.doCancelRtp(rtp))
+        .doOnSuccess(rtpUpdated -> log.info("RTP cancelled successfully. rtpId {}",
                 rtp.resourceID().getId()))
         .switchIfEmpty(Mono.defer(() -> {
             log.info("PSP is the same as the one used to send the RTP. Skipping processing. rtpId={}",
