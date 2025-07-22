@@ -206,7 +206,7 @@ class SendRTPServiceTest {
 
 
   @Test
-  void givenExistingCreatedRtp_whenCancelRtp_thenShouldSetCancelledStatusAndSave() {
+  void givenExistingCreatedRtp_whenCancelRtp_ById_thenShouldSetCancelledStatusAndSave() {
     final var rtpId = ResourceID.createNew();
     final var createdRtp = mockRtp(RtpStatus.CREATED, rtpId, LocalDateTime.now());
     final var cancelRtp = mockRtp(RtpStatus.CANCELLED, rtpId, LocalDateTime.now());
@@ -216,7 +216,7 @@ class SendRTPServiceTest {
     when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(createdRtp))
         .thenReturn(Mono.just(cancelRtp));
 
-    final var result = sendRTPService.cancelRtp(rtpId);
+    final var result = sendRTPService.cancelRtpById(rtpId);
 
     StepVerifier.create(result)
         .assertNext(rtp -> {
@@ -231,12 +231,12 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenNonExistingRtp_whenCancelRtp_thenShouldThrowRtpNotFoundException() {
+  void givenNonExistingRtp_whenCancelRtp_thenShouldThrowRtpByIdNotFoundException() {
     final var rtpId = ResourceID.createNew();
 
     when(rtpRepository.findById(rtpId)).thenReturn(Mono.empty());
 
-    final var result = sendRTPService.cancelRtp(rtpId);
+    final var result = sendRTPService.cancelRtpById(rtpId);
 
     StepVerifier.create(result)
         .expectError(RtpNotFoundException.class)
@@ -248,7 +248,7 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenRtpInCreatedStatus_whenCancelRtp_thenShouldSucceed() {
+  void givenRtpInCreatedStatus_whenCancelRtp_ById_thenShouldSucceed() {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.CREATED, rtpId);
@@ -257,7 +257,7 @@ class SendRTPServiceTest {
     when(rtpStatusUpdater.canCancel(mockRtp)).thenReturn(Mono.just(true));
     when(sendRtpProcessor.sendRtpCancellationToServiceProviderDebtor(mockRtp)).thenReturn(Mono.just(mockRtp));
 
-    StepVerifier.create(sendRTPService.cancelRtp(resourceID))
+    StepVerifier.create(sendRTPService.cancelRtpById(resourceID))
             .expectNext(mockRtp)
             .verifyComplete();
 
@@ -267,7 +267,7 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenRtpInNotAllowedStatus_whenCancelRtp_thenThrowsIllegalStateException() {
+  void givenRtpInNotAllowedStatus_whenCancelRtp_ById_thenThrowsIllegalStateException() {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
     Rtp mockRtp = mockRtpWithStatus(RtpStatus.PAID, rtpId);
@@ -275,7 +275,7 @@ class SendRTPServiceTest {
     when(rtpRepository.findById(resourceID)).thenReturn(Mono.just(mockRtp));
     when(rtpStatusUpdater.canCancel(mockRtp)).thenReturn(Mono.just(false));
 
-    StepVerifier.create(sendRTPService.cancelRtp(resourceID))
+    StepVerifier.create(sendRTPService.cancelRtpById(resourceID))
             .expectErrorMatches(err ->
                     err instanceof IllegalStateException &&
                             err.getMessage().contains(rtpId.toString()))
@@ -288,13 +288,13 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenNonExistentRtp_whenCancelRtp_thenThrowsRtpNotFoundException() {
+  void givenNonExistentRtp_whenCancelRtp_thenThrowsRtpByIdNotFoundException() {
     UUID rtpId = UUID.randomUUID();
     ResourceID resourceID = new ResourceID(rtpId);
 
     when(rtpRepository.findById(resourceID)).thenReturn(Mono.empty());
 
-    StepVerifier.create(sendRTPService.cancelRtp(resourceID))
+    StepVerifier.create(sendRTPService.cancelRtpById(resourceID))
             .expectError(RtpNotFoundException.class)
             .verify();
 
@@ -497,7 +497,7 @@ class SendRTPServiceTest {
   }
 
   @Test
-  void givenCancelRtpFails_whenUpdateRtpCancelPaid_thenThrowsIllegalStateException() {
+  void givenCancelRtpFails_whenUpdateRtpCancelPaid_thenThrowsIllegalStateExceptionById() {
     final var resourceID = ResourceID.createNew();
     final var rtp = mockRtp(RtpStatus.CREATED, resourceID, LocalDateTime.now());
 
