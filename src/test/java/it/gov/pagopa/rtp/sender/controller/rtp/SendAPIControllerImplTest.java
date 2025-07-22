@@ -21,9 +21,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +40,7 @@ import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(SpringExtension.class)
@@ -295,7 +298,7 @@ class SendAPIControllerImplTest {
     final var cancelledRtp =
         Rtp.builder().resourceID(new ResourceID(rtpId)).status(RtpStatus.CANCELLED).build();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class))).thenReturn(Mono.just(cancelledRtp));
+    when(sendRTPService.cancelRtpById(any(ResourceID.class))).thenReturn(Mono.just(cancelledRtp));
 
     webTestClient
         .post()
@@ -312,7 +315,7 @@ class SendAPIControllerImplTest {
   void givenNonExistingRtpId_whenCancelRtp_thenReturnNotFound() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new RtpNotFoundException(rtpId)));
 
     webTestClient
@@ -330,7 +333,7 @@ class SendAPIControllerImplTest {
   void givenUnexpectedError_whenCancelRtp_thenReturnInternalServerError() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new RuntimeException("Unexpected error")));
 
     webTestClient
@@ -348,7 +351,7 @@ class SendAPIControllerImplTest {
   void givenInvalidRtpStatus_whenCancelRtp_thenReturnUnprocessableEntity() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new IllegalStateException()));
 
     webTestClient
@@ -366,7 +369,7 @@ class SendAPIControllerImplTest {
   void givenValidId_whenFindRtpById_thenReturnDtoInResponseEntityOk() {
     UUID requestId = UUID.randomUUID();
     Rtp rtp = generateRtp();
-    RtpDto dto = generateRtpDto();
+    RtpDto dto = generateRtpDtoFromRtp(rtp);
 
     when(sendRTPService.findRtp(rtp.resourceID().getId())).thenReturn(Mono.just(rtp));
     when(rtpDtoMapper.toRtpDto(rtp)).thenReturn(dto);
@@ -434,6 +437,102 @@ class SendAPIControllerImplTest {
         .exchange()
         .expectStatus()
         .isForbidden();
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenValidNoticeNumberAssociatedWithRtps_whenFindRtpByNoticeNumber_thenReturnRtpAssociatedToNoticeNumber() {
+    final var noticeNumber = "311111111112222129";
+    final var requestId = UUID.randomUUID();
+    final var rtp1 = generateRtp();
+    final var rtp2 = generateRtp();
+    final var dto1 = generateRtpDtoFromRtp(rtp1);
+    final var dto2 = generateRtpDtoFromRtp(rtp2);
+
+    when(sendRTPService.findRtpsByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.just(rtp1, rtp2));
+    when(rtpDtoMapper.toRtpDto(rtp1))
+        .thenReturn(dto1);
+    when(rtpDtoMapper.toRtpDto(rtp2))
+        .thenReturn(dto2);
+
+    webTestClient.get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBodyList(RtpDto.class)
+        .hasSize(2)
+        .contains(dto1, dto2);
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenNonexistentNoticeNumber_whenFindRtpByNoticeNumber_thenReturnEmptyFlux() {
+    final var noticeNumber = "000000000000000000";
+    final var requestId = UUID.randomUUID();
+
+    when(sendRTPService.findRtpsByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.empty());
+
+    webTestClient.get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBodyList(RtpDto.class)
+        .hasSize(0);
+
+    verifyNoInteractions(rtpDtoMapper);
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenUnexpectedError_whenFindRtpByNoticeNumber_thenReturnServerError() {
+    final var noticeNumber = "311111111112222129";
+    final var requestId = UUID.randomUUID();
+
+    when(sendRTPService.findRtpsByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.error(new RuntimeException("Something went wrong")));
+
+    webTestClient.get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().is5xxServerError();
+  }
+
+  @Test
+  @WithMockUser
+  void givenUserWithoutValidRole_whenFindRtpByNoticeNumber_thenAccessDenied() {
+    final var noticeNumber = "311111111112222129";
+    final var requestId = UUID.randomUUID();
+
+    webTestClient.get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().isForbidden();
   }
 
   private CreateRtpDto generateSendRequest() {
@@ -552,33 +651,40 @@ class SendAPIControllerImplTest {
         .build();
   }
 
-  private RtpDto generateRtpDto() {
+  private RtpDto generateRtpDtoFromRtp(final Rtp rtp) {
+    final Function<Event, EventDto> eventMapper = event -> {
+      final var eventDto = new EventDto();
 
-    UUID uuid = UUID.fromString("76a185a7-4f8f-44ad-b08e-2da722e25ff8");
-    LocalDateTime date = LocalDateTime.of(2025, 1, 1, 1, 0, 0);
-    LocalDate expiry = LocalDate.of(2025, 1, 1);
-    EventDto event = new EventDto()
-            .timestamp(date)
-            .precStatus(RtpStatusDto.CREATED)
-            .triggerEvent(RtpEventDto.SEND_RTP);
+      eventDto.setTimestamp(
+          event.timestamp().
+              atZone(ZoneId.of("UTC"))
+              .toLocalDateTime());
+      eventDto.setPrecStatus(RtpStatusDto.valueOf(event.precStatus().name()));
+      eventDto.setTriggerEvent(RtpEventDto.valueOf(event.triggerEvent().name()));
+
+      return eventDto;
+    };
+
+    final var events = rtp.events().stream()
+        .map(eventMapper)
+        .toList();
 
     return new RtpDto()
-        .noticeNumber("123456789")
-        .amount(150.75)
-        .expiryDate(expiry)
-        .payerId("payer-001")
-        .payerName("Mario Rossi")
-        .payeeName("Comune di Roma")
-        .payeeId("payee-002")
-        .resourceID(uuid)
-        .subject("TARI 2025")
-        .savingDateTime(date)
-        .serviceProviderDebtor("DEBTOR-001")
-        .iban("IT60X0542811101000000123456")
-        .payTrxRef("TX123456")
-        .flgConf("Y")
-        .status(RtpStatusDto.SENT)
-        .serviceProviderCreditor("CREDITOR-001")
-        .events(List.of(event));
+        .noticeNumber(rtp.noticeNumber())
+        .amount(rtp.amount().doubleValue())
+        .expiryDate(rtp.expiryDate())
+        .payerId(rtp.payerId())
+        .payeeName(rtp.payeeName())
+        .payeeId(rtp.payeeId())
+        .resourceID(rtp.resourceID().getId())
+        .subject(rtp.subject())
+        .savingDateTime(rtp.savingDateTime())
+        .serviceProviderDebtor(rtp.serviceProviderDebtor())
+        .iban(rtp.iban())
+        .payTrxRef(rtp.payTrxRef())
+        .flgConf(rtp.flgConf())
+        .status(RtpStatusDto.valueOf(rtp.status().name()))
+        .serviceProviderCreditor(rtp.serviceProviderCreditor())
+        .events(events);
   }
 }

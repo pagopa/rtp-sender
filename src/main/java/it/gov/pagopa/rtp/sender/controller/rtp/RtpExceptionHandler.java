@@ -1,14 +1,16 @@
 package it.gov.pagopa.rtp.sender.controller.rtp;
 
 import io.netty.handler.timeout.ReadTimeoutException;
-import it.gov.pagopa.rtp.sender.activateClient.model.ErrorDto;
-import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import it.gov.pagopa.rtp.sender.domain.errors.MessageBadFormed;
 import it.gov.pagopa.rtp.sender.domain.errors.PayerNotActivatedException;
 import it.gov.pagopa.rtp.sender.exception.SendErrorCode;
+import it.gov.pagopa.rtp.sender.model.generated.send.ErrorDto;
 import it.gov.pagopa.rtp.sender.model.generated.send.MalformedRequestErrorResponseDto;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.Collection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatus;
@@ -21,13 +23,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
-import java.util.Collections;
 import java.util.Optional;
 
 @RestControllerAdvice(basePackages = "it.gov.pagopa.rtp.sender.controller.rtp")
 public class RtpExceptionHandler {
 
   private static final String MALFORMED_REQUEST_ERROR_CODE = "Malformed request";
+  private static final Pattern FIELD_NAME_REGEX_PATTERN = Pattern.compile("^\\s*\\w+\\.(?<field>\\w+):.*$");
 
 
   @ExceptionHandler(MessageBadFormed.class)
@@ -110,6 +112,36 @@ public class RtpExceptionHandler {
     return ResponseEntity.badRequest().body(errorsDto);
   }
 
+
+  /**
+   * Handles {@link ConstraintViolationException} exceptions thrown upon parsing incoming requests
+   * when some field in the payload doesn't abide to provided constraints.
+   *
+   * @param ex the {@link ConstraintViolationException} thrown upon parsing request.
+   * @return a {@link ResponseEntity} with status {@code 400 Bad Request}.
+   */
+  @ExceptionHandler(ConstraintViolationException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ResponseEntity<ErrorDto> handleConstraintViolationException(
+      @NonNull final ConstraintViolationException ex) {
+
+    final var errorCode = Optional.of(ex)
+        .map(ConstraintViolationException::getMessage)
+        .map(FIELD_NAME_REGEX_PATTERN::matcher)
+        .filter(Matcher::find)
+        .map(matcher -> matcher.group("field"))
+        .filter(field -> field.equals("noticeNumber"))
+        .map(field -> SendErrorCode.INVALID_NOTICE_NUMBER_FORMAT)
+        .orElse(SendErrorCode.INVALID_REQUEST_FORMAT);
+
+    final var errorDto = new ErrorDto()
+        .code(errorCode.getCode())
+        .description(errorCode.getMessage());
+
+    return ResponseEntity.badRequest().body(errorDto);
+  }
+
+
   /**
    * Handles {@link ReadTimeoutException} exceptions thrown during the processing of requests.
    * @param ex the {@link ReadTimeoutException} thrown during request processing.
@@ -129,18 +161,16 @@ public class RtpExceptionHandler {
    * with {@link SendErrorCode#PAYER_NOT_ACTIVATED} as error code.
    * </p>
    *
-   * @return a {@link ResponseEntity} containing an {@link ErrorsDto} with one error
+   * @return a {@link ResponseEntity} containing an {@link ErrorDto} with one error
    *         indicating that the payer is not activated.
    */
   @ExceptionHandler(PayerNotActivatedException.class)
-  public ResponseEntity<ErrorsDto> handlePayerNotActivated() {
+  public ResponseEntity<ErrorDto> handlePayerNotActivated() {
     var error = new ErrorDto()
             .code(SendErrorCode.PAYER_NOT_ACTIVATED.getCode())
             .description(SendErrorCode.PAYER_NOT_ACTIVATED.getMessage());
 
-    var errors = new ErrorsDto();
-    errors.setErrors(Collections.singletonList(error));
-
-    return ResponseEntity.unprocessableEntity().body(errors);
+    return ResponseEntity.unprocessableEntity()
+        .body(error);
   }
 }
