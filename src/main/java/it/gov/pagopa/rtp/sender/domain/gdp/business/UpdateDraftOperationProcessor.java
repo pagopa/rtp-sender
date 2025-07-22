@@ -13,6 +13,9 @@ import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * Operation processor responsible for handling GDP messages that update RTPs in {@link Status#DRAFT} state.
+ */
 @Slf4j
 public class UpdateDraftOperationProcessor extends UpdateOperationProcessor {
 
@@ -21,6 +24,16 @@ public class UpdateDraftOperationProcessor extends UpdateOperationProcessor {
   );
 
 
+  /**
+   * Constructs a new {@code UpdateOperationProcessor} with required dependencies.
+   *
+   * @param registryDataService   the service for accessing registry data; must not be {@code null}
+   * @param sendRTPService        the service for sending or retrieving RTPs; must not be
+   *                              {@code null}
+   * @param gdpEventHubProperties the configuration properties for the Event Hub; must not be
+   *                              {@code null}
+   * @throws NullPointerException if any argument is {@code null}
+   */
   protected UpdateDraftOperationProcessor(
       @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPServiceImpl sendRTPService,
@@ -31,6 +44,13 @@ public class UpdateDraftOperationProcessor extends UpdateOperationProcessor {
   }
 
 
+  /**
+   * Cancels the RTP if the current state and message are compatible with {@link Status#DRAFT}.
+   *
+   * @param rtp        the RTP to cancel; must not be {@code null}
+   * @param gdpMessage the GDP message triggering the update; must not be {@code null}
+   * @return a {@link Mono} emitting the cancelled {@link Rtp}, or an error if the operation fails
+   */
   @Override
   @NonNull
   protected Mono<Rtp> updateRtp(
