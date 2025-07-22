@@ -62,14 +62,14 @@ class UpdateInvalidOperationProcessorTest {
         when(registryDataService.getServiceProvidersByPspTaxCode())
                 .thenReturn(Mono.just(Map.of("4321", createServiceProvider(receivedPspId))));
 
-        when(sendRTPService.doCancelRtp(any()))
+        when(sendRTPService.cancelRtp(any()))
                 .thenReturn(Mono.just(rtp.withStatus(RtpStatus.CANCELLED)));
 
         StepVerifier.create(processor.updateRtp(rtp, message))
                 .expectNextMatches(result -> result.status() == RtpStatus.CANCELLED)
                 .verifyComplete();
 
-        verify(sendRTPService).doCancelRtp(rtp);
+        verify(sendRTPService).cancelRtp(rtp);
     }
 
     @Test
@@ -82,7 +82,7 @@ class UpdateInvalidOperationProcessorTest {
         StepVerifier.create(processor.updateRtp(rtp, message))
                 .verifyComplete();
 
-        verify(sendRTPService, never()).doCancelRtp(any());
+        verify(sendRTPService, never()).cancelRtp(any());
     }
 
     @Test
@@ -98,7 +98,7 @@ class UpdateInvalidOperationProcessorTest {
                                 error.getMessage().contains("9999"))
                 .verify();
 
-        verify(sendRTPService, never()).doCancelRtp(any());
+        verify(sendRTPService, never()).cancelRtp(any());
     }
 
     @Test
@@ -108,7 +108,7 @@ class UpdateInvalidOperationProcessorTest {
         when(registryDataService.getServiceProvidersByPspTaxCode())
                 .thenReturn(Mono.just(Map.of("4321", createServiceProvider(receivedPspId))));
 
-        when(sendRTPService.doCancelRtp(any()))
+        when(sendRTPService.cancelRtp(any()))
                 .thenReturn(Mono.error(new RuntimeException("Cancellation failed")));
 
         StepVerifier.create(processor.updateRtp(rtp, message))
@@ -116,7 +116,7 @@ class UpdateInvalidOperationProcessorTest {
                         e.getMessage().equals("Cancellation failed"))
                 .verify();
 
-        verify(sendRTPService).doCancelRtp(rtp);
+        verify(sendRTPService).cancelRtp(rtp);
     }
 
     private GdpMessage createGdpMessage(String pspTaxCode) {
