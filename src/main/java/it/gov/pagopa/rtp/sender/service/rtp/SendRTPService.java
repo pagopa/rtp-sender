@@ -11,7 +11,7 @@ public interface SendRTPService {
 
     Mono<Rtp> send(Rtp rtp);
 
-    Mono<Rtp> cancelRtp(ResourceID rtpId);
+    Mono<Rtp> cancelRtpById(ResourceID rtpId);
 
     Mono<Rtp> findRtp(UUID rtpId);
 

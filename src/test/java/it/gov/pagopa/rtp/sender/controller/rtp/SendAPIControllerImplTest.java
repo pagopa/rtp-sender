@@ -298,7 +298,7 @@ class SendAPIControllerImplTest {
     final var cancelledRtp =
         Rtp.builder().resourceID(new ResourceID(rtpId)).status(RtpStatus.CANCELLED).build();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class))).thenReturn(Mono.just(cancelledRtp));
+    when(sendRTPService.cancelRtpById(any(ResourceID.class))).thenReturn(Mono.just(cancelledRtp));
 
     webTestClient
         .post()
@@ -315,7 +315,7 @@ class SendAPIControllerImplTest {
   void givenNonExistingRtpId_whenCancelRtp_thenReturnNotFound() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new RtpNotFoundException(rtpId)));
 
     webTestClient
@@ -333,7 +333,7 @@ class SendAPIControllerImplTest {
   void givenUnexpectedError_whenCancelRtp_thenReturnInternalServerError() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new RuntimeException("Unexpected error")));
 
     webTestClient
@@ -351,7 +351,7 @@ class SendAPIControllerImplTest {
   void givenInvalidRtpStatus_whenCancelRtp_thenReturnUnprocessableEntity() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new IllegalStateException()));
 
     webTestClient

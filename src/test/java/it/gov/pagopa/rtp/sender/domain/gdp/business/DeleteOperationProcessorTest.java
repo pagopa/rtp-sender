@@ -50,14 +50,14 @@ class DeleteOperationProcessorTest {
 
         when(gdpEventHubProperties.eventDispatcher()).thenReturn(eventDispatcher);
         when(sendRTPService.findRtpByCompositeKey(operationId, eventDispatcher)).thenReturn(Mono.just(rtp));
-        when(sendRTPService.cancelRtp(rtp.resourceID())).thenReturn(Mono.just(rtp));
+        when(sendRTPService.cancelRtpById(rtp.resourceID())).thenReturn(Mono.just(rtp));
 
         StepVerifier.create(processor.processOperation(gdpMessage))
                 .expectNext(rtp)
                 .verifyComplete();
 
         verify(sendRTPService).findRtpByCompositeKey(operationId, eventDispatcher);
-        verify(sendRTPService).cancelRtp(rtp.resourceID());
+        verify(sendRTPService).cancelRtpById(rtp.resourceID());
     }
 
     @Test
@@ -91,6 +91,6 @@ class DeleteOperationProcessorTest {
                 .verify();
 
         verify(sendRTPService).findRtpByCompositeKey(operationId, eventDispatcher);
-        verify(sendRTPService, never()).cancelRtp(any());
+        verify(sendRTPService, never()).cancelRtpById(any());
     }
 }

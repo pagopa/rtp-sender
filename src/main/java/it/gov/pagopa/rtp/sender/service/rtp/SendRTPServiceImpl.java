@@ -110,7 +110,7 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
 
   @NonNull
   @Override
-  public Mono<Rtp> cancelRtp(@NonNull final ResourceID rtpId) {
+  public Mono<Rtp> cancelRtpById(@NonNull final ResourceID rtpId) {
     return this.rtpRepository
         .findById(rtpId)
         .doFirst(() -> log.info("Retrieving RTP with id {}", rtpId.getId()))

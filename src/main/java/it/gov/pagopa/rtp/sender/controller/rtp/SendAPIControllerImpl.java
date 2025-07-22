@@ -69,7 +69,7 @@ public class SendAPIControllerImpl implements RtpsApi {
 
     return Mono.just(rtpId)
         .map(ResourceID::new)
-        .flatMap(sendRTPService::cancelRtp)
+        .flatMap(sendRTPService::cancelRtpById)
         .<ResponseEntity<Void>>map(rtp -> ResponseEntity
             .noContent().build())
         .onErrorReturn(RtpNotFoundException.class,
