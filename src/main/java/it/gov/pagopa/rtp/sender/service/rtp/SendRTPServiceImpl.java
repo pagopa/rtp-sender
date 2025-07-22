@@ -122,7 +122,7 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
   }
 
 
-  private Mono<Rtp> doCancelRtp(@NonNull final Rtp rtpToCancel) {
+  public Mono<Rtp> doCancelRtp(@NonNull final Rtp rtpToCancel) {
     final var rtpToCancelMono = Mono.just(rtpToCancel)
         .flatMap(rtp -> this.rtpStatusUpdater.canCancel(rtp)
         .filter(Boolean::booleanValue)

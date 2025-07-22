@@ -38,7 +38,7 @@ public class UpdateInvalidOperationProcessor extends UpdateOperationProcessor {
         .filter(pspId -> !pspId.equals(rtp.serviceProviderDebtor()))
         .doOnNext(__ -> log.info("PSP mismatch detected. Proceeding to cancel RTP {}",
                 rtp.resourceID().getId()))
-        .flatMap(__ -> sendRTPService.cancelRtp(rtp.resourceID()))
+        .flatMap(__ -> sendRTPService.doCancelRtp(rtp))
         .doOnSuccess(__ -> log.info("RTP cancelled successfully. rtpId {}",
                 rtp.resourceID().getId()))
         .switchIfEmpty(Mono.defer(() -> {
