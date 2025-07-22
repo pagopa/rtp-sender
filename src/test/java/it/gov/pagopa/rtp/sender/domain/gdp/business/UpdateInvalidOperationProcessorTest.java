@@ -11,6 +11,9 @@ import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -21,10 +24,18 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class UpdateInvalidOperationProcessorTest {
 
+    @Mock
     private RegistryDataService registryDataService;
+
+    @Mock
     private SendRTPServiceImpl sendRTPService;
+
+    @Mock
+    private GdpEventHubProperties gdpProps;
+
     private UpdateInvalidOperationProcessor processor;
 
     private final UUID rtpId = UUID.randomUUID();
@@ -35,10 +46,6 @@ class UpdateInvalidOperationProcessorTest {
 
     @BeforeEach
     void setUp() {
-        registryDataService = mock(RegistryDataService.class);
-        sendRTPService = mock(SendRTPServiceImpl.class);
-
-        GdpEventHubProperties gdpProps = createGdpProps();
         processor = new UpdateInvalidOperationProcessor(registryDataService, sendRTPService, gdpProps);
 
         rtp = Rtp.builder()
@@ -131,14 +138,6 @@ class UpdateInvalidOperationProcessorTest {
                 .psp_code("PSP123")
                 .psp_tax_code(pspTaxCode)
                 .build();
-    }
-
-    private GdpEventHubProperties createGdpProps() {
-        return new GdpEventHubProperties(
-                "test",
-                "dummy-connection-string",
-                new GdpEventHubProperties.Consumer("dispatcher", "test")
-        );
     }
 
     private ServiceProvider createServiceProvider(String id) {
