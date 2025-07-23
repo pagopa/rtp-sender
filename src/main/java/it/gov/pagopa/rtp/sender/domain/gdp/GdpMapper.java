@@ -9,11 +9,14 @@ import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Component;
  * </p>
  */
 @Component("gdpMapper")
+@Slf4j
 public class GdpMapper {
 
   private final GdpEventHubProperties gdpEventHubProperties;
@@ -69,12 +73,16 @@ public class GdpMapper {
             LocalDateTime.ofInstant(instant, ZoneOffset.UTC))
         .orElse(null);
 
+    final var expiryDate = Optional.ofNullable(gdpMessage.due_date())
+        .map(this::convertLongToLocalDate)
+        .orElse(null);
+
     return Rtp.builder()
         .resourceID(ResourceID.createNew())
         .noticeNumber(gdpMessage.nav())
         .amount(BigDecimal.valueOf(gdpMessage.amount()))
         .description(gdpMessage.description())
-        .expiryDate(gdpMessage.due_date())
+        .expiryDate(expiryDate)
         .payerId(gdpMessage.debtor_tax_code())
         .payeeId(gdpMessage.ec_tax_code())
         .subject(gdpMessage.subject())
@@ -95,5 +103,22 @@ public class GdpMapper {
         .operationId(gdpMessage.id())
         .eventDispatcher(this.gdpEventHubProperties.eventDispatcher())
         .build();
+  }
+
+  private LocalDate convertLongToLocalDate(Long timestamp) {
+    try {
+      long milliseconds = timestamp / 1000;
+
+      LocalDate result = Instant.ofEpochMilli(milliseconds)
+          .atZone(ZoneId.of("Europe/Rome"))
+          .toLocalDate();
+
+      log.debug("Converted timestamp {} to date {}", timestamp, result);
+      return result;
+
+    } catch (Exception e) {
+      log.error("Error converting timestamp {} to LocalDate", timestamp, e);
+      return null;
+    }
   }
 }
