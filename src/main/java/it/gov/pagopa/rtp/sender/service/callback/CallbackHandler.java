@@ -93,6 +93,10 @@ public class CallbackHandler {
                 log.debug("Triggering ACCEPT transition for RTP {}", rtpToUpdate.resourceID().getId());
                 yield this.rtpStatusUpdater.triggerAcceptRtp(rtpToUpdate);
             }
+            case ACCP -> {
+                log.debug("Triggering USER ACCEPT transition for RTP {}", rtpToUpdate.resourceID().getId());
+                yield this.rtpStatusUpdater.triggerUserAcceptRtp(rtpToUpdate);
+            }
             case RJCT -> {
                 log.debug("Triggering REJECT transition for RTP {}", rtpToUpdate.resourceID().getId());
                 yield Mono.just(rtpToUpdate)
@@ -110,12 +114,11 @@ public class CallbackHandler {
                         )));
             }
             default -> {
-                log.warn("Received unsupported TransactionStatus: {}", transactionStatus);
-                yield this.rtpStatusUpdater.triggerErrorSendRtp(rtpToUpdate)
-                        .flatMap(rtp -> Mono.error(new IllegalStateException(
-                                String.format("Unsupported TransactionStatus '%s' received for RTP ID: %s",
-                                        transactionStatus, rtp.resourceID().getId())
-                        )));
+                log.warn("Unsupported TransactionStatus '{}' received for RTP ID '{}'", transactionStatus, rtpToUpdate.resourceID().getId());
+                yield Mono.error(new IllegalStateException(
+                        String.format("Unsupported TransactionStatus '%s' received for RTP ID: %s",
+                                transactionStatus, rtpToUpdate.resourceID().getId())
+                ));
             }
         };
     }

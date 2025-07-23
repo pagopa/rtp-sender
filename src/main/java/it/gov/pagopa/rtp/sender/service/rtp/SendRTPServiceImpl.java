@@ -29,10 +29,12 @@ import it.gov.pagopa.rtp.sender.utils.LoggingUtils;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -108,7 +110,7 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
 
   @NonNull
   @Override
-  public Mono<Rtp> cancelRtp(@NonNull final ResourceID rtpId) {
+  public Mono<Rtp> cancelRtpById(@NonNull final ResourceID rtpId) {
     return this.rtpRepository
         .findById(rtpId)
         .doFirst(() -> log.info("Retrieving RTP with id {}", rtpId.getId()))
@@ -117,12 +119,14 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
             rtp -> log.info("RTP retrieved with id {} and status {}", rtp.resourceID().getId(),
                 rtp.status()))
         .doOnError(error -> log.error("Error retrieving RTP: {}", error.getMessage(), error))
-        .flatMap(this::doCancelRtp);
+        .flatMap(this::cancelRtp);
 
   }
 
 
-  private Mono<Rtp> doCancelRtp(@NonNull final Rtp rtpToCancel) {
+  @NonNull
+  @Override
+  public Mono<Rtp> cancelRtp(@NonNull final Rtp rtpToCancel) {
     final var rtpToCancelMono = Mono.just(rtpToCancel)
         .flatMap(rtp -> this.rtpStatusUpdater.canCancel(rtp)
         .filter(Boolean::booleanValue)
@@ -150,6 +154,27 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
             .doOnNext(rtp -> log.info("RTP retrieved with id: {}", rtpId))
             .switchIfEmpty(Mono.error(new RtpNotFoundException(rtpId)));
   }
+
+
+  @Override
+  @NonNull
+  public Flux<Rtp> findRtpsByNoticeNumber(@NonNull final String noticeNumber) {
+    return Flux.just(noticeNumber)
+        .doFirst(() -> MDC.put("notice_number", noticeNumber))
+
+        .doFirst(() -> log.info("Attempting to find RTPs by notice number"))
+        .flatMap(this.rtpRepository::findByNoticeNumber)
+        .doOnNext(rtp -> MDC.put("resource_id", rtp.resourceID().getId().toString()))
+
+        .switchIfEmpty(Flux.<Rtp>empty()
+            .doOnComplete(() -> log.warn("No RTPs found for Notice Number")))
+
+        .doOnComplete(() -> log.info("Successfully found RTPs by notice number"))
+        .doOnError(error -> log.error("Error finding RTPs by notice number: {}", error.getMessage(), error))
+
+        .doFinally(signal -> MDC.clear());
+  }
+
 
   @NonNull
   @Override
@@ -181,7 +206,7 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
   public Mono<Rtp> updateRtpCancelPaid(@NonNull final Rtp rtp) {
     return Mono.just(rtp)
         .doFirst(() -> log.info("Cancelling RTP with id: {}", rtp.resourceID().getId()))
-        .flatMap(this::doCancelRtp)
+        .flatMap(this::cancelRtp)
         .doOnNext(cancelledRtp -> log.info("Successfully cancelled RTP with id: {}", rtp.resourceID().getId()))
 
         .doOnNext(cancelledRtp -> log.info("Updating cancelled paid RTP with id: {}", rtp.resourceID().getId()))

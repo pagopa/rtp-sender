@@ -5,6 +5,8 @@ import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.service.rtp.RtpStatusUpdater;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -34,7 +36,7 @@ class CallbackHandlerTest {
     private final Rtp rtp = Rtp.builder().resourceID(resourceID).status(RtpStatus.CREATED).build();
 
     @Test
-    void givenValidTransactionStatus_whenHandle_thenAcceptTriggeredAndSaved() {
+    void givenValidACTCStatus_whenHandle_thenAcceptTriggeredAndSaved() {
         final var transactionStatus = TransactionStatus.ACTC;
         final var request = mock(JsonNode.class);
 
@@ -52,6 +54,27 @@ class CallbackHandlerTest {
                 .verifyComplete();
 
         verify(rtpStatusUpdater).triggerAcceptRtp(rtp);
+    }
+
+    @Test
+    void givenValidACCPStatus_whenHandle_thenUserAcceptTriggeredAndSaved() {
+        final var transactionStatus = TransactionStatus.ACCP;
+        final var request = mock(JsonNode.class);
+
+        when(callbackFieldsExtractor.extractTransactionStatusSend(request))
+                .thenReturn(Flux.just(transactionStatus));
+        when(callbackFieldsExtractor.extractResourceIDSend(request))
+                .thenReturn(Mono.just(resourceID));
+        when(rtpRepository.findById(resourceID))
+                .thenReturn(Mono.just(rtp));
+        when(rtpStatusUpdater.triggerUserAcceptRtp(rtp))
+                .thenReturn(Mono.just(rtp));
+
+        StepVerifier.create(callbackHandler.handle(request))
+                .expectNext(request)
+                .verifyComplete();
+
+        verify(rtpStatusUpdater).triggerUserAcceptRtp(rtp);
     }
 
     @Test
@@ -119,27 +142,28 @@ class CallbackHandlerTest {
         verify(rtpStatusUpdater).triggerErrorSendRtp(rtp);
     }
 
-    @Test
-    void givenInvalidTransactionStatus_whenHandle_thenThrowsIllegalStateException() {
+    @ParameterizedTest
+    @EnumSource(value = TransactionStatus.class, names = { "CNCL", "ACWC" })
+    void givenInvalidTransactionStatus_whenHandle_thenThrowsIllegalStateException(TransactionStatus transactionStatus) {
         JsonNode request = mock(JsonNode.class);
 
         when(callbackFieldsExtractor.extractTransactionStatusSend(request))
-                .thenReturn(Flux.just(TransactionStatus.CNCL));
+                .thenReturn(Flux.just(transactionStatus));
         when(callbackFieldsExtractor.extractResourceIDSend(request))
                 .thenReturn(Mono.just(resourceID));
         when(rtpRepository.findById(resourceID))
-                .thenReturn(Mono.just(rtp));
-        when(rtpStatusUpdater.triggerErrorSendRtp(rtp))
                 .thenReturn(Mono.just(rtp));
 
         StepVerifier.create(callbackHandler.handle(request))
                 .expectErrorSatisfies(throwable -> {
                     assert throwable instanceof IllegalStateException;
-                    assert throwable.getMessage().contains("Unsupported TransactionStatus 'CNCL'");
+                    assert throwable.getMessage().contains(
+                            String.format("Unsupported TransactionStatus '%s'", transactionStatus.name())
+                    );
                 })
                 .verify();
 
-        verify(rtpStatusUpdater).triggerErrorSendRtp(rtp);
+        verifyNoInteractions(rtpStatusUpdater);
     }
 
 

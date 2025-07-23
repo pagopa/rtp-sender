@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.statemachine;
 
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.Event;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
@@ -12,6 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -97,8 +99,20 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
         .flatMap(transition -> Mono.just(source)
                 .flatMap(rtpEntity ->
                     this.applyActions(rtpEntity, transition.getPreTransactionActions()))
-                .map(rtpEntity ->
-                    this.advanceStatus(rtpEntity, transition.getDestination(), transition.getEvent()))
+                .flatMap(rtpEntity -> Mono.deferContextual(ctxView -> {
+                  GdpMessage.Status foreignStatus = ctxView.getOrDefault("foreignStatus", null);
+                  String eventDispatcher = ctxView.getOrDefault("eventDispatcher", null);
+
+                    RtpEntity updated = this.advanceStatus(
+                          rtpEntity,
+                          transition.getDestination(),
+                          transition.getEvent(),
+                          foreignStatus,
+                          eventDispatcher
+                  );
+
+                  return Mono.just(updated);
+                }))
                 .flatMap(rtpEntity ->
                     this.applyActions(rtpEntity, transition.getPostTransactionActions())));
   }
@@ -158,7 +172,9 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
   private RtpEntity advanceStatus(
       @NonNull final RtpEntity rtpEntity,
       @NonNull final RtpStatus newStatus,
-      @NonNull final RtpEvent triggerEvent) {
+      @NonNull final RtpEvent triggerEvent,
+      @Nullable final GdpMessage.Status foreignStatus,
+      @Nullable final String eventDispatcher) {
 
     Objects.requireNonNull(rtpEntity, "Entity cannot be null");
     Objects.requireNonNull(newStatus, "Status cannot be null");
@@ -168,6 +184,8 @@ public class RtpStateMachine implements StateMachine<RtpEntity, RtpEvent> {
             rtpEntity.getEvents().stream(), Stream.of(
                 Event.builder()
                     .timestamp(Instant.now())
+                    .foreignStatus(foreignStatus)
+                    .eventDispatcher(eventDispatcher)
                     .precStatus(rtpEntity.getStatus())
                     .triggerEvent(triggerEvent)
                     .build()

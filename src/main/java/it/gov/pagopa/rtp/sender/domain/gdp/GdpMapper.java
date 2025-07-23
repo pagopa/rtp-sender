@@ -87,6 +87,8 @@ public class GdpMapper {
         .events(List.of(
             Event.builder()
                 .timestamp(Instant.now())
+                .eventDispatcher(this.gdpEventHubProperties.eventDispatcher())
+                .foreignStatus(gdpMessage.status())
                 .triggerEvent(RtpEvent.CREATE_RTP)
                 .build()
         ))

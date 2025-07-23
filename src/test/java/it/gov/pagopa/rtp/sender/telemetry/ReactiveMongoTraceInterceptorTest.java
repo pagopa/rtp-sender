@@ -20,6 +20,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 
 import org.aopalliance.intercept.MethodInvocation;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -45,7 +46,7 @@ class ReactiveMongoTraceInterceptorTest {
     }
 
     @Test
-    void invokeAppliesTracingWhenAnnotationPresent() throws Throwable {
+    void invokeAppliesTracingToMonoReturningMethodsWhenAnnotationPresent() throws Throwable {
         Tracer tracer = mock(Tracer.class);
         SpanBuilder spanBuilder = mock(SpanBuilder.class);
         Span span = mock(Span.class);
@@ -73,7 +74,39 @@ class ReactiveMongoTraceInterceptorTest {
     }
 
     @Test
-    void tracingLogicIgnoresMethodsInIgnoreList() throws Throwable {
+    void invokeAppliesTracingToFluxReturningMethodsWhenAnnotationPresent() throws Throwable {
+        Tracer tracer = mock(Tracer.class);
+        SpanBuilder spanBuilder = mock(SpanBuilder.class);
+        Span span = mock(Span.class);
+        ReactiveMongoTemplate mongoTemplate = mock(ReactiveMongoTemplate.class);
+        MethodInvocation invocation = mock(MethodInvocation.class);
+        Method method = TestRepository.class.getMethod("findAll");
+
+        when(tracer.spanBuilder(anyString())).thenReturn(spanBuilder);
+        when(spanBuilder.setParent(any())).thenReturn(spanBuilder);
+        when(spanBuilder.setSpanKind(any())).thenReturn(spanBuilder);
+        when(spanBuilder.setAttribute(anyString(), any())).thenReturn(spanBuilder);
+        when(spanBuilder.startSpan()).thenReturn(span);
+        when(mongoTemplate.getMongoDatabase()).thenReturn(Mono.just(mock(MongoDatabase.class)));
+        when(invocation.getMethod()).thenReturn(method);
+        when(invocation.getThis()).thenReturn(mock(ReactiveMongoRepository.class));
+        when(invocation.getArguments()).thenReturn(new Object[] { "id" });
+        when(invocation.proceed()).thenReturn(Flux.just("data1", "data2"));
+
+        ReactiveMongoTraceInterceptor interceptor = new ReactiveMongoTraceInterceptor(tracer, mongoTemplate);
+        Flux<Object> result = (Flux<Object>) interceptor.invoke(invocation);
+
+        StepVerifier.create(result)
+            .expectNext((Object) "data1")
+            .expectNext((Object) "data2")
+            .verifyComplete();
+
+        verify(tracer).spanBuilder(contains("ReactiveMongoRepository.findAll"));
+        verify(span).end();
+    }
+
+    @Test
+    void tracingMonoLogicIgnoresMethodsInIgnoreList() throws Throwable {
         Tracer tracer = mock(Tracer.class);
         MethodInvocation invocation = mock(MethodInvocation.class);
         Method method = TestRepository.class.getMethod("getMongoTemplate");
@@ -85,6 +118,25 @@ class ReactiveMongoTraceInterceptorTest {
 
         ReactiveMongoTraceInterceptor interceptor = new ReactiveMongoTraceInterceptor(mock(Tracer.class),
                 mock(ReactiveMongoTemplate.class));
+        interceptor.invoke(invocation);
+
+        verify(invocation).proceed();
+        verifyNoInteractions(tracer);
+    }
+
+    @Test
+    void tracingFluxLogicIgnoresMethodsInIgnoreList() throws Throwable {
+        Tracer tracer = mock(Tracer.class);
+        MethodInvocation invocation = mock(MethodInvocation.class);
+        Method method = TestRepository.class.getMethod("getMongoTemplate");
+        ReactiveMongoRepository<?, ?> mockRepo = mock(ReactiveMongoRepository.class);
+
+        when(invocation.getMethod()).thenReturn(method);
+        when(invocation.proceed()).thenReturn(Flux.empty());
+        when(invocation.getThis()).thenReturn(mockRepo);
+
+        ReactiveMongoTraceInterceptor interceptor = new ReactiveMongoTraceInterceptor(mock(Tracer.class),
+            mock(ReactiveMongoTemplate.class));
         interceptor.invoke(invocation);
 
         verify(invocation).proceed();
@@ -114,6 +166,8 @@ class ReactiveMongoTraceInterceptorTest {
     public interface TestRepository extends ReactiveMongoRepository<Object, String> {
         @TraceMongo
         Mono<Object> findById(String id);
+        @TraceMongo
+        Flux<Object> findAll();
         Mono<Object> getMongoTemplate();
     }
 

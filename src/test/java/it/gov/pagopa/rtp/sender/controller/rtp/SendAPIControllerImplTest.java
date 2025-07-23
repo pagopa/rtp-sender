@@ -11,6 +11,7 @@ import it.gov.pagopa.rtp.sender.activateClient.model.ErrorsDto;
 import it.gov.pagopa.rtp.sender.configuration.SecurityConfig;
 import it.gov.pagopa.rtp.sender.configuration.ServiceProviderConfig;
 import it.gov.pagopa.rtp.sender.domain.errors.*;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.*;
 import it.gov.pagopa.rtp.sender.model.generated.send.*;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPService;
@@ -20,9 +21,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +40,7 @@ import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(SpringExtension.class)
@@ -45,19 +49,15 @@ import reactor.core.publisher.Mono;
 @DisabledInAotMode
 class SendAPIControllerImplTest {
 
-  @MockitoBean
-  private SendRTPService sendRTPService;
+  @MockitoBean private SendRTPService sendRTPService;
 
-  @MockitoBean
-  private RtpDtoMapper rtpDtoMapper;
+  @MockitoBean private RtpDtoMapper rtpDtoMapper;
 
-  @Autowired
-  private ServiceProviderConfig serviceProviderConfig;
+  @Autowired private ServiceProviderConfig serviceProviderConfig;
 
   private WebTestClient webTestClient;
 
-  @Autowired
-  private ApplicationContext context;
+  @Autowired private ApplicationContext context;
 
   private Rtp expectedRtp;
 
@@ -100,8 +100,8 @@ class SendAPIControllerImplTest {
   @RtpSenderWriter()
   void testSendRtpSuccessful() {
 
-    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class),
-        eq("PagoPA"))).thenReturn(expectedRtp);
+    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class), eq("PagoPA")))
+        .thenReturn(expectedRtp);
     when(sendRTPService.send(expectedRtp)).thenReturn(Mono.just(expectedRtp));
 
     webTestClient
@@ -123,12 +123,12 @@ class SendAPIControllerImplTest {
   @RtpSenderWriter
   void testSendRtpWithWrongBody() {
 
-    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class),
-        anyString())).thenReturn(expectedRtp);
-    when(sendRTPService.send(any()))
-        .thenReturn(Mono.empty());
+    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class), anyString()))
+        .thenReturn(expectedRtp);
+    when(sendRTPService.send(any())).thenReturn(Mono.empty());
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .bodyValue(generateWrongSendRequest())
         .exchange()
@@ -140,12 +140,12 @@ class SendAPIControllerImplTest {
   @RtpSenderWriter
   void testSendRtpWithWrongAmount() {
 
-    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class),
-        anyString())).thenReturn(expectedRtp);
-    when(sendRTPService.send(any()))
-        .thenReturn(Mono.empty());
+    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class), anyString()))
+        .thenReturn(expectedRtp);
+    when(sendRTPService.send(any())).thenReturn(Mono.empty());
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .bodyValue(generateWrongAmountSendRequest())
         .exchange()
@@ -159,7 +159,8 @@ class SendAPIControllerImplTest {
   @Test
   @WithMockUser
   void userWithoutEnoughPermissionShouldNotSendRtp() {
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .bodyValue(generateSendRequest())
         .exchange()
@@ -171,12 +172,12 @@ class SendAPIControllerImplTest {
   @RtpSenderWriter
   void givenUserNotActivatedWhenSendRTPThenReturnUnprocessableEntity() {
 
-    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class),
-        anyString())).thenReturn(expectedRtp);
-    when(sendRTPService.send(any()))
-        .thenReturn(Mono.error(new PayerNotActivatedException()));
+    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class), anyString()))
+        .thenReturn(expectedRtp);
+    when(sendRTPService.send(any())).thenReturn(Mono.error(new PayerNotActivatedException()));
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .bodyValue(generateSendRequest())
         .exchange()
@@ -191,12 +192,12 @@ class SendAPIControllerImplTest {
   @RtpSenderWriter
   void givenMessageBadFormedWhenSendRTPThenReturnBadRequest() {
 
-    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class),
-        anyString())).thenReturn(expectedRtp);
-    when(sendRTPService.send(any()))
-        .thenReturn(Mono.error(generateMessageBadFormed()));
+    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class), anyString()))
+        .thenReturn(expectedRtp);
+    when(sendRTPService.send(any())).thenReturn(Mono.error(generateMessageBadFormed()));
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .bodyValue(generateSendRequest())
         .exchange()
@@ -211,7 +212,8 @@ class SendAPIControllerImplTest {
   @RtpSenderWriter
   void givenBadFiscalCodeWhenSendRTPThenReturnBadRequest() {
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .bodyValue(generateWrongSendRequest())
         .exchange()
@@ -226,7 +228,8 @@ class SendAPIControllerImplTest {
   @RtpSenderWriter
   void givenBadExpiryDate_whenSendRTP_thenReturnBadRequest() {
 
-    String invalidJson = """
+    String invalidJson =
+        """
         {
             "payee": {
                 "name": "Comune di Smartino",
@@ -248,33 +251,36 @@ class SendAPIControllerImplTest {
         """;
 
     // When: Sending a POST request with invalid type
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(invalidJson)
         .exchange()
         // Then: Verify the response
-        .expectStatus().isBadRequest()
+        .expectStatus()
+        .isBadRequest()
         .expectBody()
-        .jsonPath("$.error").isEqualTo("Malformed request")
-        .jsonPath("$.details").exists();
+        .jsonPath("$.error")
+        .isEqualTo("Malformed request")
+        .jsonPath("$.details")
+        .exists();
 
     verify(sendRTPService, times(0)).send(any());
     verify(rtpDtoMapper, times(0)).toRtpWithServiceProviderCreditor(any(), (any()));
-
   }
-
 
   @Test
   @RtpSenderWriter()
   void givenRejectedRtp_whenSendRtp_thenReturnUnprocessableEntity() {
 
-    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class),
-        eq("PagoPA"))).thenReturn(expectedRtp);
+    when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class), eq("PagoPA")))
+        .thenReturn(expectedRtp);
     when(sendRTPService.send(expectedRtp))
         .thenReturn(Mono.error(new SepaRequestException("Rejected")));
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps")
         .bodyValue(generateSendRequest())
         .exchange()
@@ -284,60 +290,60 @@ class SendAPIControllerImplTest {
     verify(sendRTPService, times(1)).send(expectedRtp);
   }
 
-
   @Test
   @RtpSenderWriter
   void givenValidRtpId_whenCancelRtp_thenReturnNoContent() {
     final var rtpId = UUID.randomUUID();
 
-    final var cancelledRtp = Rtp.builder()
-        .resourceID(new ResourceID(rtpId))
-        .status(RtpStatus.CANCELLED)
-        .build();
+    final var cancelledRtp =
+        Rtp.builder().resourceID(new ResourceID(rtpId)).status(RtpStatus.CANCELLED).build();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
-        .thenReturn(Mono.just(cancelledRtp));
+    when(sendRTPService.cancelRtpById(any(ResourceID.class))).thenReturn(Mono.just(cancelledRtp));
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps//{rtpId}/cancel", rtpId)
         .header("RequestId", UUID.randomUUID().toString())
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
-        .expectStatus().isNoContent();
+        .expectStatus()
+        .isNoContent();
   }
-
 
   @Test
   @RtpSenderWriter
   void givenNonExistingRtpId_whenCancelRtp_thenReturnNotFound() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new RtpNotFoundException(rtpId)));
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps/{rtpId}/cancel", rtpId)
         .header("RequestId", UUID.randomUUID().toString())
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
-        .expectStatus().isNotFound();
+        .expectStatus()
+        .isNotFound();
   }
-
 
   @Test
   @RtpSenderWriter
   void givenUnexpectedError_whenCancelRtp_thenReturnInternalServerError() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
         .thenReturn(Mono.error(new RuntimeException("Unexpected error")));
 
-    webTestClient.post()
+    webTestClient
+        .post()
         .uri("/rtps/{rtpId}/cancel", rtpId)
         .header("RequestId", UUID.randomUUID().toString())
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
-        .expectStatus().is5xxServerError();
+        .expectStatus()
+        .is5xxServerError();
   }
 
   @Test
@@ -345,15 +351,17 @@ class SendAPIControllerImplTest {
   void givenInvalidRtpStatus_whenCancelRtp_thenReturnUnprocessableEntity() {
     final var rtpId = UUID.randomUUID();
 
-    when(sendRTPService.cancelRtp(any(ResourceID.class)))
-            .thenReturn(Mono.error(new IllegalStateException()));
+    when(sendRTPService.cancelRtpById(any(ResourceID.class)))
+        .thenReturn(Mono.error(new IllegalStateException()));
 
-    webTestClient.post()
-            .uri("/rtps/{rtpId}/cancel", rtpId)
-            .header("RequestId", UUID.randomUUID().toString())
-            .contentType(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    webTestClient
+        .post()
+        .uri("/rtps/{rtpId}/cancel", rtpId)
+        .header("RequestId", UUID.randomUUID().toString())
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
   }
 
   @Test
@@ -361,19 +369,21 @@ class SendAPIControllerImplTest {
   void givenValidId_whenFindRtpById_thenReturnDtoInResponseEntityOk() {
     UUID requestId = UUID.randomUUID();
     Rtp rtp = generateRtp();
-    RtpDto dto = generateRtpDto();
+    RtpDto dto = generateRtpDtoFromRtp(rtp);
 
     when(sendRTPService.findRtp(rtp.resourceID().getId())).thenReturn(Mono.just(rtp));
     when(rtpDtoMapper.toRtpDto(rtp)).thenReturn(dto);
 
-    webTestClient.get()
-            .uri("/rtps/{id}", rtp.resourceID().getId())
-            .header("requestId", requestId.toString())
-            .header("api-version", "v1")
-            .exchange()
-            .expectStatus().isOk()
-            .expectBody(RtpDto.class)
-            .isEqualTo(dto);
+    webTestClient
+        .get()
+        .uri("/rtps/{id}", rtp.resourceID().getId())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody(RtpDto.class)
+        .isEqualTo(dto);
   }
 
   @Test
@@ -384,12 +394,14 @@ class SendAPIControllerImplTest {
 
     when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.error(new RtpNotFoundException(rtpId)));
 
-    webTestClient.get()
-            .uri("/rtps/{id}", rtpId)
-            .header("requestId", requestId.toString())
-            .header("api-version", "v1")
-            .exchange()
-            .expectStatus().isNotFound();
+    webTestClient
+        .get()
+        .uri("/rtps/{id}", rtpId)
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus()
+        .isNotFound();
   }
 
   @Test
@@ -398,14 +410,17 @@ class SendAPIControllerImplTest {
     UUID requestId = UUID.randomUUID();
     UUID rtpId = UUID.randomUUID();
 
-    when(sendRTPService.findRtp(rtpId)).thenReturn(Mono.error(new RuntimeException("Something went wrong")));
+    when(sendRTPService.findRtp(rtpId))
+        .thenReturn(Mono.error(new RuntimeException("Something went wrong")));
 
-    webTestClient.get()
-            .uri("/rtps/{id}", rtpId)
-            .header("requestId", requestId.toString())
-            .header("api-version", "v1")
-            .exchange()
-            .expectStatus().is5xxServerError();
+    webTestClient
+        .get()
+        .uri("/rtps/{id}", rtpId)
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError();
   }
 
   @Test
@@ -414,12 +429,110 @@ class SendAPIControllerImplTest {
     UUID requestId = UUID.randomUUID();
     UUID rtpId = UUID.randomUUID();
 
+    webTestClient
+        .get()
+        .uri("/rtps/{id}", rtpId)
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus()
+        .isForbidden();
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenValidNoticeNumberAssociatedWithRtps_whenFindRtpByNoticeNumber_thenReturnRtpAssociatedToNoticeNumber() {
+    final var noticeNumber = "311111111112222129";
+    final var requestId = UUID.randomUUID();
+    final var rtp1 = generateRtp();
+    final var rtp2 = generateRtp();
+    final var dto1 = generateRtpDtoFromRtp(rtp1);
+    final var dto2 = generateRtpDtoFromRtp(rtp2);
+
+    when(sendRTPService.findRtpsByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.just(rtp1, rtp2));
+    when(rtpDtoMapper.toRtpDto(rtp1))
+        .thenReturn(dto1);
+    when(rtpDtoMapper.toRtpDto(rtp2))
+        .thenReturn(dto2);
+
     webTestClient.get()
-            .uri("/rtps/{id}", rtpId)
-            .header("requestId", requestId.toString())
-            .header("api-version", "v1")
-            .exchange()
-            .expectStatus().isForbidden();
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBodyList(RtpDto.class)
+        .hasSize(2)
+        .contains(dto1, dto2);
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenNonexistentNoticeNumber_whenFindRtpByNoticeNumber_thenReturnEmptyFlux() {
+    final var noticeNumber = "000000000000000000";
+    final var requestId = UUID.randomUUID();
+
+    when(sendRTPService.findRtpsByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.empty());
+
+    webTestClient.get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBodyList(RtpDto.class)
+        .hasSize(0);
+
+    verifyNoInteractions(rtpDtoMapper);
+  }
+
+  @Test
+  @RtpSenderReader
+  void givenUnexpectedError_whenFindRtpByNoticeNumber_thenReturnServerError() {
+    final var noticeNumber = "311111111112222129";
+    final var requestId = UUID.randomUUID();
+
+    when(sendRTPService.findRtpsByNoticeNumber(noticeNumber))
+        .thenReturn(Flux.error(new RuntimeException("Something went wrong")));
+
+    webTestClient.get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().is5xxServerError();
+  }
+
+  @Test
+  @WithMockUser
+  void givenUserWithoutValidRole_whenFindRtpByNoticeNumber_thenAccessDenied() {
+    final var noticeNumber = "311111111112222129";
+    final var requestId = UUID.randomUUID();
+
+    webTestClient.get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/rtps")
+                .queryParam("noticeNumber", noticeNumber)
+                .build())
+        .header("requestId", requestId.toString())
+        .header("api-version", "v1")
+        .exchange()
+        .expectStatus().isForbidden();
   }
 
   private CreateRtpDto generateSendRequest() {
@@ -490,7 +603,6 @@ class SendAPIControllerImplTest {
     paymentNoticeDto.setExpiryDate(LocalDate.now());
 
     return new CreateRtpDto(payeeDto, payerDto, paymentNoticeDto);
-
   }
 
   private MessageBadFormed generateMessageBadFormed() {
@@ -508,57 +620,71 @@ class SendAPIControllerImplTest {
     LocalDateTime localDateTime = LocalDateTime.of(2025, 1, 1, 1, 0, 0);
     Instant dateInstant = localDateTime.toInstant(ZoneOffset.UTC);
     LocalDate expiry = LocalDate.of(2025, 1, 1);
-    Event event = new Event(dateInstant, RtpStatus.CREATED, RtpEvent.SEND_RTP);
+
+    Event event = Event.builder()
+        .timestamp(dateInstant)
+        .eventDispatcher("GdpEvent")
+        .foreignStatus(GdpMessage.Status.VALID)
+        .precStatus(RtpStatus.CREATED)
+        .triggerEvent(RtpEvent.SEND_RTP)
+        .build();
 
     return Rtp.builder()
-            .noticeNumber("123456789")
-            .amount(BigDecimal.valueOf(150.75))
-            .description("Pagamento TARI")
-            .expiryDate(expiry)
-            .payerId("payer-001")
-            .payerName("Mario Rossi")
-            .payeeName("Comune di Roma")
-            .payeeId("payee-002")
-            .resourceID(new ResourceID(uuid))
-            .subject("TARI 2025")
-            .savingDateTime(localDateTime)
-            .serviceProviderDebtor("DEBTOR-001")
-            .iban("IT60X0542811101000000123456")
-            .payTrxRef("TX123456")
-            .flgConf("Y")
-            .status(RtpStatus.SENT)
-            .serviceProviderCreditor("CREDITOR-001")
-            .events(List.of(event))
-            .build();
+        .noticeNumber("123456789")
+        .amount(BigDecimal.valueOf(150.75))
+        .description("Pagamento TARI")
+        .expiryDate(expiry)
+        .payerId("payer-001")
+        .payerName("Mario Rossi")
+        .payeeName("Comune di Roma")
+        .payeeId("payee-002")
+        .resourceID(new ResourceID(uuid))
+        .subject("TARI 2025")
+        .savingDateTime(localDateTime)
+        .serviceProviderDebtor("DEBTOR-001")
+        .iban("IT60X0542811101000000123456")
+        .payTrxRef("TX123456")
+        .flgConf("Y")
+        .status(RtpStatus.SENT)
+        .serviceProviderCreditor("CREDITOR-001")
+        .events(List.of(event))
+        .build();
   }
 
-  private RtpDto generateRtpDto() {
+  private RtpDto generateRtpDtoFromRtp(final Rtp rtp) {
+    final Function<Event, EventDto> eventMapper = event -> {
+      final var eventDto = new EventDto();
 
-    UUID uuid = UUID.fromString("76a185a7-4f8f-44ad-b08e-2da722e25ff8");
-    LocalDateTime date = LocalDateTime.of(2025,1,1,1,0,0);
-    LocalDate expiry = LocalDate.of(2025,1,1);
-    EventDto event = new EventDto()
-            .timestamp(date)
-            .precStatus(RtpStatusDto.CREATED)
-            .triggerEvent(RtpEventDto.SEND_RTP);
+      eventDto.setTimestamp(
+          event.timestamp().
+              atZone(ZoneId.of("UTC"))
+              .toLocalDateTime());
+      eventDto.setPrecStatus(RtpStatusDto.valueOf(event.precStatus().name()));
+      eventDto.setTriggerEvent(RtpEventDto.valueOf(event.triggerEvent().name()));
+
+      return eventDto;
+    };
+
+    final var events = rtp.events().stream()
+        .map(eventMapper)
+        .toList();
 
     return new RtpDto()
-            .noticeNumber("123456789")
-            .amount(150.75)
-            .expiryDate(expiry)
-            .payerId("payer-001")
-            .payerName("Mario Rossi")
-            .payeeName("Comune di Roma")
-            .payeeId("payee-002")
-            .resourceID(uuid)
-            .subject("TARI 2025")
-            .savingDateTime(date)
-            .serviceProviderDebtor("DEBTOR-001")
-            .iban("IT60X0542811101000000123456")
-            .payTrxRef("TX123456")
-            .flgConf("Y")
-            .status(RtpStatusDto.SENT)
-            .serviceProviderCreditor("CREDITOR-001")
-            .events(List.of(event));
+        .noticeNumber(rtp.noticeNumber())
+        .amount(rtp.amount().doubleValue())
+        .expiryDate(rtp.expiryDate())
+        .payerId(rtp.payerId())
+        .payeeName(rtp.payeeName())
+        .payeeId(rtp.payeeId())
+        .resourceID(rtp.resourceID().getId())
+        .subject(rtp.subject())
+        .savingDateTime(rtp.savingDateTime())
+        .serviceProviderDebtor(rtp.serviceProviderDebtor())
+        .iban(rtp.iban())
+        .payTrxRef(rtp.payTrxRef())
+        .flgConf(rtp.flgConf())
+        .status(RtpStatusDto.valueOf(rtp.status().name()))
+        .serviceProviderCreditor(rtp.serviceProviderCreditor())
+        .events(events);
   }
 }
