@@ -80,6 +80,9 @@ public class SendRtpHandler extends EpcApiInvokerHandler implements RequestHandl
                   UUID.randomUUID().toString(),
                   sepaRequest))
               .doFirst(() -> log.info("Sending RTP to {}", rtpToSend.serviceProviderDebtor()))
+              .doOnError(error -> {
+                log.error("Error occurred while sending RTP: {}", error);
+              })
               .retryWhen(sendRetryPolicy());
         })
         .map(resp -> request.withResponse(TransactionStatus.ACTC))
