@@ -38,7 +38,8 @@ public record GdpMessage(
     EXPIRED,
     INVALID,
     DRAFT,
-    PUBLISHED
+    PUBLISHED,
+    NULL
   }
 
 }
