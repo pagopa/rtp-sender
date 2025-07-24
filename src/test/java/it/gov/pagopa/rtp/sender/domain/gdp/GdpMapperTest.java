@@ -54,7 +54,7 @@ class GdpMapperTest {
         .ec_tax_code("12345678901")
         .debtor_tax_code("09876543210")
         .nav("NAV001")
-        .due_date(LocalDate.of(2025, 1, 1))
+        .due_date(1753866547153000L) // 2024-07-01T00:09:07.153Z
         .amount(1500)
         .status(GdpMessage.Status.VALID)
         .psp_code("PSPCODE01")
@@ -70,7 +70,7 @@ class GdpMapperTest {
     assertThat(result.noticeNumber()).isEqualTo("NAV001");
     assertThat(result.amount()).isEqualByComparingTo("1500");
     assertThat(result.description()).isEqualTo("Pagamento TARI");
-    assertThat(result.expiryDate()).isEqualTo(LocalDate.of(2025, 1, 1));
+    assertThat(result.expiryDate()).isEqualTo(LocalDate.of(2025, 7, 30));
     assertThat(result.payerId()).isEqualTo("09876543210");
     assertThat(result.payeeId()).isEqualTo("12345678901");
     assertThat(result.subject()).isEqualTo("Mario Rossi");
