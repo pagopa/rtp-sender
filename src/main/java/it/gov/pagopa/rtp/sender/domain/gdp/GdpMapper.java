@@ -7,6 +7,7 @@ import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
+import it.gov.pagopa.rtp.sender.utils.DateUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Component;
  * </p>
  */
 @Component("gdpMapper")
+@Slf4j
 public class GdpMapper {
 
   private final GdpEventHubProperties gdpEventHubProperties;
@@ -69,12 +72,16 @@ public class GdpMapper {
             LocalDateTime.ofInstant(instant, ZoneOffset.UTC))
         .orElse(null);
 
+    final var expiryDate = Optional.ofNullable(gdpMessage.due_date())
+        .flatMap(DateUtils::convertMillisecondsToLocalDate)
+        .orElse(null);
+
     return Rtp.builder()
         .resourceID(ResourceID.createNew())
         .noticeNumber(gdpMessage.nav())
         .amount(BigDecimal.valueOf(gdpMessage.amount()))
         .description(gdpMessage.description())
-        .expiryDate(gdpMessage.due_date())
+        .expiryDate(expiryDate)
         .payerId(gdpMessage.debtor_tax_code())
         .payeeId(gdpMessage.ec_tax_code())
         .subject(gdpMessage.subject())

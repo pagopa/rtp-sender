@@ -2,7 +2,6 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
-import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +83,7 @@ class GdpEventHandlerTest {
         .ec_tax_code("testEcTaxCode")
         .debtor_tax_code("testDebtorTaxCode")
         .nav("testNav")
-        .due_date(LocalDate.now())
+        .due_date(1753866547153000L)
         .amount(100)
         .status(GdpMessage.Status.VALID)
         .psp_code("testPspCode")
@@ -99,5 +98,5 @@ class GdpEventHandlerTest {
         .setHeader(KafkaHeaders.TIMESTAMP, System.currentTimeMillis())
         .build();
   }
-  
+
 }
