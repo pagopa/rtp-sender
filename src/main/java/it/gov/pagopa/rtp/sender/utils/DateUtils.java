@@ -1,12 +1,16 @@
 package it.gov.pagopa.rtp.sender.utils;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class DateUtils {
 
   private DateUtils() {
@@ -25,5 +29,22 @@ public class DateUtils {
         .map(MILLIS_FORMATTER::format)
         .orElseThrow(() ->
             new IllegalArgumentException("Couldn't convert local datetime to offset format"));
+  }
+
+  public static LocalDate convertLongToLocalDate(Long timestamp) {
+    try {
+      long millis = (timestamp > 10000000000000L) ? timestamp / 1000 : timestamp;
+
+      LocalDate result = Instant.ofEpochMilli(millis)
+          .atZone(ZoneId.of("Europe/Rome"))
+          .toLocalDate();
+
+      log.info("Converted timestamp {} to date {}", timestamp, result);
+      return result;
+
+    } catch (Exception e) {
+      log.error("Error converting timestamp {} to LocalDate", timestamp, e);
+      return null;
+    }
   }
 }

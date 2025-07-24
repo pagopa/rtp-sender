@@ -7,11 +7,10 @@ import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpEvent;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
+import it.gov.pagopa.rtp.sender.utils.DateUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
@@ -74,7 +73,7 @@ public class GdpMapper {
         .orElse(null);
 
     final var expiryDate = Optional.ofNullable(gdpMessage.due_date())
-        .map(this::convertLongToLocalDate)
+        .map(DateUtils::convertLongToLocalDate)
         .orElse(null);
 
     return Rtp.builder()
@@ -103,22 +102,5 @@ public class GdpMapper {
         .operationId(gdpMessage.id())
         .eventDispatcher(this.gdpEventHubProperties.eventDispatcher())
         .build();
-  }
-
-  private LocalDate convertLongToLocalDate(Long timestamp) {
-    try {
-      long milliseconds = timestamp / 1000;
-
-      LocalDate result = Instant.ofEpochMilli(milliseconds)
-          .atZone(ZoneId.of("Europe/Rome"))
-          .toLocalDate();
-
-      log.debug("Converted timestamp {} to date {}", timestamp, result);
-      return result;
-
-    } catch (Exception e) {
-      log.error("Error converting timestamp {} to LocalDate", timestamp, e);
-      return null;
-    }
   }
 }
