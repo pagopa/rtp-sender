@@ -31,6 +31,14 @@ public class DateUtils {
             new IllegalArgumentException("Couldn't convert local datetime to offset format"));
   }
 
+  /**
+   * Converts a timestamp expressed in microseconds since epoch to a LocalDate
+   * in the "Europe/Rome" timezone. The input is divided by 1000 to convert it to milliseconds,
+   * then transformed into a LocalDate, discarding the time component.
+   *
+   * @param timestamp the timestamp in microseconds (e.g. 1753866547153000)
+   * @return the corresponding LocalDate in Europe/Rome timezone, or null if the input is invalid
+   */
   public static LocalDate convertLongToLocalDate(Long timestamp) {
     try {
       long millis = (timestamp > 10000000000000L) ? timestamp / 1000 : timestamp;
