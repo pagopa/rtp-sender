@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 
 @Slf4j
 public class DateUtils {
@@ -42,20 +43,17 @@ public class DateUtils {
    * @return an {@link Optional} containing the corresponding {@link LocalDate}, or {@link Optional#empty()}
    *         if the input is null or cannot be converted
    */
-  public static Optional<LocalDate> convertMillisecondsToLocalDate(Long timestamp) {
-    if (timestamp == null) {
-      return Optional.empty();
-    }
-
+  public static Optional<LocalDate> convertMillisecondsToLocalDate(@Nullable final Long timestamp) {
     try {
-      long millis = getMillis(timestamp);
-
-      LocalDate result = Instant.ofEpochMilli(millis)
-          .atZone(ZoneId.of("Europe/Rome"))
-          .toLocalDate();
-
-      log.info("Converted timestamp {} to date {}", timestamp, result);
-      return Optional.of(result);
+      return Optional.ofNullable(timestamp)
+          .map(DateUtils::getMillis)
+          .map(Instant::ofEpochMilli)
+          .map(instant -> instant.atZone(ZoneId.of("Europe/Rome")))
+          .map(zonedDateTime -> {
+            final var localDate = zonedDateTime.toLocalDate();
+            log.info("Converted timestamp {} to date {}", timestamp, localDate);
+            return localDate;
+          });
 
     } catch (DateTimeException | ArithmeticException e) {
       log.error("Error converting timestamp {} to LocalDate. {}", timestamp, e.getMessage());
