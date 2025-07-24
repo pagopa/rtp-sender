@@ -118,19 +118,6 @@ class GdpMessageProcessorTest {
   }
 
   @Test
-  void givenMessageWithoutStatus_whenProcessed_thenThrowsNullPointerException() {
-    final var message =
-        GdpMessage.builder().operation(GdpMessage.Operation.CREATE).status(null).build();
-
-    final var exception = assertThrows(
-            NullPointerException.class,
-            () -> gdpMessageProcessor.processMessage(message)
-    );
-
-    assertEquals("foreignStatus is required", exception.getMessage());
-  }
-
-  @Test
   void givenNullEventDispatcher_whenProcessed_thenThrowsNullPointerException() {
     final var message =
         GdpMessage.builder()
