@@ -3,6 +3,7 @@ package it.gov.pagopa.rtp.sender.utils;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -70,37 +71,39 @@ class DateUtilsTest {
     }
 
     @Test
-    void givenValidEpochMillis_whenConvertLongToLocalDate_thenReturnCorrectLocalDate() {
+    void givenValidEpochMillis_whenConvertMillisecondsToLocalDate_thenReturnCorrectLocalDate() {
         long epochMillis = 1753866547153000L; // 2025-07-30T00:00:00Z
         LocalDate expected = LocalDate.of(2025, 7, 30);
-        LocalDate result = DateUtils.convertLongToLocalDate(epochMillis);
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(epochMillis);
 
-        assertEquals(expected, result);
+        assertTrue(result.isPresent());
+        assertEquals(expected, result.get());
     }
 
     @Test
-    void givenZeroTimestamp_whenConvertLongToLocalDate_thenReturnEpochDate() {
+    void givenZeroTimestamp_whenConvertMillisecondsToLocalDate_thenReturnEpochDate() {
         long epochMillis = 0L;
         LocalDate expected = Instant.ofEpochMilli(0).atZone(ZoneId.of("Europe/Rome")).toLocalDate();
-        LocalDate result = DateUtils.convertLongToLocalDate(epochMillis);
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(epochMillis);
 
-        assertEquals(expected, result);
+        assertTrue(result.isPresent());
+        assertEquals(expected, result.get());
     }
 
     @Test
-    void givenNegativeTimestamp_whenConvertLongToLocalDate_thenReturnPastDate() {
+    void givenNegativeTimestamp_whenConvertMillisecondsToLocalDate_thenReturnPastDate() {
         // 1969-12-31T23:59:59.000Z
         long epochMillis = -86400000L; // -1 day
         LocalDate expected = Instant.ofEpochMilli(epochMillis).atZone(ZoneId.of("Europe/Rome")).toLocalDate();
-        LocalDate result = DateUtils.convertLongToLocalDate(epochMillis);
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(epochMillis);
 
-        assertEquals(expected, result);
+        assertTrue(result.isPresent());
+        assertEquals(expected, result.get());
     }
 
     @Test
-    void givenNullTimestamp_whenConvertLongToLocalDate_thenReturnNull() {
-        LocalDate result = DateUtils.convertLongToLocalDate(null);
-        assertNull(result);
+    void givenNullTimestamp_whenConvertMillisecondsToLocalDate_thenReturnNull() {
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(null);
+        assertTrue(result.isEmpty());
     }
-
 }

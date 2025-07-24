@@ -1,5 +1,6 @@
 package it.gov.pagopa.rtp.sender.utils;
 
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,7 +40,11 @@ public class DateUtils {
    * @param timestamp the timestamp in microseconds (e.g. 1753866547153000)
    * @return the corresponding LocalDate in Europe/Rome timezone, or null if the input is invalid
    */
-  public static LocalDate convertLongToLocalDate(Long timestamp) {
+  public static Optional<LocalDate> convertMillisecondsToLocalDate(Long timestamp) {
+    if (timestamp == null) {
+      return Optional.empty();
+    }
+
     try {
       long millis = (timestamp > 10000000000000L) ? timestamp / 1000 : timestamp;
 
@@ -48,11 +53,11 @@ public class DateUtils {
           .toLocalDate();
 
       log.info("Converted timestamp {} to date {}", timestamp, result);
-      return result;
+      return Optional.of(result);
 
-    } catch (Exception e) {
-      log.error("Error converting timestamp {} to LocalDate", timestamp, e);
-      return null;
+    } catch (DateTimeException | ArithmeticException e) {
+      log.error("Error converting timestamp {} to LocalDate. {}", timestamp, e.getMessage());
+      return Optional.empty();
     }
   }
 }

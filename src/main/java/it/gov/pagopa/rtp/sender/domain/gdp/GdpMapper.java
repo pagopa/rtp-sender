@@ -73,7 +73,7 @@ public class GdpMapper {
         .orElse(null);
 
     final var expiryDate = Optional.ofNullable(gdpMessage.due_date())
-        .map(DateUtils::convertLongToLocalDate)
+        .flatMap(DateUtils::convertMillisecondsToLocalDate)
         .orElse(null);
 
     return Rtp.builder()
