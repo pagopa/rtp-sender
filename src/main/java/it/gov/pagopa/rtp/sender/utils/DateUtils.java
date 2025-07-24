@@ -33,12 +33,14 @@ public class DateUtils {
   }
 
   /**
-   * Converts a timestamp expressed in microseconds since epoch to a LocalDate
-   * in the "Europe/Rome" timezone. The input is divided by 1000 to convert it to milliseconds,
-   * then transformed into a LocalDate, discarding the time component.
+   * Converts a timestamp expressed either in milliseconds or microseconds since the epoch
+   * to a {@link LocalDate} in the "Europe/Rome" timezone. If the timestamp appears to be
+   * in microseconds, it is first converted to milliseconds.
+   * <p>
    *
-   * @param timestamp the timestamp in microseconds (e.g. 1753866547153000)
-   * @return the corresponding LocalDate in Europe/Rome timezone, or null if the input is invalid
+   * @param timestamp the timestamp in milliseconds or microseconds since epoch (e.g. 1753866547153000)
+   * @return an {@link Optional} containing the corresponding {@link LocalDate}, or {@link Optional#empty()}
+   *         if the input is null or cannot be converted
    */
   public static Optional<LocalDate> convertMillisecondsToLocalDate(Long timestamp) {
     if (timestamp == null) {
@@ -46,7 +48,7 @@ public class DateUtils {
     }
 
     try {
-      long millis = (timestamp > 10000000000000L) ? timestamp / 1000 : timestamp;
+      long millis = getMillis(timestamp);
 
       LocalDate result = Instant.ofEpochMilli(millis)
           .atZone(ZoneId.of("Europe/Rome"))
@@ -59,5 +61,18 @@ public class DateUtils {
       log.error("Error converting timestamp {} to LocalDate. {}", timestamp, e.getMessage());
       return Optional.empty();
     }
+  }
+
+  /**
+   * Normalizes a timestamp to milliseconds.
+   * <p>
+   * If the input value is greater than 13 digits, it is assumed to be in microseconds
+   * and is divided by 1000 to convert to milliseconds.
+   *
+   * @param timestamp the original timestamp in milliseconds or microseconds
+   * @return the timestamp normalized to milliseconds
+   */
+  private static long getMillis(Long timestamp) {
+    return (timestamp > 10000000000000L) ? timestamp / 1000 : timestamp;
   }
 }
