@@ -13,7 +13,7 @@ spring:
             provider: mil-auth
             client-id: 5e9fada3-3f16-4536-9830-66afbd21df29
             client-secret: ${MIL_AUTH_CLIENT_SECRET:7rp2qlgjyuap-skPA3JCfQicEDA14RMYoo-R}
-            #client-authentication-method: post
+            client-authentication-method: client_secret_post
             authorization-grant-type: client_credentials
             scope: "*"
             client-name: Mil Auth
