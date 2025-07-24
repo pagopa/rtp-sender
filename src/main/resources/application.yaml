@@ -38,7 +38,6 @@ spring:
           content-type: application/json
           binder: gdpconsumer
           consumer:
-            auto-startup: false
             start-offset: earliest
             max-attempts: 1
 
