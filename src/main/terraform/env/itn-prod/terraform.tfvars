@@ -49,6 +49,8 @@ rtp_environment_secrets = {
   JKS_TRUST_STORE_PATH                  : "jks-trust-store-path"
   JKS_TRUST_STORE_PASSWORD              : "jks-trust-store-password"
   GDP_EVENTHUB_CONNECTION_STRING        : "gdp-eventhub-connection-string"
+  MIL_AUTH_CLIENT_SECRET                : "mil-auth-client-secret"
+  MIL_AUTH_CLIENT_ID                    : "mil-auth-client-id"
 }
 
 
@@ -70,5 +72,6 @@ rtp_environment_configs = {
   GDP_EVENTHUB_TOPIC                      : "rtp-events"
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
   REGISTRY_DATA_CACHE_TTL                 : "PD1"
+  MIL_AUTH_TOKEN_URL                      : "https://api-rtp.cstar.pagopa.it/rtp/mil-auth/token"
 }
 
