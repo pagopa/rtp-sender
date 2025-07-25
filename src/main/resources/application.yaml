@@ -10,7 +10,7 @@ spring:
       client:
         registration:
           mil-auth:
-            provider: ${client.oauth.provider.mil-auth}
+            provider: ${client.oauth.mil-auth.provider}
             client-id: ${client.oauth.mil-auth.client-id}
             client-secret: ${client.oauth.mil-auth.client-secret}
             client-authentication-method: client_secret_post
