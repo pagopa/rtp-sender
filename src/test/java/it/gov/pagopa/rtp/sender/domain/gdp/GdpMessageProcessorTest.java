@@ -118,19 +118,6 @@ class GdpMessageProcessorTest {
   }
 
   @Test
-  void givenMessageWithoutStatus_whenProcessed_thenThrowsNullPointerException() {
-    final var message =
-        GdpMessage.builder().operation(GdpMessage.Operation.CREATE).status(null).build();
-
-    final var exception = assertThrows(
-            NullPointerException.class,
-            () -> gdpMessageProcessor.processMessage(message)
-    );
-
-    assertEquals("foreignStatus is required", exception.getMessage());
-  }
-
-  @Test
   void givenNullEventDispatcher_whenProcessed_thenThrowsNullPointerException() {
     final var message =
         GdpMessage.builder()
@@ -150,4 +137,28 @@ class GdpMessageProcessorTest {
 
     assertEquals("eventDispatcher is required", exception.getMessage());
   }
+
+  @Test
+  void givenMessageWithNullStatus_whenProcessed_thenContextUsesStatusNullEnum() {
+    final var message = GdpMessage.builder()
+            .operation(GdpMessage.Operation.CREATE)
+            .status(null)
+            .build();
+
+    final var rtp = Rtp.builder().build();
+
+    when(gdpEventHubProperties.eventDispatcher()).thenReturn("test-dispatcher");
+    when(operationProcessorFactory.getProcessor(message)).thenReturn(Mono.just(operationProcessor));
+    when(operationProcessor.processOperation(message))
+            .thenReturn(Mono.deferContextual(ctx -> Mono.just(rtp)));
+
+    StepVerifier.create(gdpMessageProcessor.processMessage(message))
+            .expectAccessibleContext()
+            .contains("foreignStatus", GdpMessage.Status.NULL)
+            .contains("eventDispatcher", "test-dispatcher")
+            .then()
+            .expectNext(rtp)
+            .verifyComplete();
+  }
+
 }

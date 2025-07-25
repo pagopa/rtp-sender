@@ -63,11 +63,6 @@ public class DeleteOperationProcessor implements OperationProcessor {
 
         return Mono.just(gdpMessage)
                 .doFirst(() -> log.info("Processing GDP message with id {}", gdpMessage.id()))
-                .filter(message -> message.status() == GdpMessage.Status.VALID)
-                .switchIfEmpty(Mono.fromRunnable(() ->
-                        log.warn("Skipping GDP message with id {} due to non-VALID status: {}", gdpMessage.id(), gdpMessage.status())
-                ))
-                .doOnNext(message -> log.debug("GDP message with id {} is VALID. Retrieving RTP...", message.id()))
                 .flatMap(message -> sendRTPService.findRtpByCompositeKey(message.id(), this.gdpEventHubProperties.eventDispatcher()))
                 .doOnNext(rtp -> log.info("Cancelling RTP with resourceID {}", rtp.resourceID()))
                 .flatMap(rtp -> sendRTPService.cancelRtpById(rtp.resourceID()))
