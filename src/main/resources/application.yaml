@@ -10,11 +10,11 @@ spring:
       client:
         registration:
           mil-auth:
-            provider: mil-auth
-            client-id: 5e9fada3-3f16-4536-9830-66afbd21df29
-            client-secret: ${MIL_AUTH_CLIENT_SECRET:7rp2qlgjyuap-skPA3JCfQicEDA14RMYoo-R}
+            provider: ${client.oauth.provider.mil-auth}
+            client-id: ${client.oauth.mil-auth.client-id}
+            client-secret: ${client.oauth.mil-auth.client-secret}
             client-authentication-method: client_secret_post
-            authorization-grant-type: client_credentials
+            authorization-grant-type: ${client.oauth.mil-auth.token-uri}
             client-name: Mil Auth
         provider:
           mil-auth:
@@ -153,6 +153,14 @@ client:
     pfx-type: PKCS12
     jks-trust-store-path: ${JKS_TRUST_STORE_PATH:}
     jks-trust-store-password: ${JKS_TRUST_STORE_PASSWORD:}
+
+  oauth:
+    mil-auth:
+      client-id: ${MIL_AUTH_CLIENT_ID:}
+      client-secret: ${MIL_AUTH_CLIENT_SECRET:}
+      authorization-grant-type: client_credentials
+      token-uri: ${MIL_AUTH_TOKEN_URI:https://api-mcshared.dev.cstar.pagopa.it/auth/token}
+      provider: mil-auth
 
 callback:
   url:
