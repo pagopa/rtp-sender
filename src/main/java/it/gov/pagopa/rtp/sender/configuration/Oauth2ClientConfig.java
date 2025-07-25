@@ -20,12 +20,12 @@ import org.springframework.security.oauth2.client.web.server.ServerOAuth2Authori
 @Configuration("oauth2ClientConfig")
 public class Oauth2ClientConfig {
 
-  @Bean
+  @Bean("oauth2ClientFilter")
   public ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2ClientFilter(
-      ReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
+      @NonNull final ReactiveOAuth2AuthorizedClientManager authorizedClientManager,
       @NonNull final Oauth2ConfigProperties oauth2ConfigProperties) {
 
-    ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2ClientFilter =
+    final var oauth2ClientFilter =
         new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
 
     oauth2ClientFilter.setDefaultClientRegistrationId(
@@ -34,18 +34,18 @@ public class Oauth2ClientConfig {
     return oauth2ClientFilter;
   }
 
-  @Bean
+  @Bean("authorizedClientManager")
   public ReactiveOAuth2AuthorizedClientManager authorizedClientManager(
-      ReactiveClientRegistrationRepository clientRegistrationRepository,
-      ServerOAuth2AuthorizedClientRepository authorizedClientRepository) {
+      @NonNull final ReactiveClientRegistrationRepository clientRegistrationRepository,
+      @NonNull final ServerOAuth2AuthorizedClientRepository authorizedClientRepository) {
 
-    ReactiveOAuth2AuthorizedClientProvider authorizedClientProvider =
+    final var authorizedClientProvider =
         ReactiveOAuth2AuthorizedClientProviderBuilder.builder()
             .clientCredentials()
             .refreshToken()
             .build();
 
-    DefaultReactiveOAuth2AuthorizedClientManager authorizedClientManager =
+    final var authorizedClientManager =
         new DefaultReactiveOAuth2AuthorizedClientManager(
             clientRegistrationRepository, authorizedClientRepository);
 
