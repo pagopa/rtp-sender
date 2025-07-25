@@ -23,13 +23,13 @@ public class Oauth2ClientConfig {
   @Bean
   public ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2ClientFilter(
       ReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
+      @NonNull final Oauth2ConfigProperties oauth2ConfigProperties) {
 
     ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2ClientFilter =
         new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
 
-    // Tell the filter which client registration to use for the calls
-    // This is the name you defined in application.yml
-    oauth2ClientFilter.setDefaultClientRegistrationId("mil-auth");
+    oauth2ClientFilter.setDefaultClientRegistrationId(
+        oauth2ConfigProperties.provider());
 
     return oauth2ClientFilter;
   }
