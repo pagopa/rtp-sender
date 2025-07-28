@@ -4,6 +4,22 @@ logging.level:
 spring:
   application:
     name: rtp-sender
+
+  security:
+    oauth2:
+      client:
+        registration:
+          mil-auth:
+            provider: mil-auth
+            client-id: ${MIL_AUTH_CLIENT_ID:}
+            client-secret: ${MIL_AUTH_CLIENT_SECRET:}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: client_credentials
+            client-name: Mil Auth
+        provider:
+          mil-auth:
+            token-uri: ${MIL_AUTH_TOKEN_URI:https://api-mcshared.dev.cstar.pagopa.it/auth/token}
+
   data:
     mongodb:
       uri: ${COSMOS_ACCOUNT_RTP_CONNECTION_STRING:mongodb://localhost:27017}
