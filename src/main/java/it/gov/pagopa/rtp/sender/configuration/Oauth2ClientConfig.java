@@ -3,12 +3,12 @@ package it.gov.pagopa.rtp.sender.configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientProviderBuilder;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
-import org.springframework.security.oauth2.client.web.server.ServerOAuth2AuthorizedClientRepository;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 
 
@@ -54,13 +54,13 @@ public class Oauth2ClientConfig {
    * It supports the {@code client_credentials} and {@code refresh_token} grant types.
    *
    * @param clientRegistrationRepository  the repository of OAuth2 client registrations; must not be {@code null}
-   * @param authorizedClientRepository    the repository storing authorized client information; must not be {@code null}
+   * @param authorizedClientService    the repository storing authorized client information; must not be {@code null}
    * @return the configured authorized client manager
    */
   @Bean("authorizedClientManager")
   public ReactiveOAuth2AuthorizedClientManager authorizedClientManager(
       @NonNull final ReactiveClientRegistrationRepository clientRegistrationRepository,
-      @NonNull final ServerOAuth2AuthorizedClientRepository authorizedClientRepository) {
+      @NonNull final ReactiveOAuth2AuthorizedClientService authorizedClientService) {
 
     final var authorizedClientProvider =
         ReactiveOAuth2AuthorizedClientProviderBuilder.builder()
@@ -69,8 +69,8 @@ public class Oauth2ClientConfig {
             .build();
 
     final var authorizedClientManager =
-        new DefaultReactiveOAuth2AuthorizedClientManager(
-            clientRegistrationRepository, authorizedClientRepository);
+        new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(
+            clientRegistrationRepository, authorizedClientService);
 
     authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
 
