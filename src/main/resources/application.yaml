@@ -41,7 +41,7 @@ spring:
         gdpconsumer:
           type: kafka
           health-check:
-            enabled: false
+            enabled: true
           environment.spring.cloud.stream.kafka:
             binder:
               auto-create-topics: false
@@ -86,7 +86,7 @@ management:
       probes:
         enabled: true
       kafka:
-        enabled: false
+        enabled: true
   otlp:
     tracing:
       export:
