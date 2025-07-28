@@ -71,7 +71,7 @@ rtp_environment_configs = {
   GDP_EVENTHUB_NAME                       : "pagopa-p-itn-gps-rtp-integration-evh"
   GDP_EVENTHUB_TOPIC                      : "rtp-events"
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
-  REGISTRY_DATA_CACHE_TTL                 : "PD1"
+  REGISTRY_DATA_CACHE_TTL                 : "P1D"
   MIL_AUTH_TOKEN_URL                      : "https://api-rtp.cstar.pagopa.it/rtp/mil-auth/token"
 }
 
