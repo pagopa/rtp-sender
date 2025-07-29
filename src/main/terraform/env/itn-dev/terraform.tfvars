@@ -72,6 +72,6 @@ rtp_environment_configs = {
   GDP_EVENTHUB_TOPIC                      : "rtp-events"
   GDP_EVENTHUB_CONSUMER_GROUP             : "rtp-events-processor"
   REGISTRY_DATA_CACHE_TTL                 : "PT5M"
-  MIL_AUTH_TOKEN_URL                      : "https://api-rtp.dev.cstar.pagopa.it/rtp/mil-auth/token"
+  MIL_AUTH_TOKEN_URL                      : "https://api-mcshared.dev.cstar.pagopa.it/auth/token"
 }
 
