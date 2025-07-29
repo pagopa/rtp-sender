@@ -496,7 +496,7 @@ components:
     SepaRequestToPayCancellationResponse:
       oneOf:
       - $ref: '#/components/schemas/PositiveSepaRequestToPayCancellationResponse'
-      - $ref: '#/components/schemas/NegativeSepaRequestToPayCancellationResponse'
+      #- $ref: '#/components/schemas/NegativeSepaRequestToPayCancellationResponse'
     SepaRequestToPayErrorResponseResource_DS04b:
       type: object
       properties:
@@ -1689,6 +1689,7 @@ components:
       maxLength: 4
       minLength: 1
       enum:
+      - CNCL
       - RJCR
       type: string
     ExternalInvestigationExecutionConfirmation1Code_II:
@@ -1696,6 +1697,7 @@ components:
       minLength: 1
       enum:
       - CNCL
+      - RJCR
       type: string
     ExternalPaymentTransactionStatus1Code:
       maxLength: 4
