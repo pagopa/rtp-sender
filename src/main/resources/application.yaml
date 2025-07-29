@@ -18,7 +18,7 @@ spring:
             client-name: Mil Auth
         provider:
           mil-auth:
-            token-uri: ${MIL_AUTH_TOKEN_URI:https://api-mcshared.dev.cstar.pagopa.it/auth/token}
+            token-uri: ${MIL_AUTH_TOKEN_URL:https://api-mcshared.dev.cstar.pagopa.it/auth/token}
 
   data:
     mongodb:
