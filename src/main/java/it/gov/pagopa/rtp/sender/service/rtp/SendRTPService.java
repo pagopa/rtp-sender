@@ -9,15 +9,15 @@ import java.util.UUID;
 
 public interface SendRTPService {
 
-    Mono<Rtp> send(Rtp rtp);
+  Mono<Rtp> send(Rtp rtp);
 
-    Mono<Rtp> cancelRtp(Rtp rtp);
+  Mono<Rtp> cancelRtp(Rtp rtp);
 
-    Mono<Rtp> cancelRtpById(ResourceID rtpId);
+  Mono<Rtp> cancelRtpById(ResourceID rtpId);
 
-    Mono<Rtp> findRtp(UUID rtpId);
+  Mono<Rtp> findRtp(UUID rtpId);
 
-    Flux<Rtp> findRtpsByNoticeNumber(String noticeNumber);
+  Flux<Rtp> findRtpsByNoticeNumber(String noticeNumber);
 
-    Mono<Rtp> findRtpByCompositeKey(Long operationId, String eventDispatcher);
+  Mono<Rtp> findRtpByCompositeKey(Long operationId, String eventDispatcher);
 }
