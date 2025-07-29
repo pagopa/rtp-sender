@@ -1,5 +1,7 @@
 logging.level:
   root: INFO
+  org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+
 
 spring:
   application:
