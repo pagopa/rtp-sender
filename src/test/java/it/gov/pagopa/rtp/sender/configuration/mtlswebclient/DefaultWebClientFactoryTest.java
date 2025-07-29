@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,15 +25,16 @@ class DefaultWebClientFactoryTest {
   private SslContextFactory sslContextFactory;
   @Mock
   private ServiceProviderConfig config;
-
   @Mock
   private SslContext sslContext;
+  @Mock
+  private ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2FilterFunction;
 
   private DefaultWebClientFactory mtlsWebClientFactory;
 
   @BeforeEach
   void setUp() {
-    mtlsWebClientFactory = new DefaultWebClientFactory(sslContextFactory, config, OpenTelemetry.noop());
+    mtlsWebClientFactory = new DefaultWebClientFactory(sslContextFactory, config, OpenTelemetry.noop(), oauth2FilterFunction);
   }
 
   @Test
