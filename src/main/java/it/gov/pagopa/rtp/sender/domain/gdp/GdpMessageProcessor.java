@@ -69,7 +69,7 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
                 .getProcessor(payload)
                 .flatMap(operationProcessor -> operationProcessor.processOperation(payload)))
         .contextWrite(ctx -> ctx
-                .put("foreignStatus", message.status() != null ? message.status() : GdpMessage.Status.NULL)
+                .put("foreignStatus", message.status())
                 .put("eventDispatcher",eventDispatcher));
   }
 }
