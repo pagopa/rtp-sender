@@ -61,7 +61,7 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
   @NonNull
   public Mono<Rtp> processMessage(@NonNull final GdpMessage message) {
     Objects.requireNonNull(message, "GdpMessage cannot be null");
-    final var foreignStatus = Objects.requireNonNull(message.status(),"foreignStatus is required");
+    final var foreignStatus = Objects.requireNonNull(message.status(), "GdpMessage status cannot be null");
     final var eventDispatcher = Objects.requireNonNull(this.gdpEventHubProperties.eventDispatcher(),"eventDispatcher is required");
 
     return Mono.fromSupplier(() -> message)
@@ -70,7 +70,7 @@ public class GdpMessageProcessor implements MessageProcessor<GdpMessage, Mono<Rt
                 .getProcessor(payload)
                 .flatMap(operationProcessor -> operationProcessor.processOperation(payload)))
         .contextWrite(ctx -> ctx
-                .put("foreignStatus", foreignStatus)
+                .put("foreignStatus",foreignStatus)
                 .put("eventDispatcher",eventDispatcher));
   }
 }
