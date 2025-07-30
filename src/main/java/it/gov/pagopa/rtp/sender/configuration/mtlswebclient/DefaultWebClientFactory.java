@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.Objects;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.lang.NonNull;
-import org.springframework.security.oauth2.server.resource.web.reactive.function.client.ServerBearerExchangeFilterFunction;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -29,6 +29,7 @@ public class DefaultWebClientFactory implements WebClientFactory {
   private final SslContextFactory sslContextFactory;
   private final ServiceProviderConfig serviceProviderConfig;
   private final OpenTelemetry openTelemetry;
+  private final ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2FilterFunction;
 
   /**
    * Constructs an instance of {@code DefaultWebClientFactory}.
@@ -38,15 +39,19 @@ public class DefaultWebClientFactory implements WebClientFactory {
    * @param serviceProviderConfig configuration settings for the service provider, including timeout
    *                              configurations
    * @param openTelemetry         dependency needed to instrument the {@link WebClient}
+   * @param oauth2FilterFunction the OAuth2 client manager responsible for managing OAuth2
+   *                              authentication
    */
   public DefaultWebClientFactory(
       @NonNull final SslContextFactory sslContextFactory,
       @NonNull final ServiceProviderConfig serviceProviderConfig,
-      @NonNull final OpenTelemetry openTelemetry
+      @NonNull final OpenTelemetry openTelemetry,
+      @NonNull final ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2FilterFunction
   ) {
     this.sslContextFactory = Objects.requireNonNull(sslContextFactory);
     this.serviceProviderConfig = Objects.requireNonNull(serviceProviderConfig);
     this.openTelemetry = Objects.requireNonNull(openTelemetry);
+    this.oauth2FilterFunction = Objects.requireNonNull(oauth2FilterFunction);
   }
 
   /**
@@ -65,7 +70,8 @@ public class DefaultWebClientFactory implements WebClientFactory {
 
     return createWebClientBuilder()
         .clientConnector(new ReactorClientHttpConnector(httpClient))
-        .filters(filter -> filter.add(new ServerBearerExchangeFilterFunction()))
+        .filters(filter ->
+            filter.add(this.oauth2FilterFunction))
         .build();
   }
 
