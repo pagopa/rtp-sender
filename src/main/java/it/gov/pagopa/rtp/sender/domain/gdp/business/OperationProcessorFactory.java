@@ -100,7 +100,6 @@ public class OperationProcessorFactory {
 
   /**
    * Creates a processor instance for {@link Operation#UPDATE} based on the {@link Status}.
-   * <p>Currently, only {@link Status#PAID} is supported.</p>
    *
    * @param gdpMessage the GDP message to evaluate; must not be {@code null}
    * @return the appropriate {@link OperationProcessor} for the UPDATE operation
@@ -113,13 +112,16 @@ public class OperationProcessorFactory {
     Objects.requireNonNull(gdpMessage.operation(), "Operation cannot be null");
     Objects.requireNonNull(gdpMessage.status(), "Status cannot be null");
 
-    if (gdpMessage.status() == Status.PAID) {
-      return new UpdatePaidOperationProcessor(this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+    return switch (gdpMessage.status()) {
+      case PAID -> new UpdatePaidOperationProcessor(
+          this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
 
-    } else {
-      throw new UnsupportedOperationException(
+      case DRAFT -> new UpdateDraftOperationProcessor(
+          this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+
+      default -> throw new UnsupportedOperationException(
           String.format("%s %s", gdpMessage.operation(), gdpMessage.status()));
-    }
+    };
   }
 
 }
