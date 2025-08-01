@@ -124,7 +124,6 @@ public class SendRTPServiceImpl implements SendRTPService, UpdateRtpService {
   }
 
 
-
   @NonNull
   @Override
   public Mono<Rtp> cancelRtp(@NonNull final Rtp rtpToCancel) {
