@@ -80,13 +80,13 @@ public class GdpEventHandler {
         ))
 
         .mapNotNull(Message::getPayload)
-        .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null")))
+        .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null...")))
         .doOnNext(payload -> log.info("Payload: {}", payload))
 
         .flatMap(this.gdProcessor::processMessage)
 
         .onErrorContinue(this::handleError)
-        .then();
+        .then(Mono.never());
   }
 
 
