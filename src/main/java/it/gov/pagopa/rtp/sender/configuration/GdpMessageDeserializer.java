@@ -1,7 +1,5 @@
 package it.gov.pagopa.rtp.sender.configuration;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import java.io.IOException;
@@ -31,7 +29,7 @@ public class GdpMessageDeserializer implements Deserializer<GdpMessage> {
             return null;
           }
         })
-        .orElse(null);
+        .orElse(GdpMessage.nullMessage());
   }
 }
 
