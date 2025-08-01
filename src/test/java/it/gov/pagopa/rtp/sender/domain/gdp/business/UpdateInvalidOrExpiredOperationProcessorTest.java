@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
@@ -138,7 +137,7 @@ class UpdateInvalidOrExpiredOperationProcessorTest {
                 .ec_tax_code("EC123")
                 .debtor_tax_code("DEBT123")
                 .nav("NAV123")
-                .due_date(LocalDate.of(2025,1,1))
+                .due_date(1735689600000L)
                 .amount(1000)
                 .status(status)
                 .psp_code("PSP123")
