@@ -10,8 +10,9 @@ import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
@@ -25,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UpdateInvalidOperationProcessorTest {
+class UpdateInvalidOrExpiredOperationProcessorTest {
 
     @Mock
     private RegistryDataService registryDataService;
@@ -36,7 +37,7 @@ class UpdateInvalidOperationProcessorTest {
     @Mock
     private GdpEventHubProperties gdpProps;
 
-    private UpdateInvalidOperationProcessor processor;
+    private UpdateInvalidOrExpiredOperationProcessor processor;
 
     private final UUID rtpId = UUID.randomUUID();
     private final String originalPspId = "original-psp-id";
@@ -46,7 +47,8 @@ class UpdateInvalidOperationProcessorTest {
 
     @BeforeEach
     void setUp() {
-        processor = new UpdateInvalidOperationProcessor(registryDataService, sendRTPService, gdpProps);
+    processor =
+        new UpdateInvalidOrExpiredOperationProcessor(registryDataService, sendRTPService, gdpProps);
 
         rtp = Rtp.builder()
                 .resourceID(new ResourceID(rtpId))
@@ -55,9 +57,10 @@ class UpdateInvalidOperationProcessorTest {
                 .build();
     }
 
-    @Test
-    void givenValidRtpAndDifferentPsp_whenProcessing_thenCancelIsTriggered() {
-        GdpMessage message = createGdpMessage("4321");
+    @ParameterizedTest
+    @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
+    void givenValidRtpAndDifferentPsp_whenProcessing_thenCancelIsTriggered(GdpMessage.Status status) {
+        GdpMessage message = createGdpMessage("4321", status);
 
         when(registryDataService.getServiceProvidersByPspTaxCode())
                 .thenReturn(Mono.just(Map.of("4321", createServiceProvider(receivedPspId))));
@@ -72,9 +75,10 @@ class UpdateInvalidOperationProcessorTest {
         verify(sendRTPService).cancelRtp(rtp);
     }
 
-    @Test
-    void givenValidRtpAndSamePsp_whenProcessing_thenCancelIsNotTriggered() {
-        GdpMessage message = createGdpMessage("1234");
+    @ParameterizedTest
+    @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
+    void givenValidRtpAndSamePsp_whenProcessing_thenCancelIsNotTriggered(GdpMessage.Status status) {
+        GdpMessage message = createGdpMessage("1234", status);
 
         when(registryDataService.getServiceProvidersByPspTaxCode())
                 .thenReturn(Mono.just(Map.of("1234", createServiceProvider(originalPspId))));
@@ -85,9 +89,10 @@ class UpdateInvalidOperationProcessorTest {
         verify(sendRTPService, never()).cancelRtp(any());
     }
 
-    @Test
-    void givenUnresolvablePsp_whenProcessing_thenServiceProviderNotFoundIsThrown() {
-        GdpMessage message = createGdpMessage("9999");
+    @ParameterizedTest
+    @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
+    void givenUnresolvablePsp_whenProcessing_thenServiceProviderNotFoundIsThrown(GdpMessage.Status status) {
+        GdpMessage message = createGdpMessage("9999", status);
 
         when(registryDataService.getServiceProvidersByPspTaxCode())
                 .thenReturn(Mono.just(Map.of())); // PSP not found
@@ -101,9 +106,10 @@ class UpdateInvalidOperationProcessorTest {
         verify(sendRTPService, never()).cancelRtp(any());
     }
 
-    @Test
-    void givenErrorDuringCancellation_whenProcessing_thenErrorIsPropagated() {
-        GdpMessage message = createGdpMessage("4321");
+    @ParameterizedTest
+    @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
+    void givenErrorDuringCancellation_whenProcessing_thenErrorIsPropagated(GdpMessage.Status status) {
+        GdpMessage message = createGdpMessage("4321", status);
 
         when(registryDataService.getServiceProvidersByPspTaxCode())
                 .thenReturn(Mono.just(Map.of("4321", createServiceProvider(receivedPspId))));
@@ -119,7 +125,7 @@ class UpdateInvalidOperationProcessorTest {
         verify(sendRTPService).cancelRtp(rtp);
     }
 
-    private GdpMessage createGdpMessage(String pspTaxCode) {
+    private GdpMessage createGdpMessage(String pspTaxCode, GdpMessage.Status status) {
 
         return GdpMessage
                 .builder()
@@ -134,7 +140,7 @@ class UpdateInvalidOperationProcessorTest {
                 .nav("NAV123")
                 .due_date(LocalDate.of(2025,1,1))
                 .amount(1000)
-                .status(GdpMessage.Status.INVALID)
+                .status(status)
                 .psp_code("PSP123")
                 .psp_tax_code(pspTaxCode)
                 .build();
