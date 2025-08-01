@@ -2,7 +2,6 @@ package it.gov.pagopa.rtp.sender.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
-import java.io.IOException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -23,10 +22,10 @@ public class GdpMessageDeserializer implements Deserializer<GdpMessage> {
           try {
             return objectMapper.readValue(data, GdpMessage.class);
 
-          } catch (IOException e) {
+          } catch (Exception e) {
             log.warn("Discarded invalid GdpMessage from topic [{}]: {}", topic, e.getMessage());
             log.debug("Invalid raw payload: {}", new String(data));
-            return null;
+            return GdpMessage.nullMessage();
           }
         })
         .orElse(GdpMessage.nullMessage());
