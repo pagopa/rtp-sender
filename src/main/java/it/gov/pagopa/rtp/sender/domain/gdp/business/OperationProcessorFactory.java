@@ -113,10 +113,17 @@ public class OperationProcessorFactory {
     Objects.requireNonNull(gdpMessage.operation(), "Operation cannot be null");
     Objects.requireNonNull(gdpMessage.status(), "Status cannot be null");
 
-    return switch (gdpMessage.status()){
-      case PAID -> new UpdatePaidOperationProcessor(this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
-      case INVALID -> new UpdateInvalidOperationProcessor(this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
-      default -> throw new UnsupportedOperationException(
+    return switch (gdpMessage.status()) {
+      case PAID ->
+          new UpdatePaidOperationProcessor(
+              this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+
+      case INVALID, EXPIRED->
+          new UpdateInvalidOrExpiredOperationProcessor(
+              this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+
+      default ->
+          throw new UnsupportedOperationException(
               String.format("%s %s", gdpMessage.operation(), gdpMessage.status()));
     };
   }
