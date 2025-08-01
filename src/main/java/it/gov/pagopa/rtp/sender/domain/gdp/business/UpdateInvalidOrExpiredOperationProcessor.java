@@ -13,10 +13,16 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 /**
- * Processor implementation for handling GDP messages with status {@link GdpMessage.Status#INVALID}.
+ * {@link OperationProcessor} implementation for handling {@link GdpMessage.Operation#UPDATE} messages
+ * with status {@link GdpMessage.Status#INVALID} or {@link GdpMessage.Status#EXPIRED}.
  * <p>
- * This processor checks whether the PSP tax code in the message matches the RTP's recorded service provider debtor.
- * If the PSP differs, it cancels the RTP. Otherwise, the message is discarded.
+ * If the PSP specified in the message differs from the debtor's service provider in the RTP,
+ * the RTP is cancelled. Otherwise, the message is ignored without taking any action.
+ * </p>
+ *
+ * @see UpdateOperationProcessor
+ * @see GdpMessage
+ * @see Rtp
  */
 @Slf4j
 public class UpdateInvalidOrExpiredOperationProcessor extends UpdateOperationProcessor {
@@ -42,15 +48,15 @@ public class UpdateInvalidOrExpiredOperationProcessor extends UpdateOperationPro
     super(registryDataService, sendRTPService, gdpEventHubProperties, VALID_STATUSES, SUPPORTED_STATUSES);
   }
 
-   /**
-   * Processes an INVALID GDP message.
-   * <p>
-   * If the PSP tax code in the message differs from the one in the RTP, the RTP is cancelled.
-   * Otherwise, processing is skipped.
+  /**
+   * Processes a GDP message with status {@code INVALID} or {@code EXPIRED}.
    *
-   * @param rtp         the RTP to be checked or updated
-   * @param gdpMessage  the GDP message triggering the update
-   * @return a {@link Mono} emitting the updated RTP if it was cancelled, or completing empty if skipped
+   * <p>If the PSP in the message does not match the debtor's service provider in the RTP, the RTP
+   * is cancelled. If they match, the message is silently ignored.
+   *
+   * @param rtp the RTP to validate or update
+   * @param gdpMessage the GDP message that triggered the update
+   * @return a {@link Mono} emitting the updated RTP if cancelled, or an empty completion if skipped
    */
   @Override
   @NonNull
