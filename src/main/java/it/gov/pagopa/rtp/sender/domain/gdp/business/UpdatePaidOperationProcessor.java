@@ -32,6 +32,9 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
       RtpStatus.CREATED, RtpStatus.SENT, RtpStatus.ACCEPTED, RtpStatus.USER_ACCEPTED
   );
 
+  private static final List<GdpMessage.Status> SUPPORTED_STATUSES =
+          List.of(Status.PAID);
+
 
   /**
    * Constructs a new {@code UpdatePaidOperationProcessor}.
@@ -46,7 +49,7 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     super(
-        registryDataService, sendRTPService, gdpEventHubProperties, ACCEPTED_STATUSES, Status.PAID);
+        registryDataService, sendRTPService, gdpEventHubProperties, ACCEPTED_STATUSES, SUPPORTED_STATUSES);
   }
 
 
