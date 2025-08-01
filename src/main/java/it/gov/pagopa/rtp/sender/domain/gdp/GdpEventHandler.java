@@ -86,7 +86,7 @@ public class GdpEventHandler {
         .flatMap(this.gdProcessor::processMessage)
 
         .onErrorContinue(this::handleError)
-        .then();
+        .then(Mono.never());
   }
 
 
