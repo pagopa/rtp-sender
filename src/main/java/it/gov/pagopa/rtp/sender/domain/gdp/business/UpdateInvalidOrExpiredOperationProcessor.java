@@ -19,10 +19,13 @@ import java.util.List;
  * If the PSP differs, it cancels the RTP. Otherwise, the message is discarded.
  */
 @Slf4j
-public class UpdateInvalidOperationProcessor extends UpdateOperationProcessor {
+public class UpdateInvalidOrExpiredOperationProcessor extends UpdateOperationProcessor {
 
   private static final List<RtpStatus> VALID_STATUSES =
       List.of(RtpStatus.CREATED, RtpStatus.SENT, RtpStatus.ACCEPTED, RtpStatus.USER_ACCEPTED);
+
+  private static final List<GdpMessage.Status> SUPPORTED_STATUSES =
+      List.of(GdpMessage.Status.INVALID, GdpMessage.Status.EXPIRED);
 
   /**
   * Constructs the processor with required dependencies.
@@ -31,12 +34,12 @@ public class UpdateInvalidOperationProcessor extends UpdateOperationProcessor {
   * @param sendRTPService          service responsible for sending or cancelling RTPs
   * @param gdpEventHubProperties   configuration properties for GDP event hub
   */
-  public UpdateInvalidOperationProcessor(
+  public UpdateInvalidOrExpiredOperationProcessor(
       @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
-    super(registryDataService, sendRTPService, gdpEventHubProperties, VALID_STATUSES, GdpMessage.Status.INVALID);
+    super(registryDataService, sendRTPService, gdpEventHubProperties, VALID_STATUSES, SUPPORTED_STATUSES);
   }
 
    /**
@@ -53,8 +56,8 @@ public class UpdateInvalidOperationProcessor extends UpdateOperationProcessor {
   @NonNull
   protected Mono<Rtp> updateRtp(@NonNull final Rtp rtp, @NonNull final GdpMessage gdpMessage) {
       return Mono.just(rtp)
-        .doFirst(() -> log.info("Start processing INVALID update. messageId={}, rtpId={}",
-                gdpMessage.id(), rtp.resourceID().getId()))
+        .doFirst(() -> log.info("Start processing {} update. messageId={}, rtpId={}",
+                gdpMessage.status(), gdpMessage.id(), rtp.resourceID().getId()))
         .flatMap(rtpToUpdate -> this.retrieveServiceProviderIdByPspTaxCode(gdpMessage.psp_tax_code()))
         .doOnNext(pspTaxCode -> log.debug("Resolved PSP taxCode {} to serviceProviderId {}",
                 gdpMessage.psp_tax_code(), pspTaxCode))
@@ -69,7 +72,7 @@ public class UpdateInvalidOperationProcessor extends UpdateOperationProcessor {
                     rtp.resourceID().getId());
             return Mono.empty();
         }))
-        .doOnError(error -> log.error("Error handling an INVALID message for RTP {}: {}",
-                rtp.resourceID().getId(), error.getMessage(), error));
+        .doOnError(error -> log.error("Error handling a {} message for RTP {}: {}",
+                gdpMessage.status(), rtp.resourceID().getId(), error.getMessage(), error));
   }
 }
