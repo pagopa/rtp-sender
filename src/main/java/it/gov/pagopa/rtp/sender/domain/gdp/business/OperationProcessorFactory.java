@@ -94,6 +94,7 @@ public class OperationProcessorFactory {
       case CREATE -> new CreateOperationProcessor(this.gdpMapper, this.sendRTPService);
       case UPDATE -> this.createUpdateProcessorInstance(gdpMessage);
       case DELETE -> new DeleteOperationProcessor(this.sendRTPService, this.gdpEventHubProperties);
+      default -> throw new UnsupportedOperationException(gdpMessage.operation().name());
     };
   }
 
