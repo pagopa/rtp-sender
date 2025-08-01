@@ -2,9 +2,9 @@ package it.gov.pagopa.rtp.sender.domain.gdp;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.time.LocalDate;
 import lombok.Builder;
 import org.springframework.validation.annotation.Validated;
+import java.util.Optional;
 
 
 @Validated
@@ -19,12 +19,17 @@ public record GdpMessage(
     String ec_tax_code,
     String debtor_tax_code,
     String nav,
-    LocalDate due_date,
+    Long due_date,
     @Positive int amount,
     Status status,
     String psp_code,
     String psp_tax_code
 ) {
+
+  public GdpMessage{
+    status = Optional.ofNullable(status)
+            .orElse(Status.NULL);
+  }
 
   public enum Operation {
     CREATE,
@@ -39,7 +44,8 @@ public record GdpMessage(
     EXPIRED,
     INVALID,
     DRAFT,
-    PUBLISHED
+    PUBLISHED,
+    NULL
   }
 
 }

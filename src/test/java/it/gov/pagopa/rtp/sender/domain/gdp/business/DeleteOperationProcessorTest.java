@@ -35,12 +35,12 @@ class DeleteOperationProcessorTest {
     }
 
     @Test
-    void givenValidGdpMessage_whenProcessOperation_thenRtpIsCancelled() {
+    void givenGdpMessage_whenProcessOperation_thenRtpIsCancelled() {
         final var operationId = 123L;
         final var eventDispatcher = "test-dispatcher";
         final var gdpMessage = GdpMessage.builder()
                 .id(operationId)
-                .status(GdpMessage.Status.VALID)
+                .status(null)
                 .build();
 
         final var rtp = Rtp.builder()
@@ -61,25 +61,12 @@ class DeleteOperationProcessorTest {
     }
 
     @Test
-    void givenNonValidGdpMessage_whenProcessOperation_thenDoNothing() {
-        final var gdpMessage = GdpMessage.builder()
-                .id(123L)
-                .status(GdpMessage.Status.INVALID)
-                .build();
-
-        StepVerifier.create(processor.processOperation(gdpMessage))
-                .verifyComplete();
-
-        verifyNoInteractions(sendRTPService);
-    }
-
-    @Test
     void givenErrorDuringRtpLookup_whenProcessOperation_thenPropagateError() {
         final var operationId = 123L;
         final var eventDispatcher = "test-dispatcher";
         final var gdpMessage = GdpMessage.builder()
                 .id(operationId)
-                .status(GdpMessage.Status.VALID)
+                .status(null)
                 .build();
 
         when(gdpEventHubProperties.eventDispatcher()).thenReturn(eventDispatcher);

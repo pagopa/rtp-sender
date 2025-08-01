@@ -83,6 +83,9 @@ public class CancelRtpHandler extends EpcApiInvokerHandler implements RequestHan
                   request.rtpToSend().resourceID().getId().toString(),
                   sepaRequest))
               .doFirst(() -> log.info("Sending RTP cancellation request to {}", rtpToSend.serviceProviderDebtor()))
+              .doOnError(error -> {
+                log.error("Error occurred while cancelling RTP: {}", error);
+              })
               .retryWhen(sendRetryPolicy());
         })
         .map(resp -> request.withResponse(TransactionStatus.CNCL))

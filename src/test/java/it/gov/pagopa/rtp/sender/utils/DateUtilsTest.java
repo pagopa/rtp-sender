@@ -1,5 +1,9 @@
 package it.gov.pagopa.rtp.sender.utils;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -64,5 +68,42 @@ class DateUtilsTest {
         String result = DateUtils.localDateTimeToCustomOffsetFormat(afterDSTEnd);
 
         assertTrue(result.endsWith("+01:00"), "Expected +01:00 after DST ends");
+    }
+
+    @Test
+    void givenValidEpochMillis_whenConvertMillisecondsToLocalDate_thenReturnCorrectLocalDate() {
+        long epochMillis = 1753866547153000L; // 2025-07-30T00:00:00Z
+        LocalDate expected = LocalDate.of(2025, 7, 30);
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(epochMillis);
+
+        assertTrue(result.isPresent());
+        assertEquals(expected, result.get());
+    }
+
+    @Test
+    void givenZeroTimestamp_whenConvertMillisecondsToLocalDate_thenReturnEpochDate() {
+        long epochMillis = 0L;
+        LocalDate expected = Instant.ofEpochMilli(0).atZone(ZoneId.of("Europe/Rome")).toLocalDate();
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(epochMillis);
+
+        assertTrue(result.isPresent());
+        assertEquals(expected, result.get());
+    }
+
+    @Test
+    void givenNegativeTimestamp_whenConvertMillisecondsToLocalDate_thenReturnPastDate() {
+        // 1969-12-31T23:59:59.000Z
+        long epochMillis = -86400000L; // -1 day
+        LocalDate expected = Instant.ofEpochMilli(epochMillis).atZone(ZoneId.of("Europe/Rome")).toLocalDate();
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(epochMillis);
+
+        assertTrue(result.isPresent());
+        assertEquals(expected, result.get());
+    }
+
+    @Test
+    void givenNullTimestamp_whenConvertMillisecondsToLocalDate_thenReturnNull() {
+        Optional<LocalDate> result = DateUtils.convertMillisecondsToLocalDate(null);
+        assertTrue(result.isEmpty());
     }
 }
