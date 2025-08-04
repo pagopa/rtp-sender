@@ -40,7 +40,6 @@ class UpdateInvalidOrExpiredOperationProcessorTest {
 
     private final UUID rtpId = UUID.randomUUID();
     private final String originalPspId = "original-psp-id";
-    private final String receivedPspId = "different-psp-id";
 
     private Rtp rtp;
 
@@ -58,11 +57,28 @@ class UpdateInvalidOrExpiredOperationProcessorTest {
 
     @ParameterizedTest
     @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
-    void givenValidRtpAndDifferentPsp_whenProcessing_thenCancelIsTriggered(GdpMessage.Status status) {
-        GdpMessage message = createGdpMessage("4321", status);
+    void givenValidRtpAndDifferentPsp_whenProcessing_thenExceptionIsThrown(GdpMessage.Status status) {
+        GdpMessage message = createGdpMessage("4321", status); // PSP diverso
 
+        String receivedPspId = "different-psp-id";
         when(registryDataService.getServiceProvidersByPspTaxCode())
                 .thenReturn(Mono.just(Map.of("4321", createServiceProvider(receivedPspId))));
+
+        StepVerifier.create(processor.updateRtp(rtp, message))
+                .expectErrorMatches(error ->
+                        error instanceof IllegalStateException &&
+                                error.getMessage().contains("PSP mismatch"))
+                .verify();
+
+        verify(sendRTPService, never()).cancelRtp(any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
+    void givenValidRtpAndSamePsp_whenProcessing_thenCancelIsTriggered(GdpMessage.Status status) {
+        GdpMessage message = createGdpMessage("1234", status);
+        when(registryDataService.getServiceProvidersByPspTaxCode())
+                .thenReturn(Mono.just(Map.of("1234", createServiceProvider(originalPspId))));
 
         when(sendRTPService.cancelRtp(any()))
                 .thenReturn(Mono.just(rtp.withStatus(RtpStatus.CANCELLED)));
@@ -76,25 +92,11 @@ class UpdateInvalidOrExpiredOperationProcessorTest {
 
     @ParameterizedTest
     @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
-    void givenValidRtpAndSamePsp_whenProcessing_thenCancelIsNotTriggered(GdpMessage.Status status) {
-        GdpMessage message = createGdpMessage("1234", status);
-
-        when(registryDataService.getServiceProvidersByPspTaxCode())
-                .thenReturn(Mono.just(Map.of("1234", createServiceProvider(originalPspId))));
-
-        StepVerifier.create(processor.updateRtp(rtp, message))
-                .verifyComplete();
-
-        verify(sendRTPService, never()).cancelRtp(any());
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
     void givenUnresolvablePsp_whenProcessing_thenServiceProviderNotFoundIsThrown(GdpMessage.Status status) {
         GdpMessage message = createGdpMessage("9999", status);
 
         when(registryDataService.getServiceProvidersByPspTaxCode())
-                .thenReturn(Mono.just(Map.of())); // PSP not found
+                .thenReturn(Mono.just(Map.of()));
 
         StepVerifier.create(processor.updateRtp(rtp, message))
                 .expectErrorMatches(error ->
@@ -108,10 +110,10 @@ class UpdateInvalidOrExpiredOperationProcessorTest {
     @ParameterizedTest
     @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
     void givenErrorDuringCancellation_whenProcessing_thenErrorIsPropagated(GdpMessage.Status status) {
-        GdpMessage message = createGdpMessage("4321", status);
+        GdpMessage message = createGdpMessage("1234", status);
 
         when(registryDataService.getServiceProvidersByPspTaxCode())
-                .thenReturn(Mono.just(Map.of("4321", createServiceProvider(receivedPspId))));
+                .thenReturn(Mono.just(Map.of("1234", createServiceProvider(originalPspId))));
 
         when(sendRTPService.cancelRtp(any()))
                 .thenReturn(Mono.error(new RuntimeException("Cancellation failed")));

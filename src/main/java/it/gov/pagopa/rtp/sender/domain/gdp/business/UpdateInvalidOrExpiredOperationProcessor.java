@@ -51,12 +51,12 @@ public class UpdateInvalidOrExpiredOperationProcessor extends UpdateOperationPro
   /**
    * Processes a GDP message with status {@code INVALID} or {@code EXPIRED}.
    *
-   * <p>If the PSP in the message does not match the debtor's service provider in the RTP, the RTP
-   * is cancelled. If they match, the message is silently ignored.
+   * <p>If the PSP in the message matches the debtor's service provider in the RTP, the RTP is
+   * cancelled. If they differ, an exception is raised and the message is not processed.
    *
    * @param rtp the RTP to validate or update
    * @param gdpMessage the GDP message that triggered the update
-   * @return a {@link Mono} emitting the updated RTP if cancelled, or an empty completion if skipped
+   * @return a {@link Mono} emitting the updated RTP if cancelled, or an error if the PSP differs
    */
   @Override
   @NonNull
@@ -67,17 +67,14 @@ public class UpdateInvalidOrExpiredOperationProcessor extends UpdateOperationPro
         .flatMap(rtpToUpdate -> this.retrieveServiceProviderIdByPspTaxCode(gdpMessage.psp_tax_code()))
         .doOnNext(pspTaxCode -> log.debug("Resolved PSP taxCode {} to serviceProviderId {}",
                 gdpMessage.psp_tax_code(), pspTaxCode))
-        .filter(pspTaxCode -> !pspTaxCode.equals(rtp.serviceProviderDebtor()))
-        .doOnNext(pspTaxCode -> log.info("PSP mismatch detected. Proceeding to cancel RTP {}",
+        .filter(pspTaxCode -> pspTaxCode.equals(rtp.serviceProviderDebtor()))
+        .doOnNext(pspTaxCode -> log.info("PSP match detected. Proceeding to cancel RTP {}",
                 rtp.resourceID().getId()))
         .flatMap(pspTaxCode -> sendRTPService.cancelRtp(rtp))
         .doOnSuccess(rtpUpdated -> log.info("RTP cancelled successfully. rtpId {}",
                 rtp.resourceID().getId()))
-        .switchIfEmpty(Mono.defer(() -> {
-            log.info("PSP is the same as the one used to send the RTP. Skipping processing. rtpId={}",
-                    rtp.resourceID().getId());
-            return Mono.empty();
-        }))
+        .switchIfEmpty(Mono.error(new IllegalStateException(String.format("PSP mismatch: cannot cancel RTP %s because the PSP differs from the original sender.",
+                        rtp.resourceID().getId()))))
         .doOnError(error -> log.error("Error handling a {} message for RTP {}: {}",
                 gdpMessage.status(), rtp.resourceID().getId(), error.getMessage(), error));
   }
