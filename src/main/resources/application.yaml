@@ -32,7 +32,6 @@ spring:
         connection-string: ${APPLICATIONINSIGHTS_CONNECTION_STRING:}
 
     stream:
-      closeContextOnStop: false
       kafka:
         binder:
           configuration:
@@ -56,8 +55,6 @@ spring:
           binder: gdpconsumer
           consumer:
             max-attempts: 1
-            auto-startup: true
-            use-native-decoding: true
 
       binders:
         gdpconsumer:
@@ -69,8 +66,10 @@ spring:
               configuration:
                 sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="${gdp.eventhub.connection-string}";
               consumerProperties:
-                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
-                value.deserializer: it.gov.pagopa.rtp.sender.configuration.GdpMessageDeserializer
+                spring.kafka.consumer.value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+                spring.kafka.consumer.properties.spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+                spring.kafka.consumer.properties.spring.json.trusted.packages: it.gov.pagopa.rtp.sender.domain.gdp
+                spring.kafka.consumer.properties.spring.json.value.default.type: it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage
 
     function:
       definition: gdpMessageConsumer

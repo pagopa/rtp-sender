@@ -79,14 +79,14 @@ public class GdpEventHandler {
             message.getHeaders().get(KafkaHeaders.TIMESTAMP)
         ))
 
-        .mapNotNull(Message::getPayload)
-        .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null...")))
+        .map(Message::getPayload)
+        .switchIfEmpty(Mono.fromRunnable(() -> log.warn("Payload is null")))
         .doOnNext(payload -> log.info("Payload: {}", payload))
 
         .flatMap(this.gdProcessor::processMessage)
 
         .onErrorContinue(this::handleError)
-        .then(Mono.never());
+        .then();
   }
 
 

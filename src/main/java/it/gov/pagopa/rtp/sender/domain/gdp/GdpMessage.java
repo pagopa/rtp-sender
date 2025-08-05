@@ -26,11 +26,6 @@ public record GdpMessage(
     String psp_tax_code
 ) {
 
-  public static GdpMessage nullMessage() {
-    return new GdpMessage(0L, Operation.NULL, 0L, "", "", "", "", "", "", null, 0, Status.NULL, "",
-        "");
-  }
-
   public GdpMessage{
     status = Optional.ofNullable(status)
             .orElse(Status.NULL);
@@ -39,8 +34,7 @@ public record GdpMessage(
   public enum Operation {
     CREATE,
     UPDATE,
-    DELETE,
-    NULL
+    DELETE
   }
 
   public enum Status {
