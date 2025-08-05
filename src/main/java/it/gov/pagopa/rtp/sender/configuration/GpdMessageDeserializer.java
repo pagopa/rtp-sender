@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Deserializer;
 
 @Slf4j
-public class GdpMessageDeserializer implements Deserializer<GdpMessage> {
+public class GpdMessageDeserializer implements Deserializer<GdpMessage> {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
