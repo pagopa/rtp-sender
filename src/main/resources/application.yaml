@@ -67,6 +67,7 @@ spring:
                 sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="$ConnectionString" password="${gdp.eventhub.connection-string}";
               consumerProperties:
                 value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+                spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
                 spring.json.trusted.packages: it.gov.pagopa.rtp.sender.domain.gdp
                 spring.json.value.default.type: it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage
 
