@@ -16,7 +16,7 @@ public class GpdMessageDeserializer implements Deserializer<GdpMessage> {
   public GdpMessage deserialize(String topic, byte[] data) {
     if (data == null) {
       log.warn("Received null payload on topic '{}'", topic);
-      return null;
+      throw new GdpMessageDeserializationException("Payload Null", null);
     }
 
     try {
