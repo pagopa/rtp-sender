@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 
 
 /**
- * Abstract base class for handling {@link Operation#UPDATE} messages with a specific {@link Status}.
+ * Abstract base class for handling {@link Operation#UPDATE} messages with one or more supported {@link Status} values.
  * <p>
  * This class provides the shared logic for retrieving and validating {@link Rtp} instances,
  * ensuring they are in an accepted {@link RtpStatus} and associated with the correct service provider.
@@ -38,7 +38,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
   protected final SendRTPServiceImpl sendRTPService;
   protected final GdpEventHubProperties gdpEventHubProperties;
   protected final List<RtpStatus> acceptedStatuses;
-  protected final Status statusToHandle;
+  protected final List<Status> statusToHandle;
 
 
   /**
@@ -48,7 +48,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
    * @param sendRTPService        the service for sending or retrieving RTPs; must not be {@code null}
    * @param gdpEventHubProperties the configuration properties for the Event Hub; must not be {@code null}
    * @param acceptedStatuses      the list of acceptable RTP statuses for processing; must not be {@code null}
-   * @param statusToHandle        the specific GDP message status this processor is designed to handle; must not be {@code null}
+   * @param statusToHandle        the list of GDP message statuses this processor is designed to handle; must not be {@code null}
    * @throws NullPointerException if any argument is {@code null}
    */
   protected UpdateOperationProcessor(
@@ -56,7 +56,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
       @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties,
       @NonNull final List<RtpStatus> acceptedStatuses,
-      @NonNull final Status statusToHandle) {
+      @NonNull final List<Status> statusToHandle) {
 
     this.registryDataService = Objects.requireNonNull(registryDataService);
     this.sendRTPService = Objects.requireNonNull(sendRTPService);
@@ -80,7 +80,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
     return Mono.just(gdpMessage)
         .doFirst(() -> log.info("Processing {} message with id {} and status {}", Operation.UPDATE, gdpMessage.id(), gdpMessage.status()))
 
-        .filter(message -> this.statusToHandle.equals(message.status()))
+        .filter(message -> this.statusToHandle.contains(message.status()))
         .switchIfEmpty(
             Mono.error(new IllegalArgumentException("Cannot process message with status " + gdpMessage.status() + " in " + this.statusToHandle + " flow.")))
 
