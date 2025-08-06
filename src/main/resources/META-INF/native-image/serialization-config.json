@@ -1,0 +1,23 @@
+[
+  {
+    "name": "java.lang.Throwable"
+  },
+  {
+    "name": "java.lang.Exception"
+  },
+  {
+    "name": "java.lang.RuntimeException"
+  },
+  {
+    "name": "org.springframework.kafka.support.serializer.DeserializationException"
+  },
+  {
+    "name": "com.fasterxml.jackson.databind.exc.InvalidFormatException"
+  },
+  {
+    "name": "com.fasterxml.jackson.core.JsonParseException"
+  },
+  {
+    "name": "org.springframework.messaging.converter.MessageConversionException"
+  }
+]
