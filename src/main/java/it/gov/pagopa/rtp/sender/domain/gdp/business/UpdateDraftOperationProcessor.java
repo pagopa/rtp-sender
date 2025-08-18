@@ -7,6 +7,7 @@ import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
+import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -40,7 +41,8 @@ public class UpdateDraftOperationProcessor extends UpdateOperationProcessor {
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     super(
-        registryDataService, sendRTPService, gdpEventHubProperties, ACCEPTED_STATUSES, Status.DRAFT);
+        registryDataService, sendRTPService, gdpEventHubProperties,
+        ACCEPTED_STATUSES, Collections.singletonList(Status.DRAFT));
   }
 
 
