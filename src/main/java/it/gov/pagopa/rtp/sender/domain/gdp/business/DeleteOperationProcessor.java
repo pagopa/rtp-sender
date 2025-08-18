@@ -65,7 +65,7 @@ public class DeleteOperationProcessor implements OperationProcessor {
                 .doFirst(() -> log.info("Processing GDP message with id {}", gdpMessage.id()))
                 .flatMap(message -> sendRTPService.findRtpByCompositeKey(message.id(), this.gdpEventHubProperties.eventDispatcher()))
                 .doOnNext(rtp -> log.info("Cancelling RTP with resourceID {}", rtp.resourceID()))
-                .flatMap(rtp -> sendRTPService.cancelRtpById(rtp.resourceID()))
+                .flatMap(sendRTPService::cancelRtp)
                 .doOnSuccess(rtp -> log.info("Successfully processed GDP message with id: {}", gdpMessage.id()))
                 .doOnError(error -> log.error("Failed to process GDP message with id {}: {}", gdpMessage.id(), error.getMessage(), error));
     }
