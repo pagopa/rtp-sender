@@ -48,7 +48,7 @@ public class DeleteOperationProcessor implements OperationProcessor {
      * If the message status is {@code VALID}, it attempts to:
      * <ul>
      *   <li>Retrieve the corresponding {@link Rtp} using the operationId and eventDispatcher</li>
-     *   <li>Cancel the RTP by calling {@link SendRTPService#cancelRtpById}</li>
+     *   <li>Cancel the RTP by calling {@link SendRTPService#cancelRtp} method</li>
      * </ul>
      * If the message is not valid, it logs a warning and skips processing.
      *
