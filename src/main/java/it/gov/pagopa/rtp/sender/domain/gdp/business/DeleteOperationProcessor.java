@@ -48,7 +48,7 @@ public class DeleteOperationProcessor implements OperationProcessor {
      * If the message status is {@code VALID}, it attempts to:
      * <ul>
      *   <li>Retrieve the corresponding {@link Rtp} using the operationId and eventDispatcher</li>
-     *   <li>Cancel the RTP by calling {@link SendRTPService#cancelRtpById}</li>
+     *   <li>Cancel the RTP by calling {@link SendRTPService#cancelRtp} method</li>
      * </ul>
      * If the message is not valid, it logs a warning and skips processing.
      *
@@ -65,7 +65,7 @@ public class DeleteOperationProcessor implements OperationProcessor {
                 .doFirst(() -> log.info("Processing GDP message with id {}", gdpMessage.id()))
                 .flatMap(message -> sendRTPService.findRtpByCompositeKey(message.id(), this.gdpEventHubProperties.eventDispatcher()))
                 .doOnNext(rtp -> log.info("Cancelling RTP with resourceID {}", rtp.resourceID()))
-                .flatMap(rtp -> sendRTPService.cancelRtpById(rtp.resourceID()))
+                .flatMap(sendRTPService::cancelRtp)
                 .doOnSuccess(rtp -> log.info("Successfully processed GDP message with id: {}", gdpMessage.id()))
                 .doOnError(error -> log.error("Failed to process GDP message with id {}: {}", gdpMessage.id(), error.getMessage(), error));
     }
