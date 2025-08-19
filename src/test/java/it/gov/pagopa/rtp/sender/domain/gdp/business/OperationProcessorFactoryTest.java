@@ -93,7 +93,7 @@ class OperationProcessorFactoryTest {
     return Stream.of(
         Arguments.of(Operation.CREATE, Status.VALID, CreateOperationProcessor.class),
         Arguments.of(Operation.CREATE, Status.INVALID, CreateOperationProcessor.class),
-        Arguments.of(Operation.CREATE, Status.PARTIALLY_VALID, CreateOperationProcessor.class),
+        Arguments.of(Operation.CREATE, Status.PARTIALLY_PAID, CreateOperationProcessor.class),
         Arguments.of(Operation.CREATE, Status.PAID, CreateOperationProcessor.class),
         Arguments.of(Operation.CREATE, Status.PUBLISHED, CreateOperationProcessor.class),
         Arguments.of(Operation.CREATE, Status.EXPIRED, CreateOperationProcessor.class),
@@ -101,7 +101,7 @@ class OperationProcessorFactoryTest {
 
         Arguments.of(Operation.DELETE, Status.VALID, DeleteOperationProcessor.class),
         Arguments.of(Operation.DELETE, Status.INVALID, DeleteOperationProcessor.class),
-        Arguments.of(Operation.DELETE, Status.PARTIALLY_VALID, DeleteOperationProcessor.class),
+        Arguments.of(Operation.DELETE, Status.PARTIALLY_PAID, DeleteOperationProcessor.class),
         Arguments.of(Operation.DELETE, Status.PAID, DeleteOperationProcessor.class),
         Arguments.of(Operation.DELETE, Status.PUBLISHED, DeleteOperationProcessor.class),
         Arguments.of(Operation.DELETE, Status.EXPIRED, DeleteOperationProcessor.class),
@@ -116,7 +116,7 @@ class OperationProcessorFactoryTest {
   private static Stream<Arguments> provideUnsupportedOperationsAndStatuses() {
     return Stream.of(
         Arguments.of(Operation.UPDATE, Status.VALID),
-        Arguments.of(Operation.UPDATE, Status.PARTIALLY_VALID),
+        Arguments.of(Operation.UPDATE, Status.PARTIALLY_PAID),
         Arguments.of(Operation.UPDATE, Status.PUBLISHED),
         Arguments.of(Operation.UPDATE, Status.DRAFT)
     );

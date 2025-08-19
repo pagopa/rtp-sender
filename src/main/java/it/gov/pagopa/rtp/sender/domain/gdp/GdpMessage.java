@@ -39,7 +39,7 @@ public record GdpMessage(
 
   public enum Status {
     VALID,
-    PARTIALLY_VALID,
+    PARTIALLY_PAID,
     PAID,
     EXPIRED,
     INVALID,
