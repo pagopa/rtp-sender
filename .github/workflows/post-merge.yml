@@ -173,6 +173,9 @@ jobs:
     permissions:
       id-token: write
 
+    outputs:
+      digest: ${{ needs.dev_deployment.outputs.digest }}
+
     steps:
       - name: "Checkout the source code"
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
@@ -239,7 +242,7 @@ jobs:
             --ssl-client-key certs/private.key
 
   prod_deployment:
-    needs: [ versioning, dev_deployment ]
+    needs: [versioning, uat_deployment]
 
     if: needs.versioning.outputs.new_release_published == 'true'
 
@@ -271,4 +274,4 @@ jobs:
           ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
         run: |
           terraform init -backend-config="env/itn-prod/backend.tfvars" -reconfigure
-          terraform apply -var-file="env/itn-prod/terraform.tfvars" -var="rtp_sender_image=ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}@${{ needs.dev_deployment.outputs.digest }}" -auto-approve -lock-timeout=300s
+          terraform apply -var-file="env/itn-prod/terraform.tfvars" -var="rtp_sender_image=ghcr.io/${{ github.repository }}:${{ needs.versioning.outputs.new_version }}@${{ needs.uat_deployment.outputs.digest }}" -auto-approve -lock-timeout=300s
