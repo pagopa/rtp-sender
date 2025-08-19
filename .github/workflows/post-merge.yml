@@ -239,7 +239,7 @@ jobs:
             --ssl-client-key certs/private.key
 
   prod_deployment:
-    needs: [versioning, dev_deployment, uat_deployment]
+    # needs: [versioning, dev_deployment, uat_deployment]
 
     if: needs.versioning.outputs.new_release_published == 'true'
 
