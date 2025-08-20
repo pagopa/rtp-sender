@@ -170,7 +170,7 @@ class SendAPIControllerImplTest {
 
   @Test
   @RtpSenderWriter
-  void givenUserNotActivatedWhenSendRTPThenReturnUnprocessableEntity() {
+  void givenUserNotActivatedWhenSendRTPThenReturnNotFound() {
 
     when(rtpDtoMapper.toRtpWithServiceProviderCreditor(any(CreateRtpDto.class), anyString()))
         .thenReturn(expectedRtp);
@@ -182,7 +182,7 @@ class SendAPIControllerImplTest {
         .bodyValue(generateSendRequest())
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        .isEqualTo(HttpStatus.NOT_FOUND);
 
     verify(sendRTPService, times(1)).send(any());
     verify(rtpDtoMapper, times(1)).toRtpWithServiceProviderCreditor(any(), (any()));

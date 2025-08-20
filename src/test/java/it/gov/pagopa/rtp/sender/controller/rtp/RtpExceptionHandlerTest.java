@@ -132,11 +132,11 @@ class RtpExceptionHandlerTest {
     }
 
     @Test
-    void givenHandlerInvoked_whenPayerNotActivated_thenReturnsUnprocessableEntityWithProperError() {
+    void givenHandlerInvoked_whenPayerNotActivated_thenReturnsNotFoundWithProperError() {
         final var response = rtpExceptionHandler.handlePayerNotActivated();
 
         assertNotNull(response, "Response should not be null");
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode(), "Status should be 422 Unprocessable Entity");
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode(), "Status should be 404 Not Found");
 
         final var body = response.getBody();
         assertNotNull(body, "Response body should not be null");
