@@ -109,7 +109,8 @@ class OperationProcessorFactoryTest {
 
         Arguments.of(Operation.UPDATE, Status.PAID, UpdatePaidOperationProcessor.class),
         Arguments.of(Operation.UPDATE, Status.INVALID, UpdateInvalidOrExpiredOperationProcessor.class),
-        Arguments.of(Operation.UPDATE, Status.EXPIRED, UpdateInvalidOrExpiredOperationProcessor.class)
+        Arguments.of(Operation.UPDATE, Status.EXPIRED, UpdateInvalidOrExpiredOperationProcessor.class),
+        Arguments.of(Operation.UPDATE, Status.DRAFT, UpdateDraftOperationProcessor.class)
     );
   }
 
@@ -117,8 +118,7 @@ class OperationProcessorFactoryTest {
     return Stream.of(
         Arguments.of(Operation.UPDATE, Status.VALID),
         Arguments.of(Operation.UPDATE, Status.PARTIALLY_PAID),
-        Arguments.of(Operation.UPDATE, Status.PUBLISHED),
-        Arguments.of(Operation.UPDATE, Status.DRAFT)
+        Arguments.of(Operation.UPDATE, Status.PUBLISHED)
     );
   }
 

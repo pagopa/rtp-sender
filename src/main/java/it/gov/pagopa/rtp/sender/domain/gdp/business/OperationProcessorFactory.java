@@ -100,7 +100,6 @@ public class OperationProcessorFactory {
 
   /**
    * Creates a processor instance for {@link Operation#UPDATE} based on the {@link Status}.
-   * <p>Currently, only {@link Status#PAID} is supported.</p>
    *
    * @param gdpMessage the GDP message to evaluate; must not be {@code null}
    * @return the appropriate {@link OperationProcessor} for the UPDATE operation
@@ -121,6 +120,9 @@ public class OperationProcessorFactory {
       case INVALID, EXPIRED->
           new UpdateInvalidOrExpiredOperationProcessor(
               this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+      
+      case DRAFT -> new UpdateDraftOperationProcessor(
+          this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
 
       default ->
           throw new UnsupportedOperationException(
