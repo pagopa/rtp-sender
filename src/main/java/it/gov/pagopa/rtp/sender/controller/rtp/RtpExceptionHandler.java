@@ -157,7 +157,7 @@ public class RtpExceptionHandler {
    * Handles {@link PayerNotActivatedException} by returning a standardized error response.
    * <p>
    * This method is triggered when a request fails because the payer is not activated.
-   * It returns an HTTP status {@code 422 Unprocessable Entity} along
+   * It returns an HTTP status {@code 404 Not Found} along
    * with {@link SendErrorCode#PAYER_NOT_ACTIVATED} as error code.
    * </p>
    *
