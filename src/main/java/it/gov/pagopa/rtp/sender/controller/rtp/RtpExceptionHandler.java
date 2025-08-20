@@ -170,7 +170,6 @@ public class RtpExceptionHandler {
             .code(SendErrorCode.PAYER_NOT_ACTIVATED.getCode())
             .description(SendErrorCode.PAYER_NOT_ACTIVATED.getMessage());
 
-    return ResponseEntity.unprocessableEntity()
-        .body(error);
+    return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
   }
 }
