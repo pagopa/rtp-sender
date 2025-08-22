@@ -102,7 +102,6 @@ public class GdpEventHandler {
    * @param context the message context associated with the error
    * @throws NullPointerException if {@code error} or {@code payload} is {@code null}
    */
-  @NonNull
   private void handleError(
       @NonNull final Throwable error,
       @Nullable final Object context) {
