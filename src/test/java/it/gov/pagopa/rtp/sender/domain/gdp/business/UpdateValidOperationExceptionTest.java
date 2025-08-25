@@ -1,24 +1,35 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
+import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UpdateValidOperationExceptionTest {
 
   private static final String SUPPORTED_STATUS_NAME = "VALID";
+  private static final GdpMessage.Status SUPPORTED_STATUS = GdpMessage.Status.valueOf(SUPPORTED_STATUS_NAME);
 
   @Mock
   private RegistryDataService registryDataService;
@@ -47,11 +58,21 @@ class UpdateValidOperationExceptionTest {
   }
 
   @Test
-  void givenRtpNotFound_whenHandleMissingRtp_thenThrowsUnsupportedOperationException() {
-    final var cause = new RuntimeException("Simulated failure");
-    final var gdpMessage = mock(GdpMessage.class);
+  void givenRtpNotFound_whenProcessOperation_thenThrowsUnsupportedOperationException() {
+    final var inputOperationId = 1L;
+    final var eventDispatcher = "dispatcher";
 
-    StepVerifier.create(processor.handleMissingRtp(cause, gdpMessage))
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(eventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, eventDispatcher))
+        .thenReturn(Mono.error(new RtpNotFoundException(inputOperationId, eventDispatcher)));
+
+    StepVerifier.create(processor.processOperation(message))
         .expectErrorSatisfies(error ->
             Assertions.assertThat(error)
                 .isInstanceOf(UnsupportedOperationException.class)
