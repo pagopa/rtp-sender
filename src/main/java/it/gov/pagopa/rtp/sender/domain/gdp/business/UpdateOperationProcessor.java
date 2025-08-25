@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
@@ -84,7 +85,14 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
         .switchIfEmpty(
             Mono.error(new IllegalArgumentException("Cannot update RTP with status " + gdpMessage.status())))
 
-        .flatMap(rtpToUpdate -> this.updateRtp(rtpToUpdate, gdpMessage));
+        .flatMap(rtpToUpdate -> this.updateRtp(rtpToUpdate, gdpMessage))
+
+        .onErrorResume(
+            RtpNotFoundException.class,
+            e -> {
+              log.warn(e.getMessage());
+              return this.handleMissingRtp(gdpMessage);
+            });
   }
 
 
