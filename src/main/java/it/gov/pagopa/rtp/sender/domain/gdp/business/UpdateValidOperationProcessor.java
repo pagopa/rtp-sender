@@ -10,7 +10,7 @@ import java.util.List;
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
-public class UpdateValidOperationException extends UpdateOperationProcessor {
+public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
   private static final List<RtpStatus> ACCEPTED_STATUSES = List.of(
       RtpStatus.CREATED, RtpStatus.SENT, RtpStatus.ACCEPTED, RtpStatus.USER_ACCEPTED
@@ -27,7 +27,7 @@ public class UpdateValidOperationException extends UpdateOperationProcessor {
    * @param gdpEventHubProperties the configuration properties for the Event Hub; must not be {@code null}
    * @throws NullPointerException if any argument is {@code null}
    */
-  protected UpdateValidOperationException(
+  protected UpdateValidOperationProcessor(
       @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 

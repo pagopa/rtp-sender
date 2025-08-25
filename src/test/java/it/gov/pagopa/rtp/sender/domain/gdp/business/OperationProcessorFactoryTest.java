@@ -107,7 +107,7 @@ class OperationProcessorFactoryTest {
         Arguments.of(Operation.DELETE, Status.EXPIRED, DeleteOperationProcessor.class),
         Arguments.of(Operation.DELETE, Status.DRAFT, DeleteOperationProcessor.class),
 
-        Arguments.of(Operation.UPDATE, Status.VALID, UpdateValidOperationException.class),
+        Arguments.of(Operation.UPDATE, Status.VALID, UpdateValidOperationProcessor.class),
         Arguments.of(Operation.UPDATE, Status.PAID, UpdatePaidOperationProcessor.class),
         Arguments.of(Operation.UPDATE, Status.INVALID, UpdateInvalidOrExpiredOperationProcessor.class),
         Arguments.of(Operation.UPDATE, Status.EXPIRED, UpdateInvalidOrExpiredOperationProcessor.class),

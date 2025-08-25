@@ -124,7 +124,7 @@ public class OperationProcessorFactory {
       case DRAFT -> new UpdateDraftOperationProcessor(
           this.sendRTPService, this.gdpEventHubProperties);
 
-      case VALID -> new UpdateValidOperationException(
+      case VALID -> new UpdateValidOperationProcessor(
           this.sendRTPService, this.gdpEventHubProperties);
 
       default ->
