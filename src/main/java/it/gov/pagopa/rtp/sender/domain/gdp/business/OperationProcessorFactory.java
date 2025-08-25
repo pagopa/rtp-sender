@@ -124,6 +124,9 @@ public class OperationProcessorFactory {
       case DRAFT -> new UpdateDraftOperationProcessor(
           this.sendRTPService, this.gdpEventHubProperties);
 
+      case VALID -> new UpdateValidOperationException(
+          this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+
       default ->
           throw new UnsupportedOperationException(
               String.format("%s %s", gdpMessage.operation(), gdpMessage.status()));
