@@ -125,7 +125,7 @@ public class OperationProcessorFactory {
           this.sendRTPService, this.gdpEventHubProperties);
 
       case VALID -> new UpdateValidOperationException(
-          this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+          this.sendRTPService, this.gdpEventHubProperties);
 
       default ->
           throw new UnsupportedOperationException(
