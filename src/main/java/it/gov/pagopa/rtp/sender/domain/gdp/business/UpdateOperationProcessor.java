@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
 
@@ -91,7 +92,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
             RtpNotFoundException.class,
             e -> {
               log.warn(e.getMessage());
-              return this.handleMissingRtp(gdpMessage);
+              return this.handleMissingRtp(e, gdpMessage);
             });
   }
 
@@ -113,8 +114,12 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
    * @return a {@link Mono} emitting a {@link RtpNotFoundException} error.
    */
   @NonNull
-  protected Mono<Rtp> handleMissingRtp(GdpMessage gdpMessage) {
-    return Mono.error(new RtpNotFoundException(
-        gdpMessage.id(), this.gdpEventHubProperties.eventDispatcher()));
+  protected Mono<Rtp> handleMissingRtp(
+      @NonNull final Throwable cause,
+      @NonNull final GdpMessage gdpMessage) {
+
+    log.error(cause.getMessage(), cause);
+
+    return Mono.error(Exceptions.propagate(cause));
   }
 }
