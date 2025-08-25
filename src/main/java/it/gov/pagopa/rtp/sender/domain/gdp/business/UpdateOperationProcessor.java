@@ -90,10 +90,7 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
 
         .onErrorResume(
             RtpNotFoundException.class,
-            e -> {
-              log.warn(e.getMessage());
-              return this.handleMissingRtp(e, gdpMessage);
-            });
+            e -> this.handleMissingRtp(e, gdpMessage));
   }
 
 
