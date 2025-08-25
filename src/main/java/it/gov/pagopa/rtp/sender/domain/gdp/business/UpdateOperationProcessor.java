@@ -118,6 +118,9 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
       @NonNull final Throwable cause,
       @NonNull final GdpMessage gdpMessage) {
 
+    Objects.requireNonNull(cause, "cause cannot be null");
+    Objects.requireNonNull(gdpMessage, "gdpMessage cannot be null");
+
     log.error(cause.getMessage(), cause);
 
     return Mono.error(Exceptions.propagate(cause));
