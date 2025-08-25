@@ -25,7 +25,7 @@ import reactor.test.StepVerifier;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class UpdateValidOperationExceptionTest {
+class UpdateValidOperationProcessorTest {
 
   private static final String SUPPORTED_STATUS_NAME = "VALID";
   private static final GdpMessage.Status SUPPORTED_STATUS = GdpMessage.Status.valueOf(SUPPORTED_STATUS_NAME);
@@ -38,7 +38,7 @@ class UpdateValidOperationExceptionTest {
   private GdpEventHubProperties gdpEventHubProperties;
 
   @InjectMocks
-  private UpdateValidOperationException processor;
+  private UpdateValidOperationProcessor processor;
 
 
   @ParameterizedTest
