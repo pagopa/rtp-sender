@@ -122,4 +122,17 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
 
     return Mono.error(Exceptions.propagate(cause));
   }
+
+
+  /**
+   * Fallback case when no RTP is found.
+   *
+   * @param gdpMessage the original GDP message
+   * @return a {@link Mono} emitting a {@link RtpNotFoundException} error.
+   */
+  @NonNull
+  protected Mono<Rtp> handleMissingRtp(GdpMessage gdpMessage) {
+    return Mono.error(new RtpNotFoundException(
+        gdpMessage.id(), this.gdpEventHubProperties.eventDispatcher()));
+  }
 }
