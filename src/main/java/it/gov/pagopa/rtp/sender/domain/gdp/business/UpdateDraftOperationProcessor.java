@@ -5,7 +5,6 @@ import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +27,6 @@ public class UpdateDraftOperationProcessor extends UpdateOperationProcessor {
   /**
    * Constructs a new {@code UpdateOperationProcessor} with required dependencies.
    *
-   * @param registryDataService   the service for accessing registry data; must not be {@code null}
    * @param sendRTPService        the service for sending or retrieving RTPs; must not be
    *                              {@code null}
    * @param gdpEventHubProperties the configuration properties for the Event Hub; must not be
@@ -36,12 +34,11 @@ public class UpdateDraftOperationProcessor extends UpdateOperationProcessor {
    * @throws NullPointerException if any argument is {@code null}
    */
   protected UpdateDraftOperationProcessor(
-      @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     super(
-        registryDataService, sendRTPService, gdpEventHubProperties,
+        sendRTPService, gdpEventHubProperties,
         ACCEPTED_STATUSES, Collections.singletonList(Status.DRAFT));
   }
 
