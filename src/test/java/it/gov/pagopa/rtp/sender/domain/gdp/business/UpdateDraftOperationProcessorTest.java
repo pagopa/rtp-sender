@@ -10,7 +10,6 @@ import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,9 +31,6 @@ class UpdateDraftOperationProcessorTest {
 
 
   @Mock
-  private RegistryDataService registryDataService;
-
-  @Mock
   private SendRTPServiceImpl sendRTPService;
 
   @Mock
@@ -45,7 +41,7 @@ class UpdateDraftOperationProcessorTest {
   @BeforeEach
   void setUp() {
     lenient().when(gdpEventHubProperties.eventDispatcher()).thenReturn("dispatcher");
-    processor = new UpdateDraftOperationProcessor(registryDataService, sendRTPService, gdpEventHubProperties);
+    processor = new UpdateDraftOperationProcessor(sendRTPService, gdpEventHubProperties);
   }
 
 

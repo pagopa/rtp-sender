@@ -5,7 +5,6 @@ import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,9 +24,6 @@ import static org.mockito.Mockito.*;
 class UpdateInvalidOrExpiredOperationProcessorTest {
 
     @Mock
-    private RegistryDataService registryDataService;
-
-    @Mock
     private SendRTPServiceImpl sendRTPService;
 
     @Mock
@@ -42,7 +38,7 @@ class UpdateInvalidOrExpiredOperationProcessorTest {
     @BeforeEach
     void setUp() {
     processor =
-        new UpdateInvalidOrExpiredOperationProcessor(registryDataService, sendRTPService, gdpProps);
+        new UpdateInvalidOrExpiredOperationProcessor(sendRTPService, gdpProps);
 
         rtp = Rtp.builder()
                 .resourceID(new ResourceID(rtpId))

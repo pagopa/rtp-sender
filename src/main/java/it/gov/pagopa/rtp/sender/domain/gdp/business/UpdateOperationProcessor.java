@@ -1,14 +1,11 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
-import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
-import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +31,6 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public abstract class UpdateOperationProcessor implements OperationProcessor {
 
-  protected final RegistryDataService registryDataService;
   protected final SendRTPServiceImpl sendRTPService;
   protected final GdpEventHubProperties gdpEventHubProperties;
   protected final List<RtpStatus> acceptedStatuses;
@@ -43,8 +39,6 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
 
   /**
    * Constructs a new {@code UpdateOperationProcessor} with required dependencies.
-   *
-   * @param registryDataService   the service for accessing registry data; must not be {@code null}
    * @param sendRTPService        the service for sending or retrieving RTPs; must not be {@code null}
    * @param gdpEventHubProperties the configuration properties for the Event Hub; must not be {@code null}
    * @param acceptedStatuses      the list of acceptable RTP statuses for processing; must not be {@code null}
@@ -52,13 +46,11 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
    * @throws NullPointerException if any argument is {@code null}
    */
   protected UpdateOperationProcessor(
-      @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties,
       @NonNull final List<RtpStatus> acceptedStatuses,
       @NonNull final List<Status> statusToHandle) {
 
-    this.registryDataService = Objects.requireNonNull(registryDataService);
     this.sendRTPService = Objects.requireNonNull(sendRTPService);
     this.gdpEventHubProperties = Objects.requireNonNull(gdpEventHubProperties);
     this.acceptedStatuses = Objects.requireNonNull(acceptedStatuses);
@@ -104,21 +96,4 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
    * @return a {@link Mono} emitting the updated {@link Rtp}
    */
   protected abstract Mono<Rtp> updateRtp(Rtp rtp, GdpMessage gdpMessage);
-
-
-  /**
-   * Retrieves the service provider ID (PSP BIC) corresponding to the given tax code from the registry.
-   *
-   * @param pspTaxCode the PSP tax code; must not be {@code null}
-   * @return a {@link Mono} emitting the service provider ID
-   * @throws ServiceProviderNotFoundException if no service provider is found for the given tax code
-   */
-  @NonNull
-  protected Mono<String> retrieveServiceProviderIdByPspTaxCode(@NonNull final String pspTaxCode) {
-    return Mono.just(this.registryDataService)
-        .flatMap(RegistryDataService::getServiceProvidersByPspTaxCode)
-        .mapNotNull(serviceProviders -> serviceProviders.get(pspTaxCode))
-        .map(ServiceProvider::id)
-        .switchIfEmpty(Mono.error(new ServiceProviderNotFoundException("No service provider found for tax code " + pspTaxCode)));
-  }
 }

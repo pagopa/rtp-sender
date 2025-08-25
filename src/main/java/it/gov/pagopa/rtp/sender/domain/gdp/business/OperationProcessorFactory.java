@@ -119,10 +119,10 @@ public class OperationProcessorFactory {
 
       case INVALID, EXPIRED->
           new UpdateInvalidOrExpiredOperationProcessor(
-              this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+              this.sendRTPService, this.gdpEventHubProperties);
       
       case DRAFT -> new UpdateDraftOperationProcessor(
-          this.registryDataService, this.sendRTPService, this.gdpEventHubProperties);
+          this.sendRTPService, this.gdpEventHubProperties);
 
       default ->
           throw new UnsupportedOperationException(
