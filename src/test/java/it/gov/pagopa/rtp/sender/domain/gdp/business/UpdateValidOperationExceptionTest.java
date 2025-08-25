@@ -18,6 +18,8 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(MockitoExtension.class)
 class UpdateValidOperationExceptionTest {
 
+  private static final String SUPPORTED_STATUS_NAME = "VALID";
+
   @Mock
   private RegistryDataService registryDataService;
 
@@ -54,6 +56,22 @@ class UpdateValidOperationExceptionTest {
             Assertions.assertThat(error)
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Handle missing RTP for Update VALID operation is not supported yet"))
+        .verify();
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = Status.class, mode = EnumSource.Mode.EXCLUDE, names = SUPPORTED_STATUS_NAME)
+  void givenNonValidStatus_whenProcessOperation_thenThrowsIllegalArgumentException(Status nonValidStatus) {
+    final var message = GdpMessage.builder()
+        .id(1L)
+        .psp_tax_code("psp-code")
+        .status(nonValidStatus)
+        .build();
+
+    final var result = processor.processOperation(message);
+
+    StepVerifier.create(result)
+        .expectError(IllegalArgumentException.class)
         .verify();
   }
 }
