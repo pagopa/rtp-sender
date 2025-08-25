@@ -1,13 +1,16 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.errors.ServiceProviderNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
+import it.gov.pagopa.rtp.sender.domain.registryfile.ServiceProvider;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
@@ -36,6 +39,9 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
           List.of(Status.PAID);
 
 
+  private final RegistryDataService registryDataService;
+
+
   /**
    * Constructs a new {@code UpdatePaidOperationProcessor}.
    *
@@ -49,7 +55,9 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     super(
-        registryDataService, sendRTPService, gdpEventHubProperties, ACCEPTED_STATUSES, SUPPORTED_STATUSES);
+        sendRTPService, gdpEventHubProperties, ACCEPTED_STATUSES, SUPPORTED_STATUSES);
+
+    this.registryDataService = Objects.requireNonNull(registryDataService);
   }
 
 
@@ -73,6 +81,23 @@ public class UpdatePaidOperationProcessor extends UpdateOperationProcessor {
         .filter(pspBic -> pspBic.equals(rtp.serviceProviderDebtor()))
         .flatMap(pspBic -> this.handleSamePsp(rtp))
         .switchIfEmpty(Mono.fromDirect(this.handleDifferentPsp(rtp)));
+  }
+
+
+  /**
+   * Retrieves the service provider ID (PSP BIC) corresponding to the given tax code from the registry.
+   *
+   * @param pspTaxCode the PSP tax code; must not be {@code null}
+   * @return a {@link Mono} emitting the service provider ID
+   * @throws ServiceProviderNotFoundException if no service provider is found for the given tax code
+   */
+  @NonNull
+  private Mono<String> retrieveServiceProviderIdByPspTaxCode(@NonNull final String pspTaxCode) {
+    return Mono.just(this.registryDataService)
+        .flatMap(RegistryDataService::getServiceProvidersByPspTaxCode)
+        .mapNotNull(serviceProviders -> serviceProviders.get(pspTaxCode))
+        .map(ServiceProvider::id)
+        .switchIfEmpty(Mono.error(new ServiceProviderNotFoundException("No service provider found for tax code " + pspTaxCode)));
   }
 
 
