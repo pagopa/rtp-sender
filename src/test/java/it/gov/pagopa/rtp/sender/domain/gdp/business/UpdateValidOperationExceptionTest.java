@@ -4,10 +4,12 @@ import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
+import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -44,12 +46,31 @@ class UpdateValidOperationExceptionTest {
   private UpdateValidOperationException processor;
 
 
-  @Test
-  void givenValidRtpToUpdate_whenUpdateRtp_thenThrowsUnsupportedOperationException() {
-    final var rtp = mock(Rtp.class);
-    final var gdpMessage = mock(GdpMessage.class);
+  @ParameterizedTest
+  @MethodSource("provideValidRtpStatuses")
+  void givenValidRtpToUpdate_whenProcessRtp_thenThrowsUnsupportedOperationException(RtpStatus rtpStatus) {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+    final var resourceID = ResourceID.createNew();
 
-    StepVerifier.create(processor.updateRtp(rtp, gdpMessage))
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    final var rtp = Rtp.builder()
+        .resourceID(resourceID)
+        .status(rtpStatus)
+        .operationId(inputOperationId)
+        .eventDispatcher(inputEventDispatcher)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.just(rtp));
+
+    StepVerifier.create(processor.processOperation(message))
         .expectErrorSatisfies(error ->
             Assertions.assertThat(error)
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -78,6 +99,15 @@ class UpdateValidOperationExceptionTest {
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Handle missing RTP for Update VALID operation is not supported yet"))
         .verify();
+  }
+
+  private static Stream<Arguments> provideValidRtpStatuses() {
+    return Stream.of(
+        Arguments.of(RtpStatus.CREATED),
+        Arguments.of(RtpStatus.SENT),
+        Arguments.of(RtpStatus.ACCEPTED),
+        Arguments.of(RtpStatus.USER_ACCEPTED)
+    );
   }
 
   @ParameterizedTest
