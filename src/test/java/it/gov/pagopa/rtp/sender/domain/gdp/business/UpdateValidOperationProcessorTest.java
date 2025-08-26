@@ -23,6 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -111,6 +115,13 @@ class UpdateValidOperationProcessorTest {
     StepVerifier.create(processor.processOperation(message))
         .expectNext(rtp)
         .verifyComplete();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, times(1))
+        .send(rtp);
   }
 
   @Test
@@ -133,6 +144,13 @@ class UpdateValidOperationProcessorTest {
     StepVerifier.create(processor.processOperation(message))
         .expectErrorMatches(error -> error.equals(exception))
         .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, never())
+        .toRtp(message);
+    verify(sendRTPService, never())
+        .send(any());
   }
 
   @Test
@@ -158,6 +176,13 @@ class UpdateValidOperationProcessorTest {
     StepVerifier.create(processor.processOperation(message))
         .expectErrorMatches(error -> error.equals(genericException))
         .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, never())
+        .send(any());
   }
 
   @Test
@@ -191,6 +216,8 @@ class UpdateValidOperationProcessorTest {
         .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
     verify(gdpMapper, times(1))
         .toRtp(message);
+    verify(sendRTPService, never())
+        .send(any());
   }
 
   private static Stream<Arguments> provideValidRtpStatuses() {
@@ -235,6 +262,13 @@ class UpdateValidOperationProcessorTest {
     StepVerifier.create(processor.processOperation(message))
         .expectErrorMatches(error -> error.equals(genericException))
         .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, times(1))
+        .send(rtp);
   }
 
   @ParameterizedTest
@@ -251,5 +285,8 @@ class UpdateValidOperationProcessorTest {
     StepVerifier.create(result)
         .expectError(IllegalArgumentException.class)
         .verify();
+
+    verify(sendRTPService, never())
+        .findRtpByCompositeKey(anyLong(), anyString());
   }
 }
