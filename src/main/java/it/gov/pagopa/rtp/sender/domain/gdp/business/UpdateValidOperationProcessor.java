@@ -1,12 +1,14 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
@@ -20,19 +22,26 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
       List.of(Status.VALID);
 
 
+  private final GdpMapper gdpMapper;
+
+
   /**
    * Constructs a new {@code UpdateOperationProcessor} with required dependencies.
    *
+   * @param gdpMapper             the mapper for GDP messages; must not be {@code null}
    * @param sendRTPService        the service for sending or retrieving RTPs; must not be {@code null}
    * @param gdpEventHubProperties the configuration properties for the Event Hub; must not be {@code null}
    * @throws NullPointerException if any argument is {@code null}
    */
   protected UpdateValidOperationProcessor(
+      @NonNull final GdpMapper gdpMapper,
       @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
     super(sendRTPService, gdpEventHubProperties,
         ACCEPTED_STATUSES, SUPPORTED_STATUSES);
+
+    this.gdpMapper = Objects.requireNonNull(gdpMapper);
   }
 
 
