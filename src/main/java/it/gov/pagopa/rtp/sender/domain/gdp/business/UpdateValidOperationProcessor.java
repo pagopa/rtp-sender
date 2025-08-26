@@ -9,9 +9,12 @@ import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
+
+@Slf4j
 public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
   private static final List<RtpStatus> ACCEPTED_STATUSES = List.of(
