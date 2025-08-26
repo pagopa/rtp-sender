@@ -15,17 +15,36 @@ import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * {@code UpdateValidOperationProcessor} is a concrete implementation of {@link UpdateOperationProcessor}
+ * responsible for handling GDP messages with status {@link GdpMessage.Status#VALID}.
+ * <p>
+ * This processor supports updating RTPs only if their current status is within the
+ * accepted states defined in {@link #ACCEPTED_STATUSES}.
+ * <p>
+ * The update of existing RTPs is not yet supported (see {@link #updateRtp(Rtp, GdpMessage)}),
+ * but missing RTPs can be created and sent if an {@link RtpNotFoundException} occurs.
+ */
 @Slf4j
 public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
+  /**
+   * The set of RTP statuses that are eligible for an update in this processor.
+   */
   private static final List<RtpStatus> ACCEPTED_STATUSES = List.of(
       RtpStatus.CREATED, RtpStatus.SENT, RtpStatus.ACCEPTED, RtpStatus.USER_ACCEPTED
   );
 
+  /**
+   * The set of GDP message statuses that this processor supports.
+   */
   private static final List<GdpMessage.Status> SUPPORTED_STATUSES =
       List.of(Status.VALID);
 
 
+  /**
+   * Mapper used to convert {@link GdpMessage} instances into {@link Rtp} objects.
+   */
   private final GdpMapper gdpMapper;
 
 
@@ -49,6 +68,15 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
   }
 
 
+  /**
+   * Updates an existing RTP based on the given GDP message.
+   * <p>
+   * Currently not supported.
+   *
+   * @param rtp        the RTP to update; must not be {@code null}
+   * @param gdpMessage the GDP message providing update information; must not be {@code null}
+   * @return a {@link Mono} that always errors with {@link UnsupportedOperationException}
+   */
   @NonNull
   @Override
   protected Mono<Rtp> updateRtp(@NonNull final Rtp rtp, @NonNull final GdpMessage gdpMessage) {
@@ -56,6 +84,18 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
   }
 
 
+  /**
+   * Handles the case where no RTP was found for the given GDP message.
+   * <p>
+   * If the cause is an {@link RtpNotFoundException}, a new RTP is created from the GDP message,
+   * sent via the {@link SendRTPServiceImpl}, and the sent RTP is returned.
+   * For other exceptions, the error is propagated.
+   *
+   * @param cause      the exception that occurred; must not be {@code null}
+   * @param gdpMessage the GDP message that triggered the operation; must not be {@code null}
+   * @return a {@link Mono} emitting the newly created and sent RTP if the cause is {@code RtpNotFoundException},
+   * otherwise a {@link Mono#error(Throwable)}
+   */
   @NonNull
   @Override
   protected Mono<Rtp> handleMissingRtp(
@@ -74,6 +114,6 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
                 .flatMap(this.sendRTPService::send)
 
                 .doOnSuccess(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId())))
-                .doOnError(ex -> log.error("Error sending RTP. ResourceId: {}", gdpMessage.id(), ex));
+        .doOnError(ex -> log.error("Error sending RTP. ResourceId: {}", gdpMessage.id(), ex));
   }
 }
