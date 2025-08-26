@@ -54,7 +54,8 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
   @NonNull
   @Override
-  protected Mono<Rtp> handleMissingRtp(@NonNull final Throwable cause,
+  protected Mono<Rtp> handleMissingRtp(
+      @NonNull final Throwable cause,
       @NonNull final GdpMessage gdpMessage) {
 
     return Mono.error(new UnsupportedOperationException("Handle missing RTP for Update VALID operation is not supported yet"));
