@@ -80,24 +80,33 @@ class UpdateValidOperationProcessorTest {
   @Test
   void givenRtpNotFound_whenProcessOperation_thenThrowsUnsupportedOperationException() {
     final var inputOperationId = 1L;
-    final var eventDispatcher = "dispatcher";
+    final var inputEventDispatcher = "dispatcher";
+    final var resourceID = ResourceID.createNew();
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
         .status(SUPPORTED_STATUS)
         .build();
 
+    final var rtp = Rtp.builder()
+        .resourceID(resourceID)
+        .status(RtpStatus.CREATED)
+        .operationId(inputOperationId)
+        .eventDispatcher(inputEventDispatcher)
+        .build();
+
     when(gdpEventHubProperties.eventDispatcher())
-        .thenReturn(eventDispatcher);
-    when(sendRTPService.findRtpByCompositeKey(inputOperationId, eventDispatcher))
-        .thenReturn(Mono.error(new RtpNotFoundException(inputOperationId, eventDispatcher)));
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(new RtpNotFoundException(inputOperationId, inputEventDispatcher)));
+    when(gdpMapper.toRtp(message))
+        .thenReturn(rtp);
+    when(sendRTPService.send(rtp))
+        .thenReturn(Mono.just(rtp));
 
     StepVerifier.create(processor.processOperation(message))
-        .expectErrorSatisfies(error ->
-            Assertions.assertThat(error)
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Handle missing RTP for Update VALID operation is not supported yet"))
-        .verify();
+        .expectNext(rtp)
+        .verifyComplete();
   }
 
   private static Stream<Arguments> provideValidRtpStatuses() {
