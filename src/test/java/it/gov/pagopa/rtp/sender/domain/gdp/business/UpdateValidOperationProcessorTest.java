@@ -133,6 +133,31 @@ class UpdateValidOperationProcessorTest {
         .verify();
   }
 
+  @Test
+  void givenRtpNotFoundAndMessageMappingErrors_whenProcessOperation_thenPropagatesException() {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+
+    final var rtpNotFoundException = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+    final var genericException = new RuntimeException("Generic exception");
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(rtpNotFoundException));
+    when(gdpMapper.toRtp(message))
+        .thenThrow(genericException);
+
+    StepVerifier.create(processor.processOperation(message))
+        .expectErrorMatches(error -> error.equals(genericException))
+        .verify();
+  }
+
   private static Stream<Arguments> provideValidRtpStatuses() {
     return Stream.of(
         Arguments.of(RtpStatus.CREATED),
