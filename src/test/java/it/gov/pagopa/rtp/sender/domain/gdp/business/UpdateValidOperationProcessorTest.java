@@ -78,7 +78,7 @@ class UpdateValidOperationProcessorTest {
   }
 
   @Test
-  void givenRtpNotFound_whenProcessOperation_thenThrowsUnsupportedOperationException() {
+  void givenRtpNotFound_whenProcessOperation_thenCreatesAndSendsRtp() {
     final var inputOperationId = 1L;
     final var inputEventDispatcher = "dispatcher";
     final var resourceID = ResourceID.createNew();
