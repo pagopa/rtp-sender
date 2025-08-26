@@ -109,12 +109,12 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
                 .doOnNext(message -> log.info("Creating new RTP. Operation ID: {}", message.id()))
                 .mapNotNull(this.gdpMapper::toRtp)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Created Rtp cannot be null")))
                 .doOnNext(rtp -> log.info("RTP created. ResourceId: {}", rtp.resourceID().getId()))
 
                 .doOnNext(rtp -> log.info("Sending RTP. ResourceId: {}", rtp.resourceID().getId()))
                 .flatMap(this.sendRTPService::send)
-
-                .doOnSuccess(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId())))
+                .doOnNext(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId())))
 
         .doOnError(ex -> log.error("Error sending RTP. ResourceId: {}", gdpMessage.id(), ex));
   }
