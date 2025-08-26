@@ -104,18 +104,24 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
     return Mono.<Rtp>error(cause)
         .onErrorResume(RtpNotFoundException.class,
-            ex -> Mono.just(gdpMessage)
-                .doFirst(() -> log.warn(ex.getMessage()))
-
-                .doOnNext(message -> log.info("Creating new RTP. Operation ID: {}", message.id()))
-                .mapNotNull(this.gdpMapper::toRtp)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Created Rtp cannot be null")))
-                .doOnNext(rtp -> log.info("RTP created. ResourceId: {}", rtp.resourceID().getId()))
-
-                .doOnNext(rtp -> log.info("Sending RTP. ResourceId: {}", rtp.resourceID().getId()))
-                .flatMap(this.sendRTPService::send)
-                .doOnNext(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId())))
+            ex -> this.createAndSendRtp(gdpMessage)
+                .doFirst(() -> log.warn(ex.getMessage())))
 
         .doOnError(ex -> log.error("Error sending RTP. ResourceId: {}", gdpMessage.id(), ex));
+  }
+
+
+  @NonNull
+  private Mono<Rtp> createAndSendRtp(@NonNull final GdpMessage gdpMessage) {
+    return Mono.just(gdpMessage)
+
+        .doOnNext(message -> log.info("Creating new RTP. Operation ID: {}", message.id()))
+        .mapNotNull(this.gdpMapper::toRtp)
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Created Rtp cannot be null")))
+        .doOnNext(rtp -> log.info("RTP created. ResourceId: {}", rtp.resourceID().getId()))
+
+        .doOnNext(rtp -> log.info("Sending RTP. ResourceId: {}", rtp.resourceID().getId()))
+        .flatMap(this.sendRTPService::send)
+        .doOnNext(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId()));
   }
 }
