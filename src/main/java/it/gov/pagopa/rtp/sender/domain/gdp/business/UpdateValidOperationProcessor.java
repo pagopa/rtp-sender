@@ -105,7 +105,7 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
     return Mono.<Rtp>error(cause)
         .onErrorResume(RtpNotFoundException.class,
             ex -> Mono.just(gdpMessage)
-                .doFirst(() -> log.warn(ex.getMessage(), ex))
+                .doFirst(() -> log.warn(ex.getMessage()))
 
                 .doOnNext(message -> log.info("Creating new RTP. Operation ID: {}", message.id()))
                 .mapNotNull(this.gdpMapper::toRtp)
