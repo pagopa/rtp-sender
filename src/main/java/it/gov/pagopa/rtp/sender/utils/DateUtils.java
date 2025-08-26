@@ -51,7 +51,7 @@ public class DateUtils {
           .map(instant -> instant.atZone(ZoneId.of("Europe/Rome")))
           .map(zonedDateTime -> {
             final var localDate = zonedDateTime.toLocalDate();
-            log.info("Converted timestamp {} to date {}", timestamp, localDate);
+            log.debug("Converted timestamp {} to date {}", timestamp, localDate);
             return localDate;
           });
 
