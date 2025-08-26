@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
@@ -61,6 +62,18 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
       @NonNull final Throwable cause,
       @NonNull final GdpMessage gdpMessage) {
 
-    return Mono.error(new UnsupportedOperationException("Handle missing RTP for Update VALID operation is not supported yet"));
+    return Mono.<Rtp>error(cause)
+        .onErrorResume(RtpNotFoundException.class,
+            ex -> Mono.just(gdpMessage)
+
+                .doOnNext(message -> log.info("Creating new RTP. Operation ID: {}", message.id()))
+                .mapNotNull(this.gdpMapper::toRtp)
+                .doOnNext(rtp -> log.info("RTP created. ResourceId: {}", rtp.resourceID().getId()))
+
+                .doOnNext(rtp -> log.info("Sending RTP. ResourceId: {}", rtp.resourceID().getId()))
+                .flatMap(this.sendRTPService::send)
+
+                .doOnSuccess(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId())))
+                .doOnError(ex -> log.error("Error sending RTP. ResourceId: {}", gdpMessage.id(), ex));
   }
 }
