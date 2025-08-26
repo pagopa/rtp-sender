@@ -53,28 +53,50 @@ class UpdateValidOperationProcessorTest {
 
   @ParameterizedTest
   @MethodSource("provideValidRtpStatuses")
-  void givenValidRtpToUpdate_whenProcessRtp_thenThrowsUnsupportedOperationException(RtpStatus rtpStatus) {
+  void givenValidRtpToUpdate_whenProcessRtp_thenCancelsCurrentRtpAndSendsNewOne(RtpStatus rtpStatus) {
     final var inputOperationId = 1L;
     final var inputEventDispatcher = "dispatcher";
-    final var resourceID = ResourceID.createNew();
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
         .status(SUPPORTED_STATUS)
         .build();
 
-    final var rtp = Rtp.builder()
-        .resourceID(resourceID)
+    final var rtpToCancel = Rtp.builder()
+        .resourceID(ResourceID.createNew())
         .status(rtpStatus)
         .operationId(inputOperationId)
         .eventDispatcher(inputEventDispatcher)
         .build();
 
+    final var rtpToSend = rtpToCancel
+        .withResourceID(ResourceID.createNew())
+        .withStatus(RtpStatus.CREATED);
+
     when(gdpEventHubProperties.eventDispatcher())
         .thenReturn(inputEventDispatcher);
     when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
-        .thenReturn(Mono.just(rtp));
+        .thenReturn(Mono.just(rtpToCancel));
+    when(sendRTPService.cancelRtp(rtpToCancel))
+        .thenReturn(Mono.just(rtpToCancel));
+    when(gdpMapper.toRtp(message))
+        .thenReturn(rtpToSend);
+    when(sendRTPService.send(rtpToSend))
+        .thenReturn(Mono.just(rtpToSend));
 
+    StepVerifier.create(processor.processOperation(message))
+        .expectNext(rtpToSend)
+        .verifyComplete();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(sendRTPService, times(1))
+        .cancelRtp(rtpToCancel);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, times(1))
+        .send(rtpToSend);
+  }
     StepVerifier.create(processor.processOperation(message))
         .expectErrorSatisfies(error ->
             Assertions.assertThat(error)
