@@ -23,6 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -156,6 +158,39 @@ class UpdateValidOperationProcessorTest {
     StepVerifier.create(processor.processOperation(message))
         .expectErrorMatches(error -> error.equals(genericException))
         .verify();
+  }
+
+  @Test
+  void givenRtpNotFoundAndMessageMappingReturnsNull_whenProcessOperation_thenThrowIllegalArgumentException() {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+
+    final var rtpNotFoundException = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+    final var expectedException = new IllegalArgumentException("Created Rtp cannot be null");
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(rtpNotFoundException));
+    when(gdpMapper.toRtp(message))
+        .thenReturn(null);
+
+    StepVerifier.create(processor.processOperation(message))
+        .expectErrorSatisfies(error ->
+            Assertions.assertThat(error)
+                .isInstanceOf(expectedException.getClass())
+                .hasMessage(expectedException.getMessage()))
+        .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
   }
 
   private static Stream<Arguments> provideValidRtpStatuses() {
