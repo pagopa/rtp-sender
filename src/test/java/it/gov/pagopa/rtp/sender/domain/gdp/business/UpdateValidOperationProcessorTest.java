@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
@@ -30,6 +31,9 @@ class UpdateValidOperationProcessorTest {
   private static final String SUPPORTED_STATUS_NAME = "VALID";
   private static final GdpMessage.Status SUPPORTED_STATUS = GdpMessage.Status.valueOf(SUPPORTED_STATUS_NAME);
 
+  
+  @Mock
+  private GdpMapper gdpMapper;
 
   @Mock
   private SendRTPServiceImpl sendRTPService;
