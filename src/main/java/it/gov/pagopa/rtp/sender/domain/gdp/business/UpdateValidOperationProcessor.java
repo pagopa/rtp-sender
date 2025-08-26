@@ -79,8 +79,24 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
    */
   @NonNull
   @Override
-  protected Mono<Rtp> updateRtp(@NonNull final Rtp rtp, @NonNull final GdpMessage gdpMessage) {
-    return Mono.error(new UnsupportedOperationException("Update VALID existing RTP is not supported yet"));
+  protected Mono<Rtp> updateRtp(
+      @NonNull final Rtp rtp,
+      @NonNull final GdpMessage gdpMessage) {
+
+    Objects.requireNonNull(rtp, "rtp must not be null");
+    Objects.requireNonNull(gdpMessage, "gdpMessage must not be null");
+
+    final var rtpCancellation = Mono.just(rtp)
+
+        .doOnNext(rtpToCancel -> log.info("Cancelling RTP. ResourceId: {}", rtpToCancel.resourceID().getId()))
+        .flatMap(this.sendRTPService::cancelRtp)
+
+        .doOnSuccess(rtpCancelled -> log.info("RTP cancelled successfully. rtpId {}", rtpCancelled.resourceID().getId()))
+        .doOnError(error -> log.error("Error cancelling RTP: {}", error.getMessage(), error));
+
+    final var newRtpToSend = this.createAndSendRtp(gdpMessage);
+
+    return rtpCancellation.then(newRtpToSend);
   }
 
 
