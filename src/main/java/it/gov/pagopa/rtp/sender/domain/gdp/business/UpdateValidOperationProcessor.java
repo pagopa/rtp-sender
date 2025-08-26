@@ -71,11 +71,22 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
   /**
    * Updates an existing RTP based on the given GDP message.
    * <p>
-   * Currently not supported.
+   * The update operation consists of two sequential steps:
+   * <ol>
+   *   <li>Cancel the existing RTP using {@link SendRTPServiceImpl#cancelRtp(Rtp)}.</li>
+   *   <li>Create and send a new RTP from the provided {@link GdpMessage} via {@link #createAndSendRtp(GdpMessage)}.</li>
+   * </ol>
+   * <p>
+   * Both steps are executed in sequence: the cancellation must complete successfully
+   * before the new RTP is created and sent. If cancellation fails, the error is propagated
+   * and the new RTP will not be created.
+   * <p>
    *
-   * @param rtp        the RTP to update; must not be {@code null}
-   * @param gdpMessage the GDP message providing update information; must not be {@code null}
-   * @return a {@link Mono} that always errors with {@link UnsupportedOperationException}
+   * @param rtp        the RTP to cancel before creating a replacement; must not be {@code null}
+   * @param gdpMessage the GDP message providing data for the new RTP; must not be {@code null}
+   * @return a {@link Mono} emitting the newly created and sent RTP,
+   *         or a {@link Mono#error(Throwable)} if cancellation or creation fails
+   * @throws NullPointerException if {@code rtp} or {@code gdpMessage} is {@code null}
    */
   @NonNull
   @Override
@@ -127,6 +138,24 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
   }
 
 
+  /**
+   * Creates a new {@link Rtp} from the given {@link GdpMessage} and sends it using the
+   * {@link SendRTPServiceImpl}.
+   * <p>
+   * The operation proceeds in the following steps:
+   * <ol>
+   *   <li>Convert the {@link GdpMessage} into an {@link Rtp} using {@link GdpMapper#toRtp(GdpMessage)}.</li>
+   *   <li>Send the newly created RTP via {@link SendRTPServiceImpl#send(Rtp)}.</li>
+   * </ol>
+   * <p>
+   * If the GDP message cannot be mapped to an {@link Rtp}, the pipeline will complete empty.
+   *
+   * @param gdpMessage the GDP message to transform and send; must not be {@code null}
+   * @return a {@link Mono} emitting the sent {@link Rtp},
+   *         or an empty {@link Mono} if the message could not be mapped,
+   *         or a {@link Mono#error(Throwable)} if sending fails
+   * @throws NullPointerException if {@code gdpMessage} is {@code null}
+   */
   @NonNull
   private Mono<Rtp> createAndSendRtp(@NonNull final GdpMessage gdpMessage) {
     return Mono.just(gdpMessage)
