@@ -30,7 +30,7 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
 
   /**
-   * Constructs a new {@code UpdateOperationProcessor} with required dependencies.
+   * Constructs a new {@code UpdateValidOperationProcessor} with required dependencies.
    *
    * @param gdpMapper             the mapper for GDP messages; must not be {@code null}
    * @param sendRTPService        the service for sending or retrieving RTPs; must not be {@code null}
