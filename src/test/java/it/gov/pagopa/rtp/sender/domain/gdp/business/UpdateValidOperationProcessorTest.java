@@ -83,6 +83,8 @@ class UpdateValidOperationProcessorTest {
     final var inputEventDispatcher = "dispatcher";
     final var resourceID = ResourceID.createNew();
 
+    final var exception = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+
     final var message = GdpMessage.builder()
         .id(inputOperationId)
         .status(SUPPORTED_STATUS)
@@ -98,7 +100,7 @@ class UpdateValidOperationProcessorTest {
     when(gdpEventHubProperties.eventDispatcher())
         .thenReturn(inputEventDispatcher);
     when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
-        .thenReturn(Mono.error(new RtpNotFoundException(inputOperationId, inputEventDispatcher)));
+        .thenReturn(Mono.error(exception));
     when(gdpMapper.toRtp(message))
         .thenReturn(rtp);
     when(sendRTPService.send(rtp))
