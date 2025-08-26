@@ -167,6 +167,41 @@ class UpdateValidOperationProcessorTest {
     );
   }
 
+  @Test
+  void givenRtpNotFoundAndSendingRtpErrors_whenProcessOperation_thenPropagatesException() {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+    final var resourceID = ResourceID.createNew();
+
+    final var rtpNotFoundException = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+    final var genericException = new Exception("Generic exception");
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    final var rtp = Rtp.builder()
+        .resourceID(resourceID)
+        .status(RtpStatus.CREATED)
+        .operationId(inputOperationId)
+        .eventDispatcher(inputEventDispatcher)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(rtpNotFoundException));
+    when(gdpMapper.toRtp(message))
+        .thenReturn(rtp);
+    when(sendRTPService.send(rtp))
+        .thenReturn(Mono.error(genericException));
+
+    StepVerifier.create(processor.processOperation(message))
+        .expectErrorMatches(error -> error.equals(genericException))
+        .verify();
+  }
+
   @ParameterizedTest
   @EnumSource(value = Status.class, mode = EnumSource.Mode.EXCLUDE, names = SUPPORTED_STATUS_NAME)
   void givenNonValidStatus_whenProcessOperation_thenThrowsIllegalArgumentException(Status nonValidStatus) {
