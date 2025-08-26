@@ -5,7 +5,7 @@ import java.util.UUID;
 public class RtpNotFoundException extends RuntimeException {
 
   private static final String DEFAULT_ERROR_MESSAGE = "Rtp not found. Id: %s";
-  private static final String COMPOSITE_KEY_ERROR_MESSAGE = "RTP not found with composite key: OperationId %s and EventDispatcher %s";
+  private static final String COMPOSITE_KEY_ERROR_MESSAGE = "RTP not found by composite key: OperationId %s and EventDispatcher %s";
 
 
   public RtpNotFoundException(String message) {
