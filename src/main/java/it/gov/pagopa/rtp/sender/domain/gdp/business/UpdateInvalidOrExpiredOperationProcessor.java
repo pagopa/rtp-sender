@@ -4,7 +4,6 @@ import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
 import it.gov.pagopa.rtp.sender.domain.rtp.RtpStatus;
-import it.gov.pagopa.rtp.sender.service.registryfile.RegistryDataService;
 import it.gov.pagopa.rtp.sender.service.rtp.SendRTPServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -36,16 +35,14 @@ public class UpdateInvalidOrExpiredOperationProcessor extends UpdateOperationPro
   /**
   * Constructs the processor with required dependencies.
   *
-  * @param registryDataService     service for retrieving service provider data from the registry
   * @param sendRTPService          service responsible for sending or cancelling RTPs
   * @param gdpEventHubProperties   configuration properties for GDP event hub
   */
   public UpdateInvalidOrExpiredOperationProcessor(
-      @NonNull final RegistryDataService registryDataService,
       @NonNull final SendRTPServiceImpl sendRTPService,
       @NonNull final GdpEventHubProperties gdpEventHubProperties) {
 
-    super(registryDataService, sendRTPService, gdpEventHubProperties, VALID_STATUSES, SUPPORTED_STATUSES);
+    super(sendRTPService, gdpEventHubProperties, VALID_STATUSES, SUPPORTED_STATUSES);
   }
 
   /**
