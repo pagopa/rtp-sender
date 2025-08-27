@@ -71,16 +71,43 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
   /**
    * Updates an existing RTP based on the given GDP message.
    * <p>
-   * Currently not supported.
+   * The update operation consists of two sequential steps:
+   * <ol>
+   *   <li>Cancel the existing RTP using {@link SendRTPServiceImpl#cancelRtp(Rtp)}.</li>
+   *   <li>Create and send a new RTP from the provided {@link GdpMessage} via {@link #createAndSendRtp(GdpMessage)}.</li>
+   * </ol>
+   * <p>
+   * Both steps are executed in sequence: the cancellation must complete successfully
+   * before the new RTP is created and sent. If cancellation fails, the error is propagated
+   * and the new RTP will not be created.
+   * <p>
    *
-   * @param rtp        the RTP to update; must not be {@code null}
-   * @param gdpMessage the GDP message providing update information; must not be {@code null}
-   * @return a {@link Mono} that always errors with {@link UnsupportedOperationException}
+   * @param rtp        the RTP to cancel before creating a replacement; must not be {@code null}
+   * @param gdpMessage the GDP message providing data for the new RTP; must not be {@code null}
+   * @return a {@link Mono} emitting the newly created and sent RTP,
+   *         or a {@link Mono#error(Throwable)} if cancellation or creation fails
+   * @throws NullPointerException if {@code rtp} or {@code gdpMessage} is {@code null}
    */
   @NonNull
   @Override
-  protected Mono<Rtp> updateRtp(@NonNull final Rtp rtp, @NonNull final GdpMessage gdpMessage) {
-    return Mono.error(new UnsupportedOperationException("Update VALID existing RTP is not supported yet"));
+  protected Mono<Rtp> updateRtp(
+      @NonNull final Rtp rtp,
+      @NonNull final GdpMessage gdpMessage) {
+
+    Objects.requireNonNull(rtp, "rtp must not be null");
+    Objects.requireNonNull(gdpMessage, "gdpMessage must not be null");
+
+    final var rtpCancellation = Mono.just(rtp)
+
+        .doOnNext(rtpToCancel -> log.info("Cancelling RTP. ResourceId: {}", rtpToCancel.resourceID().getId()))
+        .flatMap(this.sendRTPService::cancelRtp)
+
+        .doOnSuccess(rtpCancelled -> log.info("RTP cancelled successfully. rtpId {}", rtpCancelled.resourceID().getId()))
+        .doOnError(error -> log.error("Error cancelling RTP: {}", error.getMessage(), error));
+
+    final var newRtpToSend = this.createAndSendRtp(gdpMessage);
+
+    return rtpCancellation.then(newRtpToSend);
   }
 
 
@@ -104,18 +131,42 @@ public class UpdateValidOperationProcessor extends UpdateOperationProcessor {
 
     return Mono.<Rtp>error(cause)
         .onErrorResume(RtpNotFoundException.class,
-            ex -> Mono.just(gdpMessage)
-                .doFirst(() -> log.warn(ex.getMessage()))
-
-                .doOnNext(message -> log.info("Creating new RTP. Operation ID: {}", message.id()))
-                .mapNotNull(this.gdpMapper::toRtp)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Created Rtp cannot be null")))
-                .doOnNext(rtp -> log.info("RTP created. ResourceId: {}", rtp.resourceID().getId()))
-
-                .doOnNext(rtp -> log.info("Sending RTP. ResourceId: {}", rtp.resourceID().getId()))
-                .flatMap(this.sendRTPService::send)
-                .doOnNext(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId())))
+            ex -> this.createAndSendRtp(gdpMessage)
+                .doFirst(() -> log.warn(ex.getMessage())))
 
         .doOnError(ex -> log.error("Error sending RTP. ResourceId: {}", gdpMessage.id(), ex));
+  }
+
+
+  /**
+   * Creates a new {@link Rtp} from the given {@link GdpMessage} and sends it using the
+   * {@link SendRTPServiceImpl}.
+   * <p>
+   * The operation proceeds in the following steps:
+   * <ol>
+   *   <li>Convert the {@link GdpMessage} into an {@link Rtp} using {@link GdpMapper#toRtp(GdpMessage)}.</li>
+   *   <li>Send the newly created RTP via {@link SendRTPServiceImpl#send(Rtp)}.</li>
+   * </ol>
+   * <p>
+   * If the GDP message cannot be mapped to an {@link Rtp}, the pipeline will complete empty.
+   *
+   * @param gdpMessage the GDP message to transform and send; must not be {@code null}
+   * @return a {@link Mono} emitting the sent {@link Rtp},
+   *         or an empty {@link Mono} if the message could not be mapped,
+   *         or a {@link Mono#error(Throwable)} if sending fails
+   * @throws NullPointerException if {@code gdpMessage} is {@code null}
+   */
+  @NonNull
+  private Mono<Rtp> createAndSendRtp(@NonNull final GdpMessage gdpMessage) {
+    return Mono.just(gdpMessage)
+
+        .doOnNext(message -> log.info("Creating new RTP. Operation ID: {}", message.id()))
+        .mapNotNull(this.gdpMapper::toRtp)
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Created Rtp cannot be null")))
+        .doOnNext(rtp -> log.info("RTP created. ResourceId: {}", rtp.resourceID().getId()))
+
+        .doOnNext(rtp -> log.info("Sending RTP. ResourceId: {}", rtp.resourceID().getId()))
+        .flatMap(this.sendRTPService::send)
+        .doOnNext(rtp -> log.info("RTP sent. ResourceId: {}", rtp.resourceID().getId()));
   }
 }
