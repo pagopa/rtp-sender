@@ -2,6 +2,7 @@ package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
 import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
+import it.gov.pagopa.rtp.sender.domain.gdp.GdpMapper;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
@@ -22,6 +23,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +37,9 @@ class UpdateValidOperationProcessorTest {
   private static final String SUPPORTED_STATUS_NAME = "VALID";
   private static final GdpMessage.Status SUPPORTED_STATUS = GdpMessage.Status.valueOf(SUPPORTED_STATUS_NAME);
 
+  
+  @Mock
+  private GdpMapper gdpMapper;
 
   @Mock
   private SendRTPServiceImpl sendRTPService;
@@ -74,9 +84,82 @@ class UpdateValidOperationProcessorTest {
   }
 
   @Test
-  void givenRtpNotFound_whenProcessOperation_thenThrowsUnsupportedOperationException() {
+  void givenRtpNotFound_whenProcessOperation_thenCreatesAndSendsRtp() {
     final var inputOperationId = 1L;
-    final var eventDispatcher = "dispatcher";
+    final var inputEventDispatcher = "dispatcher";
+    final var resourceID = ResourceID.createNew();
+
+    final var exception = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    final var rtp = Rtp.builder()
+        .resourceID(resourceID)
+        .status(RtpStatus.CREATED)
+        .operationId(inputOperationId)
+        .eventDispatcher(inputEventDispatcher)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(exception));
+    when(gdpMapper.toRtp(message))
+        .thenReturn(rtp);
+    when(sendRTPService.send(rtp))
+        .thenReturn(Mono.just(rtp));
+
+    StepVerifier.create(processor.processOperation(message))
+        .expectNext(rtp)
+        .verifyComplete();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, times(1))
+        .send(rtp);
+  }
+
+  @Test
+  void givenRtpNotFoundAndGenericException_whenProcessOperation_thenPropagatesException() {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    final var exception = new Exception("Generic exception");
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(exception));
+
+    StepVerifier.create(processor.processOperation(message))
+        .expectErrorMatches(error -> error.equals(exception))
+        .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, never())
+        .toRtp(message);
+    verify(sendRTPService, never())
+        .send(any());
+  }
+
+  @Test
+  void givenRtpNotFoundAndMessageMappingErrors_whenProcessOperation_thenPropagatesException() {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+
+    final var rtpNotFoundException = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+    final var genericException = new RuntimeException("Generic exception");
 
     final var message = GdpMessage.builder()
         .id(inputOperationId)
@@ -84,16 +167,57 @@ class UpdateValidOperationProcessorTest {
         .build();
 
     when(gdpEventHubProperties.eventDispatcher())
-        .thenReturn(eventDispatcher);
-    when(sendRTPService.findRtpByCompositeKey(inputOperationId, eventDispatcher))
-        .thenReturn(Mono.error(new RtpNotFoundException(inputOperationId, eventDispatcher)));
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(rtpNotFoundException));
+    when(gdpMapper.toRtp(message))
+        .thenThrow(genericException);
+
+    StepVerifier.create(processor.processOperation(message))
+        .expectErrorMatches(error -> error.equals(genericException))
+        .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, never())
+        .send(any());
+  }
+
+  @Test
+  void givenRtpNotFoundAndMessageMappingReturnsNull_whenProcessOperation_thenThrowIllegalArgumentException() {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+
+    final var rtpNotFoundException = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+    final var expectedException = new IllegalArgumentException("Created Rtp cannot be null");
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(rtpNotFoundException));
+    when(gdpMapper.toRtp(message))
+        .thenReturn(null);
 
     StepVerifier.create(processor.processOperation(message))
         .expectErrorSatisfies(error ->
             Assertions.assertThat(error)
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Handle missing RTP for Update VALID operation is not supported yet"))
+                .isInstanceOf(expectedException.getClass())
+                .hasMessage(expectedException.getMessage()))
         .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, never())
+        .send(any());
   }
 
   private static Stream<Arguments> provideValidRtpStatuses() {
@@ -103,6 +227,48 @@ class UpdateValidOperationProcessorTest {
         Arguments.of(RtpStatus.ACCEPTED),
         Arguments.of(RtpStatus.USER_ACCEPTED)
     );
+  }
+
+  @Test
+  void givenRtpNotFoundAndSendingRtpErrors_whenProcessOperation_thenPropagatesException() {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+    final var resourceID = ResourceID.createNew();
+
+    final var rtpNotFoundException = new RtpNotFoundException(inputOperationId, inputEventDispatcher);
+    final var genericException = new Exception("Generic exception");
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .status(SUPPORTED_STATUS)
+        .build();
+
+    final var rtp = Rtp.builder()
+        .resourceID(resourceID)
+        .status(RtpStatus.CREATED)
+        .operationId(inputOperationId)
+        .eventDispatcher(inputEventDispatcher)
+        .build();
+
+    when(gdpEventHubProperties.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(rtpNotFoundException));
+    when(gdpMapper.toRtp(message))
+        .thenReturn(rtp);
+    when(sendRTPService.send(rtp))
+        .thenReturn(Mono.error(genericException));
+
+    StepVerifier.create(processor.processOperation(message))
+        .expectErrorMatches(error -> error.equals(genericException))
+        .verify();
+
+    verify(sendRTPService, times(1))
+        .findRtpByCompositeKey(inputOperationId, inputEventDispatcher);
+    verify(gdpMapper, times(1))
+        .toRtp(message);
+    verify(sendRTPService, times(1))
+        .send(rtp);
   }
 
   @ParameterizedTest
@@ -119,5 +285,8 @@ class UpdateValidOperationProcessorTest {
     StepVerifier.create(result)
         .expectError(IllegalArgumentException.class)
         .verify();
+
+    verify(sendRTPService, never())
+        .findRtpByCompositeKey(anyLong(), anyString());
   }
 }
