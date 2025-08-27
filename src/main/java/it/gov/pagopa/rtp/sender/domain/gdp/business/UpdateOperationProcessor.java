@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Operation;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage.Status;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
 
@@ -84,7 +86,11 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
         .switchIfEmpty(
             Mono.error(new IllegalArgumentException("Cannot update RTP with status " + gdpMessage.status())))
 
-        .flatMap(rtpToUpdate -> this.updateRtp(rtpToUpdate, gdpMessage));
+        .flatMap(rtpToUpdate -> this.updateRtp(rtpToUpdate, gdpMessage))
+
+        .onErrorResume(
+            RtpNotFoundException.class,
+            e -> this.handleMissingRtp(e, gdpMessage));
   }
 
 
@@ -96,4 +102,24 @@ public abstract class UpdateOperationProcessor implements OperationProcessor {
    * @return a {@link Mono} emitting the updated {@link Rtp}
    */
   protected abstract Mono<Rtp> updateRtp(Rtp rtp, GdpMessage gdpMessage);
+
+
+  /**
+   * Fallback case when no RTP is found.
+   *
+   * @param gdpMessage the original GDP message
+   * @return a {@link Mono} emitting a {@link RtpNotFoundException} error.
+   */
+  @NonNull
+  protected Mono<Rtp> handleMissingRtp(
+      @NonNull final Throwable cause,
+      @NonNull final GdpMessage gdpMessage) {
+
+    Objects.requireNonNull(cause, "cause cannot be null");
+    Objects.requireNonNull(gdpMessage, "gdpMessage cannot be null");
+
+    log.error(cause.getMessage(), cause);
+
+    return Mono.error(Exceptions.propagate(cause));
+  }
 }

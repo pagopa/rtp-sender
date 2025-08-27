@@ -1,6 +1,7 @@
 package it.gov.pagopa.rtp.sender.domain.gdp.business;
 
 import it.gov.pagopa.rtp.sender.configuration.GdpEventHubProperties;
+import it.gov.pagopa.rtp.sender.domain.errors.RtpNotFoundException;
 import it.gov.pagopa.rtp.sender.domain.gdp.GdpMessage;
 import it.gov.pagopa.rtp.sender.domain.rtp.ResourceID;
 import it.gov.pagopa.rtp.sender.domain.rtp.Rtp;
@@ -76,6 +77,31 @@ class UpdateInvalidOrExpiredOperationProcessorTest {
 
         verify(sendRTPService).cancelRtp(rtp);
     }
+
+  @ParameterizedTest
+  @EnumSource(value = GdpMessage.Status.class, names = {"INVALID", "EXPIRED"})
+  void givenRtpNotFound_whenProcessOperation_thenThrowsRtpNotFoundException(GdpMessage.Status status) {
+    final var inputOperationId = 1L;
+    final var inputEventDispatcher = "dispatcher";
+
+    final var message = GdpMessage.builder()
+        .id(inputOperationId)
+        .psp_tax_code("psp-code")
+        .status(status)
+        .build();
+
+    when(gdpProps.eventDispatcher())
+        .thenReturn(inputEventDispatcher);
+
+    when(sendRTPService.findRtpByCompositeKey(inputOperationId, inputEventDispatcher))
+        .thenReturn(Mono.error(new RtpNotFoundException(inputOperationId, inputEventDispatcher)));
+
+    final var result = processor.processOperation(message);
+
+    StepVerifier.create(result)
+        .expectError(RtpNotFoundException.class)
+        .verify();
+  }
 
     private GdpMessage createGdpMessage(GdpMessage.Status status) {
 

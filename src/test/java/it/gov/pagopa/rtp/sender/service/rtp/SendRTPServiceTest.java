@@ -395,7 +395,7 @@ class SendRTPServiceTest {
     StepVerifier.create(sendRTPService.findRtpByCompositeKey(operationId, dispatcher))
             .expectErrorMatches(error ->
                     error instanceof RtpNotFoundException &&
-                            error.getMessage().contains("RTP not found with composite key"))
+                            error.getMessage().contains("RTP not found by composite key"))
             .verify();
   }
 
